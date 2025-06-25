@@ -6,17 +6,11 @@ const B4A_APP_ID = '1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0'; // Replace with y
 const B4A_JS_KEY = '7CE7gnknAyyfSZRTWpqvuDvNhLOMsF0DNYk8qvgn';   // Replace with your JavaScript Key
 const B4A_SERVER_URL = 'https://parseapi.back4app.com';   // Replace with your Server URL (e.g., https://parseapi.back4app.com/)
 
-// Global data arrays (will be populated by Parse LiveQuery)
+// Global data arrays (will be populated by explicit fetches from Parse)
 let students = [];
 let attendanceRecords = [];
 let grades = [];
 let announcements = [];
-
-// LiveQuery subscriptions
-let studentSubscription;
-let attendanceSubscription;
-let gradesSubscription;
-let announcementsSubscription;
 
 // Utility for displaying messages (replaces alert)
 function showMessage(message, type = "info", duration = 3000) {
@@ -128,15 +122,13 @@ function showConfirmDialog(message, onConfirm, onCancel) {
 // Helper function to convert Parse Object to plain JavaScript object
 function parseObjectToJson(parseObject) {
     const json = parseObject.toJSON();
-    // Parse automatically adds 'className', 'objectId', 'createdAt', 'updatedAt'
-    // 'objectId' is our 'id'
-    json.id = json.objectId;
+    json.id = json.objectId; // Map Parse objectId to 'id' for consistency
     delete json.objectId;
-    delete json.className; // Not needed on client
-    // createdAt and updatedAt can be kept if useful, or removed
+    delete json.className;
     return json;
 }
 
+// Function to save/update data in Parse
 async function saveParseData(className, data, id = null) {
     if (!Parse.User.current()) {
         showMessage('You must be logged in to save data.', 'error');
@@ -145,39 +137,36 @@ async function saveParseData(className, data, id = null) {
     const ParseObject = Parse.Object.extend(className);
     let obj;
 
-    if (id) {
-        obj = await new Parse.Query(ParseObject).get(id);
-    } else {
-        obj = new ParseObject();
-        // Set ACL for new objects: public read, only creator can write
-        const acl = new Parse.ACL(Parse.User.current());
-        acl.setPublicReadAccess(true); // Can be read by anyone (for public data like announcements)
-        // For private data, set acl.setReadAccess(Parse.User.current(), true); acl.setWriteAccess(Parse.User.current(), true);
-        // We'll control read/write via Parse Dashboard Security for specific classes.
-        // For now, let's allow public read for announcements, others remain private by default ACL of Parse.User.current()
-        if (className === 'Announcement') {
-            acl.setPublicReadAccess(true);
-            acl.setWriteAccess(Parse.User.current(), true);
-        } else {
-             // For private data, ensure only current user can read/write
-             acl.setReadAccess(Parse.User.current(), true);
-             acl.setWriteAccess(Parse.User.current(), true);
-             acl.setPublicReadAccess(false);
-             acl.setPublicWriteAccess(false);
-        }
-        obj.setACL(acl);
-    }
-
-    // Set properties from data (excluding 'id' and 'objectId')
-    for (const key in data) {
-        if (key !== 'id' && key !== 'objectId') {
-            obj.set(key, data[key]);
-        }
-    }
-
     try {
+        if (id) {
+            obj = await new Parse.Query(ParseObject).get(id);
+        } else {
+            obj = new ParseObject();
+            // Set ACL for new objects based on class type
+            const acl = new Parse.ACL(Parse.User.current());
+            if (className === 'Announcement') {
+                acl.setPublicReadAccess(true); // Announcements can be publicly read
+                acl.setWriteAccess(Parse.User.current(), true); // Only creator can write
+            } else {
+                // Default for private data: only current user can read/write
+                acl.setReadAccess(Parse.User.current(), true);
+                acl.setWriteAccess(Parse.User.current(), true);
+                acl.setPublicReadAccess(false);
+                acl.setPublicWriteAccess(false);
+            }
+            obj.setACL(acl);
+        }
+
+        // Set properties from data (excluding 'id')
+        for (const key in data) {
+            if (key !== 'id') {
+                obj.set(key, data[key]);
+            }
+        }
+
         await obj.save();
         showMessage('Data saved successfully!', 'success');
+        await loadAllData(); // Refresh all data after a save
         return obj.id;
     } catch (e) {
         console.error("Error saving document: ", e);
@@ -186,6 +175,7 @@ async function saveParseData(className, data, id = null) {
     }
 }
 
+// Function to delete data from Parse
 async function deleteParseData(className, id) {
     if (!Parse.User.current()) {
         showMessage('You must be logged in to delete data.', 'error');
@@ -196,6 +186,7 @@ async function deleteParseData(className, id) {
         const obj = await new Parse.Query(ParseObject).get(id);
         await obj.destroy();
         showMessage('Item deleted successfully!', 'success');
+        await loadAllData(); // Refresh all data after a delete
         return true;
     } catch (e) {
         console.error("Error deleting document: ", e);
@@ -204,151 +195,45 @@ async function deleteParseData(className, id) {
     }
 }
 
-
-// --- Real-time Data Loading with Parse LiveQuery ---
-function setupParseLiveQueries() {
-    if (typeof Parse === 'undefined' || !Parse.User.current()) {
-        console.warn("Parse SDK not initialized or user not logged in. Cannot set up Live Queries.");
-        return;
+// Function to load data from Parse (explicit fetch, not LiveQuery)
+async function loadParseData(className, isPublic = false) {
+    if (!Parse.User.current()) {
+        console.warn(`User not logged in. Cannot load ${className} data.`);
+        return [];
     }
 
-    // Ensure LiveQueryClient is available
-    if (!Parse.LiveQueryClient) {
-        console.error("Parse LiveQuery Client not available. Make sure LiveQuery is enabled on your Back4App app and SDK supports it.");
-        showMessage("Real-time features not available. Please check LiveQuery configuration.", "error", 7000);
-        return;
+    const ParseObject = Parse.Object.extend(className);
+    const query = new Parse.Query(ParseObject);
+
+    if (className !== 'Announcement') { // Private data (Students, Attendance, Grades)
+        // Ensure only data owned by the current user is fetched
+        query.equalTo("ACL.owner", Parse.User.current());
+    } else { // Public data (Announcements)
+        query.limit(1000); // Set a limit for announcements to avoid fetching too much data
+        query.descending("createdAt"); // Sort by newest first for announcements
     }
 
-    // Initialize LiveQuery Client if not already done
-    if (!Parse.LiveQueryClient.has  ('subscribes')) { // A simple check to see if client exists
-         Parse.LiveQueryClient = new Parse.LiveQueryClient({
-            applicationId: B4A_APP_ID,
-            serverURL: B4A_SERVER_URL.replace('https', 'wss'), // Use wss for websocket
-            javascriptKey: B4A_JS_KEY
-        });
-        Parse.LiveQueryClient.open();
-
-        Parse.LiveQueryClient.on('open', () => console.log('LiveQuery client opened'));
-        Parse.LiveQueryClient.on('close', () => console.log('LiveQuery client closed'));
-        Parse.LiveQueryClient.on('error', (error) => console.error('LiveQuery error:', error));
+    try {
+        const results = await query.find();
+        return results.map(parseObjectToJson);
+    } catch (e) {
+        console.error(`Error loading ${className} data:`, e);
+        showMessage(`Error loading ${className} data: ${e.message}`, 'error', 5000);
+        return [];
     }
+}
 
+// Function to load all data and update UI
+async function loadAllData() {
+    console.log("Loading all data from Parse...");
+    students = await loadParseData('Student', false);
+    attendanceRecords = await loadParseData('AttendanceRecord', false);
+    grades = await loadParseData('Grade', false);
+    announcements = await loadParseData('Announcement', true); // Announcements are public
 
-    // 1. Students LiveQuery
-    if (studentSubscription) studentSubscription.unsubscribe(); // Unsubscribe previous if exists
-    const Student = Parse.Object.extend("Student");
-    const studentQuery = new Parse.Query(Student);
-    // Student data is private to the user who created it
-    studentQuery.equalTo("ACL.owner", Parse.User.current()); // Filter by current user's ownership (if ACL set up correctly)
-    studentSubscription = Parse.LiveQueryClient.subscribe(studentQuery);
-
-    studentSubscription.on('open', () => console.log('Student LiveQuery subscribed'));
-    studentSubscription.on('create', (parseObject) => {
-        console.log('Student created:', parseObject.toJSON());
-        students.push(parseObjectToJson(parseObject));
-        renderUIComponents();
-    });
-    studentSubscription.on('update', (parseObject) => {
-        console.log('Student updated:', parseObject.toJSON());
-        const updatedStudent = parseObjectToJson(parseObject);
-        const index = students.findIndex(s => s.id === updatedStudent.id);
-        if (index !== -1) students[index] = updatedStudent;
-        renderUIComponents();
-    });
-    studentSubscription.on('delete', (parseObject) => {
-        console.log('Student deleted:', parseObject.toJSON());
-        students = students.filter(s => s.id !== parseObject.id);
-        renderUIComponents();
-    });
-    studentSubscription.on('enter', (parseObject) => console.log('Student entered query:', parseObject.toJSON()));
-    studentSubscription.on('leave', (parseObject) => console.log('Student left query:', parseObject.toJSON()));
-
-
-    // 2. Attendance Records LiveQuery
-    if (attendanceSubscription) attendanceSubscription.unsubscribe();
-    const AttendanceRecord = Parse.Object.extend("AttendanceRecord");
-    const attendanceQuery = new Parse.Query(AttendanceRecord);
-    // Attendance records are private to the user who created them
-    attendanceQuery.equalTo("ACL.owner", Parse.User.current());
-    attendanceSubscription = Parse.LiveQueryClient.subscribe(attendanceQuery);
-
-    attendanceSubscription.on('open', () => console.log('Attendance LiveQuery subscribed'));
-    attendanceSubscription.on('create', (parseObject) => {
-        console.log('Attendance created:', parseObject.toJSON());
-        attendanceRecords.push(parseObjectToJson(parseObject));
-        renderUIComponents();
-    });
-    attendanceSubscription.on('update', (parseObject) => {
-        console.log('Attendance updated:', parseObject.toJSON());
-        const updatedRecord = parseObjectToJson(parseObject);
-        const index = attendanceRecords.findIndex(r => r.id === updatedRecord.id);
-        if (index !== -1) attendanceRecords[index] = updatedRecord;
-        renderUIComponents();
-    });
-    attendanceSubscription.on('delete', (parseObject) => {
-        console.log('Attendance deleted:', parseObject.toJSON());
-        attendanceRecords = attendanceRecords.filter(r => r.id !== parseObject.id);
-        renderUIComponents();
-    });
-
-
-    // 3. Grades LiveQuery
-    if (gradesSubscription) gradesSubscription.unsubscribe();
-    const Grade = Parse.Object.extend("Grade");
-    const gradesQuery = new Parse.Query(Grade);
-    // Grades are private to the user who created them
-    gradesQuery.equalTo("ACL.owner", Parse.User.current());
-    gradesSubscription = Parse.LiveQueryClient.subscribe(gradesQuery);
-
-    gradesSubscription.on('open', () => console.log('Grades LiveQuery subscribed'));
-    gradesSubscription.on('create', (parseObject) => {
-        console.log('Grade created:', parseObject.toJSON());
-        grades.push(parseObjectToJson(parseObject));
-        renderUIComponents();
-    });
-    gradesSubscription.on('update', (parseObject) => {
-        console.log('Grade updated:', parseObject.toJSON());
-        const updatedGrade = parseObjectToJson(parseObject);
-        const index = grades.findIndex(g => g.id === updatedGrade.id);
-        if (index !== -1) grades[index] = updatedGrade;
-        renderUIComponents();
-    });
-    gradesSubscription.on('delete', (parseObject) => {
-        console.log('Grade deleted:', parseObject.toJSON());
-        grades = grades.filter(g => g.id !== parseObject.id);
-        renderUIComponents();
-    });
-
-
-    // 4. Announcements LiveQuery (Public)
-    if (announcementsSubscription) announcementsSubscription.unsubscribe();
-    const Announcement = Parse.Object.extend("Announcement");
-    const announcementsQuery = new Parse.Query(Announcement);
-    announcementsQuery.equalTo("ACL.publicRead", true); // Should be readable by anyone
-    announcementsSubscription = Parse.LiveQueryClient.subscribe(announcementsQuery);
-
-    announcementsSubscription.on('open', () => console.log('Announcement LiveQuery subscribed'));
-    announcementsSubscription.on('create', (parseObject) => {
-        console.log('Announcement created:', parseObject.toJSON());
-        announcements.push(parseObjectToJson(parseObject));
-        renderAnnouncements(); // Specific render for announcements
-    });
-    announcementsSubscription.on('update', (parseObject) => {
-        console.log('Announcement updated:', parseObject.toJSON());
-        const updatedAnnouncement = parseObjectToJson(parseObject);
-        const index = announcements.findIndex(a => a.id === updatedAnnouncement.id);
-        if (index !== -1) announcements[index] = updatedAnnouncement;
-        renderAnnouncements();
-    });
-    announcementsSubscription.on('delete', (parseObject) => {
-        console.log('Announcement deleted:', parseObject.toJSON());
-        announcements = announcements.filter(a => a.id !== parseObject.id);
-        renderAnnouncements();
-    });
-
-    // Initial render after setting up subscriptions
-    renderUIComponents(); // Call once after setting up listeners to display initial state
-    renderAnnouncements(); // Ensure announcements render initially
+    // Render all UI components after data is loaded
+    renderUIComponents();
+    console.log("All data loaded and UI updated.");
 }
 
 // Function to render all UI components dependent on data
@@ -361,6 +246,13 @@ function renderUIComponents() {
     // Only re-render current grades if a student is already selected
     if (currentGradesStudentId) {
         renderGradesTable(currentGradesStudentId);
+    }
+    renderAnnouncements(); // Ensure announcements render initially
+    // Also update attendance table for current selected date/course
+    const selectedDate = document.getElementById('attendanceDate')?.value;
+    const selectedCourse = document.getElementById('attendanceCourseFilter')?.value;
+    if (selectedDate) {
+        renderAttendanceTable(selectedCourse, selectedDate);
     }
 }
 
@@ -460,28 +352,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     const logoutBtn = document.querySelector('.logout-btn');
 
 
-    // --- Parse SDK Initialization ---
+    // --- Parse SDK Initialization & Session Check ---
     if (typeof Parse !== 'undefined') {
         Parse.initialize(B4A_APP_ID, B4A_JS_KEY);
         Parse.serverURL = B4A_SERVER_URL;
         console.log("Back4App Parse SDK Initialized in Dashboard.");
 
-        // Check if user is already logged in (e.g., from loginPage.js)
+        // Check for current user and validate session
         const currentUser = Parse.User.current();
         if (currentUser) {
-            console.log("User already logged in:", currentUser.id);
-            // Optionally, you might refresh the session token if needed
-            // await currentUser.fetch(); // Re-fetches user data and updates session
-            setupParseLiveQueries(); // Set up real-time listeners for authenticated user
-            loadSettings(); // Load user settings
+            try {
+                // Try to fetch the user to validate the session token
+                await currentUser.fetch();
+                console.log("User session is valid:", currentUser.id);
+                await loadAllData(); // Load all data for the valid user
+                loadSettings(); // Load user settings
+            } catch (error) {
+                console.error("User session invalid or expired:", error);
+                showMessage("Your session has expired. Please log in again.", "error", 5000);
+                await Parse.User.logOut(); // Clear invalid session from local storage
+                window.location.href = 'index.html'; // Redirect to login
+            }
         } else {
             console.warn("No Parse user found. Redirecting to login page.");
-            window.location.href = 'index.html'; // Redirect to login page if not authenticated
+            window.location.href = 'index.html'; // Redirect to login if no user token found locally
         }
     } else {
         console.error("Parse SDK not loaded in dashboard. Cannot connect to backend.");
         showMessage("Application error: Backend SDK not loaded. Cannot load data.", "error", 5000);
-        // Fallback or exit if Parse is not available
         return;
     }
 
@@ -494,18 +392,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 try {
                     await Parse.User.logOut();
                     console.log('User logged out successfully.');
-                    // Unsubscribe from LiveQueries on logout
-                    if (studentSubscription) studentSubscription.unsubscribe();
-                    if (attendanceSubscription) attendanceSubscription.unsubscribe();
-                    if (gradesSubscription) gradesSubscription.unsubscribe();
-                    if (announcementsSubscription) announcementsSubscription.unsubscribe();
-
-                    // Clear any local session storage related to user ID if used
-                    sessionStorage.removeItem('currentParseUserId');
-                    sessionStorage.removeItem('currentParseSessionToken');
-
                     showMessage('Logged out successfully! Redirecting...', 'success');
-                    // Add a small delay for message visibility before redirect
                     setTimeout(() => {
                         window.location.href = 'index.html'; // Redirect to login page
                     }, 1000);
@@ -554,6 +441,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // --- Phone Number Validation Function ---
+    function isValidKenyanPhoneNumber(phoneNumber) {
+        const kenyanPhoneRegex = /^(07|\+2547)\d{8}$/;
+        const cleanedPhoneNumber = phoneNumber.replace(/[\s-]/g, '');
+        return kenyanPhoneRegex.test(cleanedPhoneNumber);
+    }
+
     async function addOrUpdateStudent(event, studentDataFromUpload = null) {
         if (event && event.preventDefault) { event.preventDefault(); }
         let studentData;
@@ -580,8 +474,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!studentData.name || !studentData.course || isNaN(studentData.season) || studentData.season <= 0 ||
             !studentData.startDate || !studentData.endDate || !studentData.nationalID ||
             !studentData.phone || !studentData.location) {
-            showMessage('Error: Missing or invalid required student data fields.', 'error', 5000);
+            showMessage('Error: Missing or invalid required student data fields. Name, Course, Season, Dates, ID, Phone, Location are required.', 'error', 5000);
             return { success: false, message: 'Invalid data' };
+        }
+
+        if (!isValidKenyanPhoneNumber(studentData.phone)) {
+            showMessage('Error: Please enter a valid Kenyan phone number (e.g., 07XXXXXXXX or +2547XXXXXXXX).', 'error', 7000);
+            return { success: false, message: 'Invalid Kenyan phone number format.' };
         }
 
         let isDuplicate = false;
@@ -761,6 +660,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
             studentData.season = parseInt(studentData.season);
             if (isNaN(studentData.season)) studentData.season = 0;
+
+            if (!isValidKenyanPhoneNumber(studentData.phone)) {
+                console.warn(`Skipping record ${i + 1}: Invalid Kenyan phone number format for ${studentData.name}.`);
+                skipCount++;
+                continue;
+            }
+
             const result = await addOrUpdateStudent(null, studentData);
             if (result.success) { successCount++; } else { skipCount++; console.warn(`Skipped record ${i + 1}: ${result.message || 'Unknown error'}. Data:`, record); }
         }
@@ -1050,7 +956,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         });
-        if (todayAbsencesCountElement) { todayAbsencesCountElement.textContent = todayAbsences; }
+        if (todayAbsencesCountElement) { totalStudentsCountElement.textContent = todayAbsences; } // Corrected target element
         const pendingAssignmentsCount = grades.filter(g => g.score === null).length;
         if (pendingAssignmentsCountElement) { pendingAssignmentsCountElement.textContent = pendingAssignmentsCount; }
         if (totalStudentsReport) totalStudentsReport.textContent = students.length;
