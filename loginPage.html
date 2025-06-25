@@ -4,14 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SchoolFlow Hub Login</title>
-    <link rel="stylesheet" href="loginPage.css"> 
+    <!-- Preconnect to domains for faster resource loading -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+
+    <link rel="stylesheet" href="loginPage.css">
 </head>
 <body>
     <div class="login-container">
         <div class="login-box">
             <h1>SchoolFlow Hub</h1>
             <p>Your streamlined school management portal.</p>
-            <form id="loginForm" action=""> <div class="input-group">
+            <form id="loginForm" action="">
+                <div class="input-group">
                     <label for="username">Staff ID / Username</label>
                     <input type="text" id="username" name="username" required>
                 </div>
@@ -25,6 +31,7 @@
         </div>
     </div>
 
-    <script src="loginPage.js"></script>
+    <!-- Defer loading of loginPage.js until after HTML is parsed -->
+    <script src="loginPage.js" defer></script>
 </body>
 </html>
