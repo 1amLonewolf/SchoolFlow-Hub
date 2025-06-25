@@ -4,8 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SchoolFlow Hub - Dashboard</title>
+    <!-- Preconnect to domains for faster resource loading -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://parseapi.back4app.com" crossorigin> <!-- NEW: Preconnect to Back4App -->
+
     <link rel="stylesheet" href="dashboard.css">
-    <!-- FontAwesome for hamburger icon (optional, could use SVG or text) -->
+    <!-- FontAwesome for hamburger icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
@@ -26,7 +32,7 @@
                 </ul>
             </nav>
             <div class="sidebar-footer">
-                <a href="loginPage.html" class="logout-btn">Logout</a>
+                <a href="index.html" class="logout-btn">Logout</a>
             </div>
         </aside>
 
@@ -401,6 +407,9 @@
     <!-- This overlay will appear when the sidebar is open on mobile -->
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
-    <script src="dashboard.js" type="module"></script>
+    <!-- NEW: Include Parse SDK before your dashboard.js -->
+    <script type="text/javascript" src="https://unpkg.com/parse/dist/parse.min.js"></script>
+    <!-- Defer loading of dashboard.js until after HTML is parsed and Parse is available -->
+    <script src="dashboard.js" type="module" defer></script>
 </body>
 </html>

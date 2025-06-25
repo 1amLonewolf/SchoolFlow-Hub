@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://parseapi.back4app.com" crossorigin> <!-- NEW: Preconnect to Back4App -->
 
     <link rel="stylesheet" href="loginPage.css">
 </head>
@@ -28,10 +29,13 @@
                 <button type="submit" class="login-button">Login</button>
                 <a href="#" class="forgot-password">Forgot Password?</a>
             </form>
+            <!-- Message div will be inserted by JS -->
         </div>
     </div>
 
-    <!-- Defer loading of loginPage.js until after HTML is parsed -->
+    <!-- NEW: Include Parse SDK before your loginPage.js -->
+    <script type="text/javascript" src="https://unpkg.com/parse/dist/parse.min.js"></script>
+    <!-- Defer loading of loginPage.js until after HTML is parsed and Parse is available -->
     <script src="loginPage.js" defer></script>
 </body>
 </html>
