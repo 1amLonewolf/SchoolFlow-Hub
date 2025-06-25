@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolFlow Hub - Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <!-- FontAwesome for hamburger icon (optional, could use SVG or text) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <h3>SchoolFlow Hub</h3>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#dashboard-overview" class="active">Dashboard Overview</a></li>
+                    <li><a href="#student-management">Student Management</a></li>
+                    <li><a href="#attendance-management">Attendance</a></li>
+                    <li><a href="#grades-management">Grades</a></li>
+                    <li><a href="#announcements">Announcements</a></li>
+                    <li><a href="#reports-analytics">Reports & Analytics</a></li>
+                    <li><a href="#settings">Settings</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="loginPage.html" class="logout-btn">Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <button id="hamburgerBtn" class="hamburger-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1>Welcome, Admin!</h1>
+            </header>
+
+            <section id="dashboard-overview" class="dashboard-content-section active">
+                <h2>Dashboard Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card students">
+                        <h3>Total Students</h3>
+                        <p id="totalStudentsCount">0</p>
+                    </div>
+                    <div class="stat-card absences">
+                        <h3>Today's Absences</h3>
+                        <p id="todayAbsencesCount">0</p>
+                    </div>
+                    <div class="stat-card assignments">
+                        <h3>Pending Assignments</h3>
+                        <p id="pendingAssignmentsCount">0</p>
+                    </div>
+                </div>
+
+                <div class="quick-actions card">
+                    <h3>Quick Actions</h3>
+                    <button id="goToAttendanceBtn" class="action-button">Record Attendance</button>
+                    <button id="enterGradesBtn" class="action-button">Enter Grades</button>
+                    <button id="addStudentQuickBtn" class="action-button">Add New Student</button>
+                </div>
+            </section>
+
+            <section id="student-management" class="dashboard-content-section">
+                <h2>Student Management</h2>
+
+                <button id="addStudentBtn" class="action-button" style="margin-bottom: 20px;">Add New Student</button>
+
+                <div class="add-student-form-container card" style="display: none; margin-bottom: 25px;">
+                    <h3 style="margin-bottom: 15px;">Add New Student</h3>
+                    <form id="addStudentForm">
+                        <div class="form-group">
+                            <label for="studentName">Student Name:</label>
+                            <input type="text" id="studentName" name="studentName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="courseEnrolled">Course/Program Enrolled:</label>
+                            <input type="text" id="courseEnrolled" name="courseEnrolled" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="seasonNumber">Season Number:</label>
+                            <input type="number" id="seasonNumber" name="seasonNumber" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="enrollmentStartDate">Enrollment Start Date:</label>
+                            <input type="date" id="enrollmentStartDate" name="enrollmentStartDate" class="input-date-custom" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="enrollmentEndDate">Enrollment End Date:</label>
+                            <input type="date" id="enrollmentEndDate" name="enrollmentEndDate" class="input-date-custom" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="nationalID">National ID:</label>
+                            <input type="text" id="nationalID" name="nationalID" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phoneNumber">Phone Number:</label>
+                            <input type="tel" id="phoneNumber" name="phoneNumber" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="placeOfLiving">Place of Living:</label>
+                            <input type="text" id="placeOfLiving" name="placeOfLiving" required>
+                        </div>
+                        <button type="submit" class="submit-button">Save Student</button>
+                        <button type="button" class="cancel-button">Cancel</button>
+                    </form>
+                </div>
+
+                <!-- NEW/MODIFIED: Bulk Student Upload Section -->
+                <div class="card" style="margin-bottom: 25px;">
+                    <h3>Bulk Student Upload (CSV / JSON)</h3>
+                    <p>Upload a CSV or JSON file containing student data. For CSV, ensure headers: "Name,Course,Season,Enrollment Start Date,Enrollment End Date,National ID,Phone Number,Place of Living". For JSON, provide an array of objects with keys matching these fields (e.g., "name", "course", "season", etc.).</p>
+                    <div class="form-group">
+                        <label for="fileUploadInput">Select File:</label>
+                        <!-- Changed ID, added .json to accept -->
+                        <input type="file" id="fileUploadInput" accept=".csv, .json">
+                    </div>
+                    <!-- Changed ID -->
+                    <button id="uploadFileBtn" class="action-button">Upload & Process File</button>
+                    <div id="uploadStatus" style="margin-top: 15px; font-size: 0.9em; color: #555;"></div>
+                </div>
+                <!-- END NEW/MODIFIED: Bulk Student Upload Section -->
+
+                <div class="card">
+                    <h3>Student Roster</h3>
+                    <div class="table-responsive">
+                        <table id="studentTable">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Course/Program</th>
+                                    <th>Season No.</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>National ID</th>
+                                    <th>Contact</th>
+                                    <th>Location</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Student rows will be dynamically inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="attendance-management" class="dashboard-content-section">
+                <h2>Attendance Management</h2>
+                <div class="card" style="margin-bottom: 25px;">
+                    <h3>Select Filters for Attendance</h3>
+                    <div class="form-group" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px;">
+                        <div style="flex-grow: 1; min-width: 150px;">
+                            <label for="attendanceCourseFilter">Select Course:</label>
+                            <select id="attendanceCourseFilter" name="attendanceCourseFilter" class="input-select-custom">
+                                <option value="">-- All Courses --</option>
+                                <!-- Courses populated by JS -->
+                            </select>
+                        </div>
+                        <div style="flex-grow: 1; min-width: 150px;">
+                            <label for="attendanceDate">Date:</label>
+                            <input type="date" id="attendanceDate" name="attendanceDate" class="input-date-custom" required>
+                        </div>
+                        <button id="loadAttendanceBtn" class="action-button" style="margin-top: 0;">Load Attendance</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Attendance for <span id="currentAttendanceDateDisplay"></span></h3>
+                    <div class="table-responsive">
+                        <table id="attendanceTable">
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Status</th>
+                                    <th>Notes</th>
+                                    <th>Course</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                <tr><td colspan="4">Select a date and click "Load Attendance"</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button id="saveAttendanceBtn" class="submit-button" style="margin-top: 20px;">Save Attendance</button>
+                </div>
+            </section>
+
+            <section id="grades-management" class="dashboard-content-section">
+                <h2>Grades Management</h2>
+
+                <div class="card" style="margin-bottom: 25px;">
+                    <h3>Manage Grades</h3>
+                    <div class="form-group" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px;">
+                        <div style="flex-grow: 1; min-width: 150px;">
+                            <label for="gradesCourseFilter">Select Course:</label>
+                            <select id="gradesCourseFilter" name="gradesCourseFilter" class="input-select-custom">
+                                <option value="">-- All Courses --</option>
+                                <!-- Courses populated by JS -->
+                            </select>
+                        </div>
+                        <div style="flex-grow: 1; min-width: 150px;">
+                            <label for="selectStudentForGrades">Select Student:</label>
+                            <select id="selectStudentForGrades" name="selectStudentForGrades" class="input-select-custom" required>
+                                <option value="">-- Select a Student --</option>
+                                <!-- Students populated by JS -->
+                            </select>
+                        </div>
+                        <button id="loadGradesBtn" class="action-button" style="margin-top: 0;">Load Grades</button>
+                    </div>
+                </div>
+
+                <div id="gradesTableContainer" class="card" style="display: none;">
+                    <h3>Grades for <span id="currentGradesStudentName">Selected Student</span></h3>
+                    <div class="table-responsive">
+                        <table id="gradesTable">
+                            <thead>
+                                <tr>
+                                    <th>Assignment Name</th>
+                                    <th>Max Score</th>
+                                    <th>Student Score</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gradesTableBody">
+                                <!-- Grades populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <button id="saveGradesBtn" class="submit-button" style="margin-top: 20px;">Save Grades</button>
+                </div>
+
+                <div class="add-assignment-form-container card" style="margin-top: 25px;">
+                    <h3>Add New Assignment</h3>
+                    <form id="addAssignmentForm">
+                        <div class="form-group" style="display: flex; flex-wrap: wrap; gap: 15px;">
+                            <div style="flex-grow: 1; min-width: 150px;">
+                                <label for="addAssignmentCourseFilter">Select Course:</label>
+                                <select id="addAssignmentCourseFilter" name="addAssignmentCourseFilter" class="input-select-custom">
+                                    <option value="">-- Select Course --</option>
+                                    <!-- Courses populated by JS -->
+                                </select>
+                            </div>
+                            <div style="flex-grow: 1; min-width: 150px;">
+                                <label for="addAssignmentStudent">Select Student:</label>
+                                <select id="addAssignmentStudent" name="addAssignmentStudent" class="input-select-custom" required>
+                                    <option value="">-- Select Student --</option>
+                                    <!-- Students populated by JS -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="newAssignmentName">Assignment Name:</label>
+                            <input type="text" id="newAssignmentName" name="newAssignmentName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="newAssignmentMaxScore">Max Score:</label>
+                            <input type="number" id="newAssignmentMaxScore" name="newAssignmentMaxScore" min="1" required>
+                        </div>
+                        <button type="submit" class="submit-button">Add Assignment</button>
+                        <button type="button" class="cancel-button" id="cancelAddAssignmentBtn">Cancel</button>
+                    </form>
+                </div>
+            </section>
+
+            <section id="announcements" class="dashboard-content-section">
+                <h2>Announcements</h2>
+
+                <div class="card add-announcement-form-container" style="margin-bottom: 25px;">
+                    <h3>Create New Announcement</h3>
+                    <form id="addAnnouncementForm">
+                        <div class="form-group">
+                            <label for="announcementTitle">Title:</label>
+                            <input type="text" id="announcementTitle" name="announcementTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="announcementContent">Content:</label>
+                            <textarea id="announcementContent" name="announcementContent" rows="5" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="announcementDate">Date Posted:</label>
+                            <input type="date" id="announcementDate" name="announcementDate" class="input-date-custom" required>
+                        </div>
+                        <button type="submit" class="submit-button">Post Announcement</button>
+                        <button type="button" class="cancel-button" id="cancelAnnouncementBtn">Clear Form</button>
+                    </form>
+                </div>
+
+                <div class="announcements-list-container card">
+                    <h3>All Announcements</h3>
+                    <div id="announcementsList">
+                        <p>No announcements to display yet.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="reports-analytics" class="dashboard-content-section">
+                <h2>Reports & Analytics</h2>
+                <p>Generate various reports and gain insights here.</p>
+
+                <div class="reports-grid">
+                    <div class="card report-card">
+                        <h3>Student Enrollment Summary</h3>
+                        <div class="report-content" id="studentEnrollmentSummary">
+                            <p>Total Students: <span id="totalStudentsReport">0</span></p>
+                            <p>Students in Web Development Basics: <span id="webDevStudents">0</span></p>
+                            <p>Students in Graphic Design Intro: <span id="graphicDesignStudents">0</span></p>
+                            <p>Students in Digital Marketing Mastery: <span id="digitalMarketingStudents">0</span></p>
+                            <!-- More detailed enrollment trends could go here -->
+                        </div>
+                    </div>
+
+                    <div class="card report-card">
+                        <h3>Attendance Overview</h3>
+                        <div class="report-content" id="attendanceOverview">
+                            <p>Overall Present Rate: <span id="overallPresentRate">0%</span></p>
+                            <p>Overall Absent Rate: <span id="overallAbsentRate">0%</span></p>
+                            <h4>Absenteeism by Student:</h4>
+                            <ul id="absenteeStudentsList">
+                                <!-- Populated by JS -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card report-card">
+                        <h3>Grade Performance Summary</h3>
+                        <div class="report-content" id="gradePerformanceSummary">
+                            <p>Total Assignments Graded: <span id="totalGradedAssignments">0</span></p>
+                            <p>Total Assignments Pending: <span id="totalPendingAssignmentsReport">0</span></p>
+                            <h4>Top Performing Students (by average grade):</h4>
+                            <ol id="topStudentsList">
+                                <!-- Populated by JS -->
+                            </ol>
+                            <h4>Assignments with Lowest Average Scores:</h4>
+                            <ul id="lowPerformingAssignments">
+                                <!-- Populated by JS -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Course Popularity</h3>
+                    <div class="report-content" id="coursePopularity">
+                        <ul id="coursePopularityList">
+                            <!-- Populated by JS -->
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="settings" class="dashboard-content-section">
+                <h2>Settings</h2>
+                <p>Manage system settings and preferences.</p>
+
+                <div class="settings-grid">
+                    <div class="card setting-card">
+                        <h3>User Profile</h3>
+                        <div class="setting-content">
+                            <p><strong>Name:</strong> Admin User</p>
+                            <p><strong>Email:</strong> admin@schoolflow.com</p>
+                            <button class="button primary-button">Edit Profile</button>
+                            <button class="button secondary-button">Change Password</button>
+                        </div>
+                    </div>
+
+                    <div class="card setting-card">
+                        <h3>General Settings</h3>
+                        <div class="setting-content">
+                            <label for="themeSelect">Dashboard Theme:</label>
+                            <select id="themeSelect">
+                                <option value="light">Light (Default)</option>
+                                <option value="dark">Dark</option>
+                            </select>
+
+                            <label for="notificationsToggle" class="switch">
+                                Enable Notifications
+                                <input type="checkbox" id="notificationsToggle" checked>
+                                <span class="slider round"></span>
+                            </label>
+                            <button class="button primary-button">Save General Settings</button>
+                        </div>
+                    </div>
+
+                    <div class="card setting-card">
+                        <h3>System Information</h3>
+                        <div class="setting-content">
+                            <p><strong>Version:</strong> 1.0.0</p>
+                            <p><strong>Last Updated:</strong> 2025-06-19</p>
+                            <p><strong>Support Contact:</strong> support@schoolflow.com</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- This overlay will appear when the sidebar is open on mobile -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <script src="dashboard.js" type="module"></script>
+</body>
+</html>
