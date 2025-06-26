@@ -1,10 +1,9 @@
 // dashboard.js
 
-// Back4App Parse SDK Initialization (IMPORTANT: These MUST match what's in loginPage.js)
-// You can find these in your Back4App Dashboard -> App Settings -> Security & Keys
-const B4A_APP_ID = '1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0'; // Replace with your Application ID
-const B4A_JS_KEY = '7CE7gnknAyyfSZRTWpqvuDvNhLOMsF0DNYk8qvgn';   // Replace with your JavaScript Key
-const B4A_SERVER_URL = 'https://parseapi.back4app.com';   // Replace with your Server URL (e.g., https://parseapi.back4app.com/)
+// Back4App Parse SDK Initialization (IMPORTANT: These are now filled with your keys)
+const B4A_APP_ID = '1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0';
+const B4A_JS_KEY = '7CE7gnknAyyfSZRTWpqvuDvNhLOMsF0DNYk8qvgn';
+const B4A_SERVER_URL = 'https://parseapi.back4app.com/'; // Confirmed correct URL
 
 // Global data arrays (will be populated by explicit fetches from Parse)
 let students = [];
@@ -295,7 +294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Attendance Management Section Elements ---
     const attendanceCourseFilter = document.getElementById('attendanceCourseFilter');
-    const attendanceDateInput = document.getElementById('attendanceDate');
+    const attendanceDateInput = document = document.getElementById('attendanceDate');
     const loadAttendanceBtn = document.getElementById('loadAttendanceBtn');
     const attendanceTableBody = document.getElementById('attendanceTableBody');
     const currentAttendanceDateDisplay = document.getElementById('currentAttendanceDateDisplay');
@@ -401,7 +400,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     showMessage('Error during logout: ' + error.message, 'error');
                 }
             } else {
-                // Already logged out or session invalid, just redirect
                 window.location.href = 'index.html';
             }
         });
