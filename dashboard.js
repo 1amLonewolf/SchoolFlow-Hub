@@ -918,7 +918,14 @@ async function loadAllData() {
 
     // Render all UI components after data is loaded
     renderUIComponents();
-    console.log("All data loaded and UI updated.");
+    console.log("All data loaded and UI updated. Session status after loadAllData:", Parse.User.current() ? 'VALID' : 'INVALID');
+    // Check session status right after UI update
+    if (!Parse.User.current()) {
+        console.warn("Session found to be invalid immediately after loadAllData and UI update. Triggering redirect.");
+        // !!! DEBUGGER PAUSE POINT !!!
+        debugger; // This will pause execution right before redirect if session is null here
+        window.location.href = 'index.html'; // Redirect to login
+    }
 }
 
 
@@ -1029,28 +1036,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Check for current user and validate session
         const currentUser = Parse.User.current();
+        console.log("Initial currentUser check on DOMContentLoaded:", currentUser ? currentUser.id : "NULL");
+
         if (currentUser) {
             try {
-                console.log("Attempting to validate user session...");
+                console.log("Attempting to validate user session with fetch()...");
                 await currentUser.fetch(); // This attempts to fetch user data from the server using the session token
-                console.log("User session is valid:", currentUser.id);
+                console.log("User session is VALID after fetch():", currentUser.id);
                 await loadAllData(); // Load all data for the valid user
                 loadSettings(); // Load user settings
             } catch (error) {
-                // !!! DEBUGGER PAUSE POINT !!!
-                // Execution will pause here if currentUser.fetch() fails.
-                debugger;
+                // This catch block handles errors specifically from currentUser.fetch()
                 console.groupCollapsed("Session Validation Error Details (Click to expand)");
-                console.error("User session invalid or expired:", error);
+                console.error("User session invalid or expired caught during fetch():", error);
                 console.error("Error Code:", error.code);
                 console.error("Error Message:", error.message);
                 console.groupEnd();
+
                 showMessage("Your session has expired. Please log in again.", "error", 5000);
                 await Parse.User.logOut(); // Clear invalid session from local storage
+                // !!! DEBUGGER PAUSE POINT !!!
+                debugger; // This will pause execution right before redirect
                 window.location.href = 'index.html'; // Redirect to login
             }
         } else {
             console.warn("No Parse user found (currentUser is null). Redirecting to login page.");
+            // !!! DEBUGGER PAUSE POINT !!!
+            debugger; // This will pause execution right before redirect
             window.location.href = 'index.html'; // Redirect to login if no user token found locally
         }
     } else {
@@ -1070,6 +1082,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     console.log('User logged out successfully.');
                     showMessage('Logged out successfully! Redirecting...', 'success');
                     setTimeout(() => {
+                        // !!! DEBUGGER PAUSE POINT !!!
+                        debugger; // This will pause execution right before redirect
                         window.location.href = 'index.html'; // Redirect to login page
                     }, 1000);
                 } catch (error) {
@@ -1077,6 +1091,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     showMessage('Error during logout: ' + error.message, 'error');
                 }
             } else {
+                console.warn("Logout button clicked but no current user to log out. Redirecting anyway.");
+                // !!! DEBUGGER PAUSE POINT !!!
+                debugger; // This will pause execution right before redirect
                 window.location.href = 'index.html';
             }
         });
@@ -1159,7 +1176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (goToAttendanceBtn) { goToAttendanceBtn.addEventListener('click', () => { switchDashboardSection('attendance-management'); }); }
-    if (enterGradesBtn) { enterGradesBtn.addEventListener('click', () => { switchDashboardSection('grades-management'); }); }
+    if (enterGradesBtn) { enterGradesBtn.addEventListener('click', () => { switchDashboardSection('grades-management'); }); });
     if (addStudentQuickBtn) { addStudentQuickBtn.addEventListener('click', () => {
         switchDashboardSection('student-management');
         if (addStudentFormContainer) addStudentFormContainer.style.display = 'block';
