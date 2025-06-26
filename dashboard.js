@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Attendance Management Section Elements ---
     const attendanceCourseFilter = document.getElementById('attendanceCourseFilter');
-    const attendanceDateInput = document.getElementById('attendanceDate'); // CORRECTED LINE
+    const attendanceDateInput = document.getElementById('attendanceDate');
     const loadAttendanceBtn = document.getElementById('loadAttendanceBtn');
     const attendanceTableBody = document.getElementById('attendanceTableBody');
     const currentAttendanceDateDisplay = document.getElementById('currentAttendanceDateDisplay');
@@ -361,19 +361,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentUser = Parse.User.current();
         if (currentUser) {
             try {
-                // Try to fetch the user to validate the session token
-                await currentUser.fetch();
+                console.log("Attempting to validate user session...");
+                await currentUser.fetch(); // This attempts to fetch user data from the server using the session token
                 console.log("User session is valid:", currentUser.id);
                 await loadAllData(); // Load all data for the valid user
                 loadSettings(); // Load user settings
             } catch (error) {
+                // !!! DEBUGGER PAUSE POINT !!!
+                // Execution will pause here if currentUser.fetch() fails.
+                debugger;
+                console.groupCollapsed("Session Validation Error Details (Click to expand)");
                 console.error("User session invalid or expired:", error);
+                console.error("Error Code:", error.code);
+                console.error("Error Message:", error.message);
+                console.groupEnd();
                 showMessage("Your session has expired. Please log in again.", "error", 5000);
                 await Parse.User.logOut(); // Clear invalid session from local storage
                 window.location.href = 'index.html'; // Redirect to login
             }
         } else {
-            console.warn("No Parse user found. Redirecting to login page.");
+            console.warn("No Parse user found (currentUser is null). Redirecting to login page.");
             window.location.href = 'index.html'; // Redirect to login if no user token found locally
         }
     } else {
