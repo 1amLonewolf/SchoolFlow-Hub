@@ -167,7 +167,8 @@ async function saveParseData(className, data, id = null) {
 
         await obj.save();
         showMessage('Data saved successfully!', 'success');
-        await loadAllData(); // Refresh all data after a save
+        console.log(`[saveParseData] Data saved for class: ${className}. Reloading all data...`);
+        await loadAllData(); // <--- This should trigger the UI refresh
         return obj.id;
     } catch (e) {
         console.error("Error saving document: ", e);
@@ -187,6 +188,7 @@ async function deleteParseData(className, id) {
         const obj = await new Parse.Query(ParseObject).get(id);
         await obj.destroy();
         showMessage('Item deleted successfully!', 'success');
+        console.log(`[deleteParseData] Item deleted for class: ${className}. Reloading all data...`);
         await loadAllData(); // Refresh all data after a delete
         return true;
     } catch (e) {
@@ -216,6 +218,7 @@ async function loadParseData(className, isPublic = false) {
 
     try {
         const results = await query.find();
+        console.log(`[loadParseData] Successfully loaded ${results.length} ${className} records.`);
         return results.map(parseObjectToJson);
     } catch (e) {
         console.error(`Error loading ${className} data:`, e);
@@ -232,7 +235,10 @@ let currentGradesStudentId = null; // Declare this globally
 function renderStudentTable() {
     const studentTableBody = document.querySelector('#studentTable tbody');
     if (!studentTableBody) { console.error("studentTableBody not found."); return; }
-    studentTableBody.innerHTML = '';
+    console.log(`[renderStudentTable] Starting render. Current 'students' array length: ${students.length}`);
+    students.forEach(s => console.log(`[renderStudentTable] Student: ${s.name}, ID: ${s.id}`)); // Log each student
+
+    studentTableBody.innerHTML = ''; // Clear existing rows
     if (students.length === 0) {
         studentTableBody.innerHTML = '<tr><td colspan="9" style="text-align:center;">No students enrolled yet.</td></tr>';
         return;
@@ -254,12 +260,14 @@ function renderStudentTable() {
             </td>
         `;
     });
+    // Re-attach event listeners to new buttons
     document.querySelectorAll('.edit-button').forEach(button => {
         button.onclick = (event) => editStudent(event.target.dataset.id);
     });
     document.querySelectorAll('.delete-button').forEach(button => {
         button.onclick = (event) => deleteStudent(event.target.dataset.id);
     });
+    console.log("[renderStudentTable] Finished rendering student table.");
 }
 
 // Phone Number Validation Function
@@ -884,6 +892,7 @@ function applyTheme(theme) { console.log(`Applying theme: ${theme}`); }
 // Function to render all UI components dependent on data
 // This function needs to be defined BEFORE it's called in loadAllData()
 function renderUIComponents() {
+    console.log("[renderUIComponents] Starting UI rendering.");
     renderStudentTable();
     populateCourseDropdowns();
     // Re-get elements here as they might be null if not loaded yet
@@ -906,6 +915,7 @@ function renderUIComponents() {
     if (selectedDate) {
         renderAttendanceTable(selectedCourse, selectedDate);
     }
+    console.log("[renderUIComponents] Finished UI rendering.");
 }
 
 // Function to load all data and update UI
@@ -916,6 +926,7 @@ async function loadAllData() {
     grades = await loadParseData('Grade', false);
     announcements = await loadParseData('Announcement', true); // Announcements are public
 
+    console.log("[loadAllData] Students data after fetch:", students); // Check the fetched student data
     // Render all UI components after data is loaded
     renderUIComponents();
     console.log("All data loaded and UI updated. Session status after loadAllData:", Parse.User.current() ? 'VALID' : 'INVALID');
@@ -1055,14 +1066,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 showMessage("Your session has expired. Please log in again.", "error", 5000);
                 await Parse.User.logOut(); // Clear invalid session from local storage
-                // !!! DEBUGGER PAUSE POINT !!!
-                debugger; // This will pause execution right before redirect
+                // !!! DEBUGGER PAUSE POINT (Session expired on initial load) !!!
+                debugger;
                 window.location.href = 'index.html'; // Redirect to login
             }
         } else {
             console.warn("No Parse user found (currentUser is null). Redirecting to login page.");
-            // !!! DEBUGGER PAUSE POINT !!!
-            debugger; // This will pause execution right before redirect
+            // !!! DEBUGGER PAUSE POINT (No current user on initial load) !!!
+            debugger;
             window.location.href = 'index.html'; // Redirect to login if no user token found locally
         }
     } else {
@@ -1082,8 +1093,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     console.log('User logged out successfully.');
                     showMessage('Logged out successfully! Redirecting...', 'success');
                     setTimeout(() => {
-                        // !!! DEBUGGER PAUSE POINT !!!
-                        debugger; // This will pause execution right before redirect
+                        // !!! DEBUGGER PAUSE POINT (Logout initiated) !!!
+                        debugger;
                         window.location.href = 'index.html'; // Redirect to login page
                     }, 1000);
                 } catch (error) {
@@ -1092,8 +1103,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             } else {
                 console.warn("Logout button clicked but no current user to log out. Redirecting anyway.");
-                // !!! DEBUGGER PAUSE POINT !!!
-                debugger; // This will pause execution right before redirect
+                // !!! DEBUGGER PAUSE POINT (Logout without current user) !!!
+                debugger;
                 window.location.href = 'index.html';
             }
         });
@@ -1176,7 +1187,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (goToAttendanceBtn) { goToAttendanceBtn.addEventListener('click', () => { switchDashboardSection('attendance-management'); }); }
-    // CORRECTED LINE: Removed the extra ')'
     if (enterGradesBtn) { enterGradesBtn.addEventListener('click', () => { switchDashboardSection('grades-management'); }); }
     if (addStudentQuickBtn) { addStudentQuickBtn.addEventListener('click', () => {
         switchDashboardSection('student-management');
