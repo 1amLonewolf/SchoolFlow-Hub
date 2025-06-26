@@ -126,6 +126,13 @@ function parseObjectToJson(parseObject) {
     json.id = json.objectId; // Map Parse objectId to 'id' for consistency
     delete json.objectId;
     delete json.className;
+    // If 'user' is a pointer, it will be an object {__type: "Pointer", className: "_User", objectId: "..."}
+    // We only need the objectId from it if we are explicitly storing it as a field.
+    // For now, we'll keep it as is, or you could optionally flatten it like:
+    // if (json.user && json.user.__type === "Pointer") {
+    //    json.userId = json.user.objectId;
+    //    delete json.user;
+    // }
     return json;
 }
 
@@ -156,11 +163,16 @@ async function saveParseData(className, data, id = null) {
                 acl.setPublicWriteAccess(false);
             }
             obj.setACL(acl);
+
+            // --- IMPORTANT CHANGE: Set 'user' pointer for private data ---
+            if (className !== 'Announcement') {
+                obj.set("user", Parse.User.current()); // Link the object to the current user
+            }
         }
 
-        // Set properties from data (excluding 'id')
+        // Set properties from data (excluding 'id' and 'user' if already set as pointer)
         for (const key in data) {
-            if (key !== 'id') {
+            if (key !== 'id' && key !== 'user') { // Exclude 'user' from general data copy if it's handled as a pointer
                 obj.set(key, data[key]);
             }
         }
@@ -209,8 +221,8 @@ async function loadParseData(className, isPublic = false) {
     const query = new Parse.Query(ParseObject);
 
     if (className !== 'Announcement') { // Private data (Students, Attendance, Grades)
-        // Ensure only data owned by the current user is fetched
-        query.equalTo("ACL.owner", Parse.User.current());
+        // --- IMPORTANT CHANGE: Filter by 'user' pointer ---
+        query.equalTo("user", Parse.User.current());
     } else { // Public data (Announcements)
         query.limit(1000); // Set a limit for announcements to avoid fetching too much data
         query.descending("createdAt"); // Sort by newest first for announcements
