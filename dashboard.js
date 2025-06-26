@@ -11,6 +11,8 @@ let attendanceRecords = [];
 let grades = [];
 let announcements = [];
 
+// --- UTILITY FUNCTIONS ---
+
 // Utility for displaying messages (replaces alert)
 function showMessage(message, type = "info", duration = 3000) {
     let messageBox = document.getElementById('appMessage');
@@ -116,7 +118,7 @@ function showConfirmDialog(message, onConfirm, onCancel) {
 }
 
 
-// --- Parse Data Operations ---
+// --- PARSE DATA OPERATIONS ---
 
 // Helper function to convert Parse Object to plain JavaScript object
 function parseObjectToJson(parseObject) {
@@ -222,6 +224,690 @@ async function loadParseData(className, isPublic = false) {
     }
 }
 
+// --- UI RENDERING & DATA MANAGEMENT FUNCTIONS ---
+
+let currentGradesStudentId = null; // Declare this globally
+
+// Student Management Functions
+function renderStudentTable() {
+    const studentTableBody = document.querySelector('#studentTable tbody');
+    if (!studentTableBody) { console.error("studentTableBody not found."); return; }
+    studentTableBody.innerHTML = '';
+    if (students.length === 0) {
+        studentTableBody.innerHTML = '<tr><td colspan="9" style="text-align:center;">No students enrolled yet.</td></tr>';
+        return;
+    }
+    students.forEach(student => {
+        const row = studentTableBody.insertRow();
+        row.innerHTML = `
+            <td data-label="Name">${student.name}</td>
+            <td data-label="Course/Program">${student.course}</td>
+            <td data-label="Season No.">${student.season}</td>
+            <td data-label="Start Date">${student.startDate}</td>
+            <td data-label="End Date">${student.endDate}</td>
+            <td data-label="National ID">${student.nationalID}</td>
+            <td data-label="Contact">${student.phone}</td>
+            <td data-label="Location">${student.location}</td>
+            <td data-label="Actions" class="actions">
+                <button class="edit-button" data-id="${student.id}">Edit</button>
+                <button class="delete-button" data-id="${student.id}">Delete</button>
+            </td>
+        `;
+    });
+    document.querySelectorAll('.edit-button').forEach(button => {
+        button.onclick = (event) => editStudent(event.target.dataset.id);
+    });
+    document.querySelectorAll('.delete-button').forEach(button => {
+        button.onclick = (event) => deleteStudent(event.target.dataset.id);
+    });
+}
+
+// Phone Number Validation Function
+function isValidKenyanPhoneNumber(phoneNumber) {
+    const kenyanPhoneRegex = /^(07|\+2547)\d{8}$/;
+    const cleanedPhoneNumber = phoneNumber.replace(/[\s-]/g, '');
+    return kenyanPhoneRegex.test(cleanedPhoneNumber);
+}
+
+// Add/Update Student (called from form submit or bulk upload)
+async function addOrUpdateStudent(event, studentDataFromUpload = null) {
+    if (event && event.preventDefault) { event.preventDefault(); }
+    let studentData;
+
+    // References to DOM elements, defined here for clarity if called outside DOMContentLoaded
+    const studentNameInput = document.getElementById('studentName');
+    const courseEnrolledInput = document.getElementById('courseEnrolled');
+    const seasonNumberInput = document.getElementById('seasonNumber');
+    const enrollmentStartDateInput = document.getElementById('enrollmentStartDate');
+    const enrollmentEndDateInput = document.getElementById('enrollmentEndDate');
+    const nationalIDInput = document.getElementById('nationalID');
+    const phoneNumberInput = document.getElementById('phoneNumber');
+    const placeOfLivingInput = document.getElementById('placeOfLiving');
+    const addStudentForm = document.getElementById('addStudentForm');
+    const addStudentFormContainer = document.querySelector('.add-student-form-container');
+    const formHeading = addStudentFormContainer ? addStudentFormContainer.querySelector('h3') : null;
+    const saveStudentButton = addStudentForm ? addStudentForm.querySelector('.submit-button') : null;
+
+
+    if (studentDataFromUpload) {
+        studentData = studentDataFromUpload;
+    } else {
+        if (!studentNameInput || !courseEnrolledInput || !seasonNumberInput || !enrollmentStartDateInput ||
+            !enrollmentEndDateInput || !nationalIDInput || !phoneNumberInput || !placeOfLivingInput) {
+            showMessage('Error: One or more student input fields not found.', 'error');
+            return { success: false, message: 'Missing input fields.' };
+        }
+        studentData = {
+            name: studentNameInput.value.trim(),
+            course: courseEnrolledInput.value.trim(),
+            season: parseInt(seasonNumberInput.value),
+            startDate: enrollmentStartDateInput.value,
+            endDate: enrollmentEndDateInput.value,
+            nationalID: nationalIDInput.value.trim(),
+            phone: phoneNumberInput.value.trim(),
+            location: placeOfLivingInput.value.trim(),
+        };
+    }
+
+    if (!studentData.name || !studentData.course || isNaN(studentData.season) || studentData.season <= 0 ||
+        !studentData.startDate || !studentData.endDate || !studentData.nationalID ||
+        !studentData.phone || !studentData.location) {
+        showMessage('Error: Missing or invalid required student data fields. Name, Course, Season, Dates, ID, Phone, Location are required.', 'error', 5000);
+        return { success: false, message: 'Invalid data' };
+    }
+
+    if (!isValidKenyanPhoneNumber(studentData.phone)) {
+        showMessage('Error: Please enter a valid Kenyan phone number (e.g., 07XXXXXXXX or +2547XXXXXXXX).', 'error', 7000);
+        return { success: false, message: 'Invalid Kenyan phone number format.' };
+    }
+
+    let isDuplicate = false;
+    let duplicateMessage = '';
+    // Assume `editingStudentId` is available from an outer scope or passed.
+    // For this to work, editingStudentId must be a global variable or passed as an argument.
+    // Given the current structure, it's typically a global within the DOMContentLoaded scope.
+    const studentsToCheck = students.filter(s => s.id !== (window.editingStudentId || null)); // Access via window.editingStudentId if it's set in DOMContentLoaded
+
+    if (studentData.nationalID !== '') {
+        isDuplicate = studentsToCheck.some(s => s.nationalID === studentData.nationalID);
+        if (isDuplicate) {
+            duplicateMessage = `A student with National ID '${studentData.nationalID}' already exists.`;
+        }
+    }
+    if (!isDuplicate && studentData.nationalID === '') {
+         isDuplicate = studentsToCheck.some(s =>
+            s.name.toLowerCase() === studentData.name.toLowerCase() &&
+            s.course.toLowerCase() === studentData.course.toLowerCase() &&
+            s.season === studentData.season
+        );
+        if (isDuplicate) {
+            duplicateMessage = `A student named '${studentData.name}' in '${studentData.course}' for Season ${studentData.season} already exists.`;
+        }
+    }
+
+    if (isDuplicate) {
+        const msg = `Duplicate entry detected: ${duplicateMessage}`;
+        showMessage(msg, 'error', 5000);
+        return { success: false, message: msg };
+    }
+
+    let savedId = null;
+    if (window.editingStudentId) { // Access via window for global scope
+        savedId = await saveParseData('Student', studentData, window.editingStudentId);
+    } else {
+        savedId = await saveParseData('Student', studentData);
+    }
+
+    if (!studentDataFromUpload) {
+        if (addStudentForm) addStudentForm.reset();
+        if (addStudentFormContainer) addStudentFormContainer.style.display = 'none';
+        window.editingStudentId = null; // Set to null globally
+        if (formHeading) formHeading.textContent = 'Add New Student';
+        if (saveStudentButton) saveStudentButton.textContent = 'Save Student';
+    }
+    return { success: !!savedId, id: savedId };
+}
+
+function editStudent(id) {
+    // References to DOM elements
+    const studentNameInput = document.getElementById('studentName');
+    const courseEnrolledInput = document.getElementById('courseEnrolled');
+    const seasonNumberInput = document.getElementById('seasonNumber');
+    const enrollmentStartDateInput = document.getElementById('enrollmentStartDate');
+    const enrollmentEndDateInput = document.getElementById('enrollmentEndDate');
+    const nationalIDInput = document.getElementById('nationalID');
+    const phoneNumberInput = document.getElementById('phoneNumber');
+    const placeOfLivingInput = document.getElementById('placeOfLiving');
+    const addStudentFormContainer = document.querySelector('.add-student-form-container');
+    const formHeading = addStudentFormContainer ? addStudentFormContainer.querySelector('h3') : null;
+    const saveStudentButton = document.getElementById('addStudentForm') ? document.getElementById('addStudentForm').querySelector('.submit-button') : null;
+
+
+    const studentToEdit = students.find(student => student.id === id);
+    if (studentToEdit) {
+        if (studentNameInput) studentNameInput.value = studentToEdit.name;
+        if (courseEnrolledInput) courseEnrolledInput.value = studentToEdit.course;
+        if (seasonNumberInput) seasonNumberInput.value = studentToEdit.season;
+        if (enrollmentStartDateInput) enrollmentStartDateInput.value = studentToEdit.startDate;
+        if (enrollmentEndDateInput) enrollmentEndDateInput.value = studentToEdit.endDate;
+        if (nationalIDInput) nationalIDInput.value = studentToEdit.nationalID;
+        if (phoneNumberInput) phoneNumberInput.value = studentToEdit.phone;
+        if (placeOfLivingInput) placeOfLivingInput.value = studentToEdit.location;
+
+        if (formHeading) formHeading.textContent = `Edit Student: ${studentToEdit.name}`;
+        if (addStudentFormContainer) addStudentFormContainer.style.display = 'block';
+        window.editingStudentId = id; // Set to global scope
+        if (saveStudentButton) saveStudentButton.textContent = 'Update Student';
+    }
+}
+
+async function deleteStudent(id) {
+    showConfirmDialog('Are you sure you want to delete this student? This action cannot be undone.', async () => {
+        await deleteParseData('Student', id);
+    });
+}
+
+// Bulk Upload Functions
+const expectedHeaders = [
+    "name", "course", "season", "enrollment start date",
+    "enrollment end date", "national id", "phone number", "place of living"
+];
+const headerMap = {
+    "name": "name", "course": "course", "season": "season",
+    "enrollment start date": "startDate", "enrollment end date": "endDate",
+    "national id": "nationalID", "phone number": "phone", "place of living": "location"
+};
+
+async function handleFileUpload() {
+    const fileUploadInput = document.getElementById('fileUploadInput');
+    const uploadStatusDiv = document.getElementById('uploadStatus');
+
+    if (!fileUploadInput || !uploadStatusDiv) { showMessage("File upload elements not found.", "error"); return; }
+    const file = fileUploadInput.files[0];
+    if (!file) { showMessage("Please select a file to upload.", "error"); return; }
+    uploadStatusDiv.textContent = 'Processing file...'; uploadStatusDiv.style.color = '#555';
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+        try {
+            const content = e.target.result; let parsedData = []; let fileType = file.type;
+            if (fileType === "" || fileType === "application/octet-stream") {
+                const fileName = file.name.toLowerCase();
+                if (fileName.endsWith('.csv')) { fileType = 'text/csv'; }
+                else if (fileName.endsWith('.json')) { fileType = 'application/json'; }
+            }
+            if (fileType === 'text/csv') { parsedData = parseCSV(content); }
+            else if (fileType === 'application/json') { parsedData = parseJSON(content); }
+            else { showMessage("Unsupported file type. Please upload a CSV or JSON file.", "error"); uploadStatusDiv.textContent = 'Unsupported file type.'; return; }
+
+            if (parsedData.length === 0) { showMessage("No data found in the file or file format is incorrect.", "error"); uploadStatusDiv.textContent = 'No data found or format incorrect.'; return; }
+            await processStudentRecords(parsedData);
+            fileUploadInput.value = '';
+        } catch (error) {
+            console.error("Error reading or processing file:", error);
+            showMessage(`Error processing file: ${error.message}`, "error", 7000);
+            uploadStatusDiv.textContent = `Error: ${error.message}`; uploadStatusDiv.style.color = 'red';
+        }
+    };
+    reader.onerror = () => { showMessage("Error reading file.", "error"); uploadStatusDiv.textContent = 'Error reading file.'; uploadStatusDiv.style.color = 'red'; };
+    reader.readAsText(file);
+}
+
+function parseCSV(csvText) {
+    const lines = csvText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    if (lines.length < 2) { throw new Error("CSV file must contain a header row and at least one data row."); }
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const records = [];
+    const missingHeaders = expectedHeaders.filter(eh => !headers.includes(eh));
+    if (missingHeaders.length > 0) { throw new Error(`Missing required CSV headers: ${missingHeaders.join(', ')}. Please ensure your CSV matches the specified format.`); }
+    for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',');
+        if (values.length !== headers.length) { console.warn(`Skipping row ${i + 1} due to column count mismatch.`); continue; }
+        const record = {};
+        headers.forEach((header, index) => { record[headerMap[header] || header] = values[index].trim(); });
+        records.push(record);
+    }
+    return records;
+}
+
+function parseJSON(jsonText) {
+    try {
+        const data = JSON.parse(jsonText);
+        if (!Array.isArray(data)) { throw new Error("JSON file must contain an array of student objects."); }
+        if (data.length > 0) {
+            const firstRecord = data[0];
+            const recordKeys = Object.keys(firstRecord).map(key => key.toLowerCase());
+            const missingKeys = expectedHeaders.filter(eh => !recordKeys.includes(eh));
+            if (missingKeys.length > 0) { console.warn(`JSON data might be missing expected keys: ${missingKeys.join(', ')}.`); }
+        }
+        return data;
+    } catch (error) { throw new Error(`Invalid JSON file: ${error.message}`); }
+}
+
+async function processStudentRecords(records) {
+    let successCount = 0; let skipCount = 0;
+    const totalRecords = records.length;
+    const uploadStatusDiv = document.getElementById('uploadStatus'); // Re-get inside function for robustness
+    if (uploadStatusDiv) {
+        uploadStatusDiv.textContent = `Processing ${totalRecords} records...`; uploadStatusDiv.style.color = '#555';
+    }
+    for (let i = 0; i < totalRecords; i++) {
+        const record = records[i];
+        const studentData = {
+            name: record.name || '', course: record.course || '', season: parseInt(record.season) || 0,
+            startDate: record.startDate || record['enrollment start date'] || '',
+            endDate: record.endDate || record['enrollment end date'] || '',
+            nationalID: record.nationalID || record['national id'] || '',
+            phone: record.phone || record['phone number'] || '',
+            location: record.location || record['place of living'] || ''
+        };
+        studentData.season = parseInt(studentData.season);
+        if (isNaN(studentData.season)) studentData.season = 0;
+
+        if (!isValidKenyanPhoneNumber(studentData.phone)) {
+            console.warn(`Skipping record ${i + 1}: Invalid Kenyan phone number format for ${studentData.name}.`);
+            skipCount++;
+            continue;
+        }
+
+        const result = await addOrUpdateStudent(null, studentData);
+        if (result.success) { successCount++; } else { skipCount++; console.warn(`Skipped record ${i + 1}: ${result.message || 'Unknown error'}. Data:`, record); }
+    }
+    const message = `Upload complete! Added ${successCount} students, skipped ${skipCount} duplicates/invalid records.`;
+    showMessage(message, 'success', 7000);
+    if (uploadStatusDiv) {
+        uploadStatusDiv.textContent = message; uploadStatusDiv.style.color = '#4CAF50';
+    }
+}
+
+// Course and Student Dropdown Population
+function getUniqueCourses() { return [...new Set(students.map(s => s.course))].sort(); }
+
+function populateCourseDropdowns() {
+    const courses = getUniqueCourses();
+    const attendanceCourseFilter = document.getElementById('attendanceCourseFilter');
+    const gradesCourseFilter = document.getElementById('gradesCourseFilter');
+    const addAssignmentCourseFilter = document.getElementById('addAssignmentCourseFilter');
+
+    const courseFilters = [attendanceCourseFilter, gradesCourseFilter, addAssignmentCourseFilter];
+    courseFilters.forEach(filter => {
+        if (filter) {
+            const currentValue = filter.value; filter.innerHTML = '<option value="">-- All Courses --</option>';
+            if (filter.id === 'addAssignmentCourseFilter') { filter.innerHTML = '<option value="">-- Select Course --</option>'; }
+            courses.forEach(course => { const option = document.createElement('option'); option.value = course; option.textContent = course; filter.appendChild(option); });
+            filter.value = currentValue;
+        }
+    });
+}
+
+function populateStudentDropdowns(selectElement, course = '') {
+    if (!selectElement) return;
+    const currentValue = selectElement.value; selectElement.innerHTML = '<option value="">-- Select a Student --</option>';
+    if (selectElement.id === 'addAssignmentStudent') { selectElement.innerHTML = '<option value="">-- Select Student --</doption>'; }
+    const filteredStudents = course ? students.filter(s => s.course === course) : students;
+    filteredStudents.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
+        const option = document.createElement('option'); option.value = student.id;
+        option.textContent = student.name + (course ? '' : ` (${student.course})`);
+        selectElement.appendChild(option);
+    });
+    selectElement.value = currentValue;
+}
+
+// Attendance Management Functions
+function getTodayDateString() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+async function renderAttendanceTable(selectedCourse = '', selectedDate) {
+    const attendanceTableBody = document.getElementById('attendanceTableBody');
+    const currentAttendanceDateDisplay = document.getElementById('currentAttendanceDateDisplay');
+    const saveAttendanceBtn = document.getElementById('saveAttendanceBtn');
+
+    if (!attendanceTableBody) { console.error("attendanceTableBody not found."); return; }
+    attendanceTableBody.innerHTML = '';
+    if (currentAttendanceDateDisplay) { currentAttendanceDateDisplay.textContent = selectedDate; }
+    const filteredStudents = selectedCourse ? students.filter(s => s.course === selectedCourse) : students;
+    if (filteredStudents.length === 0) {
+        attendanceTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No students found for this course/date.</td></tr>';
+        if (saveAttendanceBtn) saveAttendanceBtn.style.display = 'none'; return;
+    }
+    if (saveAttendanceBtn) saveAttendanceBtn.style.display = 'block';
+    const existingAttendance = attendanceRecords.find(rec => rec.date === selectedDate && rec.course === selectedCourse);
+    const attendanceData = existingAttendance ? existingAttendance.records : {};
+    filteredStudents.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
+        const status = attendanceData[student.id] ? attendanceData[student.id].status : 'present';
+        const notes = attendanceData[student.id] ? attendanceData[student.id].notes : '';
+        const row = attendanceTableBody.insertRow();
+        row.dataset.studentId = student.id; row.dataset.course = student.course;
+        row.innerHTML = `
+            <td data-label="Student Name">${student.name}</td>
+            <td data-label="Status">
+                <label><input type="radio" name="status-${student.id}" value="present" ${status === 'present' ? 'checked' : ''}> Present</label>
+                <label><input type="radio" name="status-${student.id}" value="absent" ${status === 'absent' ? 'checked' : ''}> Absent</label>
+                <label><input type="radio" name="status-${student.id}" value="late" ${status === 'late' ? 'checked' : ''}> Late</label>
+            </td>
+            <td data-label="Notes"><input type="text" value="${notes}" placeholder="Optional notes"></td>
+            <td data-label="Course">${student.course}</td>
+        `;
+    });
+}
+
+async function saveAttendance() {
+    const attendanceDateInput = document.getElementById('attendanceDate');
+    const attendanceCourseFilter = document.getElementById('attendanceCourseFilter');
+    const attendanceTableBody = document.getElementById('attendanceTableBody');
+
+    const date = attendanceDateInput.value;
+    const course = attendanceCourseFilter.value;
+    if (!date) { showMessage('Please select a date for attendance.', 'error'); return; }
+    const records = {}; let allPresent = true;
+    if (attendanceTableBody) {
+        attendanceTableBody.querySelectorAll('tr').forEach(row => {
+            const studentId = row.dataset.studentId;
+            if (studentId) {
+                const statusInput = row.querySelector(`input[name="status-${studentId}"]:checked`);
+                const status = statusInput ? statusInput.value : 'present';
+                const notesInput = row.querySelector('input[type="text"]');
+                const notes = notesInput ? notesInput.value : '';
+                records[studentId] = { status, notes };
+                if (status !== 'present') { allPresent = false; }
+            }
+        });
+    }
+    const existingRecord = attendanceRecords.find(rec => rec.date === date && rec.course === course);
+    const attendanceData = { date: date, course: course, records: records, allPresent: allPresent };
+    if (existingRecord) { await saveParseData('AttendanceRecord', attendanceData, existingRecord.id); }
+    else { await saveParseData('AttendanceRecord', attendanceData); }
+}
+
+// Grades Management Functions
+async function renderGradesTable(studentId) {
+    const gradesTableContainer = document.getElementById('gradesTableContainer');
+    const gradesTableBody = document.getElementById('gradesTableBody');
+    const currentGradesStudentName = document.getElementById('currentGradesStudentName');
+    const saveGradesBtn = document.getElementById('saveGradesBtn');
+
+    if (!gradesTableContainer || !gradesTableBody || !currentGradesStudentName || !saveGradesBtn) { console.error("Grades management elements not found."); return; }
+    gradesTableContainer.style.display = 'block'; gradesTableBody.innerHTML = '';
+    const student = students.find(s => s.id === studentId);
+    if (!student) {
+        gradesTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Student not found.</td></tr>';
+        currentGradesStudentName.textContent = 'N/A'; if (saveGradesBtn) saveGradesBtn.style.display = 'none'; return;
+    }
+    currentGradesStudentName.textContent = student.name; currentGradesStudentId = studentId;
+    const studentGrades = grades.filter(g => g.studentId === studentId);
+    if (studentGrades.length === 0) {
+        gradesTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No grades recorded for this student yet.</td></tr>';
+        if (saveGradesBtn) saveGradesBtn.style.display = 'none'; return;
+    }
+    if (saveGradesBtn) saveGradesBtn.style.display = 'block';
+    studentGrades.forEach(grade => {
+        const row = gradesTableBody.insertRow(); row.dataset.gradeId = grade.id; row.dataset.assignmentName = grade.assignmentName;
+        const statusClass = grade.score !== null && grade.score !== undefined ? 'graded' : 'pending';
+        const statusText = grade.score !== null && grade.score !== undefined ? 'Graded' : 'Pending';
+        row.innerHTML = `
+            <td data-label="Assignment Name">${grade.assignmentName}</td>
+            <td data-label="Max Score">${grade.maxScore}</td>
+            <td data-label="Student Score"><input type="number" min="0" max="${grade.maxScore}" value="${grade.score !== null && grade.score !== undefined ? grade.score : ''}" placeholder="Enter score"></td>
+            <td data-label="Status" class="grade-status ${statusClass}">${statusText}</td>
+        `;
+        const scoreInput = row.querySelector('input[type="number"]');
+        if (scoreInput) { scoreInput.addEventListener('input', (event) => {
+            const score = event.target.value.trim(); const statusCell = row.querySelector('.grade-status');
+            if (statusCell) {
+                if (score !== '' && !isNaN(score) && Number(score) >= 0) { statusCell.textContent = 'Graded'; statusCell.className = 'grade-status graded'; }
+                else { statusCell.textContent = 'Pending'; statusCell.className = 'grade-status pending'; }
+            }
+        }); }
+    });
+}
+
+async function saveGrades() {
+    const gradesTableBody = document.getElementById('gradesTableBody');
+    if (!currentGradesStudentId) { showMessage('No student selected to save grades for.', 'error'); return; }
+    if (!gradesTableBody) { console.error("gradesTableBody not found."); return; }
+    const gradesToUpdate = [];
+    gradesTableBody.querySelectorAll('tr').forEach(row => {
+        const gradeId = row.dataset.gradeId; const assignmentName = row.dataset.assignmentName;
+        const scoreInput = row.querySelector('input[type="number"]');
+        const newScore = scoreInput && scoreInput.value.trim() !== '' ? parseFloat(scoreInput.value) : null;
+        const maxScore = parseFloat(row.children[1].textContent);
+        const existingGrade = grades.find(g => g.id === gradeId);
+        if (existingGrade) { gradesToUpdate.push({ ...existingGrade, score: newScore }); }
+    });
+    for (const gradeItem of gradesToUpdate) { await saveParseData('Grade', gradeItem, gradeItem.id); }
+}
+
+async function addAssignmentToStudent(event) {
+    event.preventDefault();
+    const addAssignmentStudentSelect = document.getElementById('addAssignmentStudent');
+    const newAssignmentNameInput = document.getElementById('newAssignmentName');
+    const newAssignmentMaxScoreInput = document.getElementById('newAssignmentMaxScore');
+    const addAssignmentCourseFilter = document.getElementById('addAssignmentCourseFilter');
+    const addAssignmentForm = document.getElementById('addAssignmentForm');
+
+    if (!addAssignmentStudentSelect || !newAssignmentNameInput || !newAssignmentMaxScoreInput || !addAssignmentCourseFilter) { showMessage('Error: Required assignment input fields not found.', 'error'); return; }
+    const studentId = addAssignmentStudentSelect.value;
+    const assignmentName = newAssignmentNameInput.value;
+    const maxScore = parseFloat(newAssignmentMaxScoreInput.value);
+    const course = addAssignmentCourseFilter.value;
+    if (!studentId || !assignmentName || isNaN(maxScore) || maxScore <= 0) { showMessage('Please fill all assignment fields correctly.', 'error'); return; }
+    const newAssignment = { studentId: studentId, assignmentName: assignmentName, maxScore: maxScore, score: null, course: course };
+    await saveParseData('Grade', newAssignment);
+    if (addAssignmentForm) addAssignmentForm.reset();
+}
+
+// Announcements Functions
+async function renderAnnouncements() {
+    const announcementsListDiv = document.getElementById('announcementsList');
+    if (!announcementsListDiv) { console.error("announcementsListDiv not found."); return; }
+    announcementsListDiv.innerHTML = '';
+    if (announcements.length === 0) { announcementsListDiv.innerHTML = '<p>No announcements to display yet.</p>'; return; }
+    const sortedAnnouncements = [...announcements].sort((a, b) => new Date(b.date) - new Date(a.date));
+    sortedAnnouncements.forEach(announcement => {
+        const announcementItem = document.createElement('div');
+        announcementItem.classList.add('announcement-item');
+        announcementItem.innerHTML = `
+            <h4>${announcement.title}</h4>
+            <p>${announcement.content}</p>
+            <small>Posted on: ${announcement.date}</small>
+            <button class="delete-button" data-id="${announcement.id}" style="margin-top: 10px; padding: 5px 10px; font-size: 0.8rem;">Delete</button>
+        `;
+        announcementsListDiv.appendChild(announcementItem);
+    });
+    document.querySelectorAll('.announcement-item .delete-button').forEach(button => {
+        button.onclick = (event) => deleteAnnouncement(event.target.dataset.id);
+    });
+}
+
+async function addAnnouncement(event) {
+    event.preventDefault();
+    const announcementTitleInput = document.getElementById('announcementTitle');
+    const announcementContentInput = document.getElementById('announcementContent');
+    const announcementDateInput = document.getElementById('announcementDate');
+    const addAnnouncementForm = document.getElementById('addAnnouncementForm');
+
+    if (!announcementTitleInput || !announcementContentInput || !announcementDateInput) { showMessage('Error: Required announcement input fields not found.', 'error'); return; }
+    const newAnnouncement = { title: announcementTitleInput.value, content: announcementContentInput.value, date: announcementDateInput.value };
+    await saveParseData('Announcement', newAnnouncement, null);
+    if (addAnnouncementForm) addAnnouncementForm.reset();
+    if (announcementDateInput) announcementDateInput.value = getTodayDateString();
+}
+
+async function deleteAnnouncement(id) {
+    showConfirmDialog('Are you sure you want to delete this announcement?', async () => {
+        await deleteParseData('Announcement', id);
+    });
+}
+
+
+// Reports & Analytics Functions
+function updateReports() {
+    const totalStudentsCountElement = document.getElementById('totalStudentsCount');
+    const todayAbsencesCountElement = document.getElementById('todayAbsencesCount');
+    const pendingAssignmentsCountElement = document.getElementById('pendingAssignmentsCount');
+    const totalStudentsReport = document.getElementById('totalStudentsReport');
+    const webDevStudents = document.getElementById('webDevStudents');
+    const graphicDesignStudents = document.getElementById('graphicDesignStudents');
+    const digitalMarketingStudents = document.getElementById('digitalMarketingStudents');
+    const overallPresentRate = document.getElementById('overallPresentRate');
+    const overallAbsentRate = document.getElementById('overallAbsentRate');
+    const absenteeStudentsList = document.getElementById('absenteeStudentsList');
+    const totalGradedAssignments = document.getElementById('totalGradedAssignments');
+    const totalPendingAssignmentsReport = document.getElementById('totalPendingAssignmentsReport');
+    const topStudentsList = document.getElementById('topStudentsList');
+    const lowPerformingAssignments = document.getElementById('lowPerformingAssignments');
+    const coursePopularityList = document.getElementById('coursePopularityList');
+
+
+    if (totalStudentsCountElement) { totalStudentsCountElement.textContent = students.length; }
+    const todayDate = getTodayDateString(); let todayAbsences = 0;
+    attendanceRecords.forEach(record => {
+        if (record.date === todayDate) {
+            for (const studentId in record.records) {
+                if (record.records[studentId].status === 'absent') { todayAbsences++; }
+            }
+        }
+    });
+    if (todayAbsencesCountElement) { todayAbsencesCountElement.textContent = todayAbsences; }
+    const pendingAssignmentsCount = grades.filter(g => g.score === null).length;
+    if (pendingAssignmentsCountElement) { pendingAssignmentsCountElement.textContent = pendingAssignmentsCount; }
+    if (totalStudentsReport) totalStudentsReport.textContent = students.length;
+    if (webDevStudents) webDevStudents.textContent = students.filter(s => s.course === 'Web Development Basics').length;
+    if (graphicDesignStudents) graphicDesignStudents.textContent = students.filter(s => s.course === 'Graphic Design Intro').length;
+    if (digitalMarketingStudents) digitalMarketingStudents.textContent = students.filter(s => s.course === 'Digital Marketing Mastery').length;
+
+    let totalAttendanceEntries = 0; let totalPresent = 0; let totalAbsent = 0; let totalLate = 0;
+    const studentAttendanceCounts = {};
+    attendanceRecords.forEach(record => {
+        for (const studentId in record.records) {
+            if (!studentAttendanceCounts[studentId]) { studentAttendanceCounts[studentId] = { present: 0, absent: 0, late: 0 }; }
+            const status = record.records[studentId].status;
+            if (status === 'present') { totalPresent++; studentAttendanceCounts[studentId].present++; }
+            else if (status === 'absent') { totalAbsent++; studentAttendanceCounts[studentId].absent++; }
+            else if (status === 'late') { totalLate++; studentAttendanceCounts[studentId].late++; }
+            totalAttendanceEntries++;
+        }
+    });
+    const overallPresentRateVal = totalAttendanceEntries > 0 ? ((totalPresent / totalAttendanceEntries) * 100).toFixed(2) : 0;
+    const overallAbsentRateVal = totalAttendanceEntries > 0 ? ((totalAbsent / totalAttendanceEntries) * 100).toFixed(2) : 0;
+    if (overallPresentRate) { overallPresentRate.textContent = `${overallPresentRateVal}%`; }
+    if (overallAbsentRate) { overallAbsentRate.textContent = `${overallAbsentRateVal}%`; }
+    if (absenteeStudentsList) {
+        absenteeStudentsList.innerHTML = '';
+        const absentStudents = [];
+        for (const studentId in studentAttendanceCounts) {
+            const student = students.find(s => s.id === studentId);
+            if (student && (studentAttendanceCounts[studentId].absent > 0 || studentAttendanceCounts[studentId].late > 0)) {
+                absentStudents.push({ name: student.name, absent: studentAttendanceCounts[studentId].absent, late: studentAttendanceCounts[studentId].late });
+            }
+        }
+        if (absentStudents.length > 0) {
+            absentStudents.sort((a, b) => (b.absent + b.late) - (a.absent + a.late));
+            absentStudents.forEach(s => { const li = document.createElement('li'); li.textContent = `${s.name}: ${s.absent} Absent, ${s.late} Late`; absenteeStudentsList.appendChild(li); });
+        } else { absenteeStudentsList.innerHTML = '<li>No significant absences recorded.</li>'; }
+    }
+
+    let totalAssignmentsGradedCount = grades.filter(g => g.score !== null).length;
+    if (totalGradedAssignments) { totalGradedAssignments.textContent = totalAssignmentsGradedCount; }
+    if (totalPendingAssignmentsReport) { totalPendingAssignmentsReport.textContent = pendingAssignmentsCount; }
+    const studentAverageGrades = {};
+    const assignmentAverageScores = {};
+    grades.forEach(grade => {
+        if (grade.score !== null && grade.score !== undefined) {
+            if (!studentAverageGrades[grade.studentId]) { studentAverageGrades[grade.studentId] = { totalScore: 0, totalMaxScore: 0, count: 0, avg: 0 }; }
+            studentAverageGrades[grade.studentId].totalScore += grade.score;
+            studentAverageGrades[grade.studentId].totalMaxScore += grade.maxScore;
+            studentAverageGrades[grade.studentId].count++;
+            if (!assignmentAverageScores[grade.assignmentName]) { assignmentAverageScores[grade.assignmentName] = { totalScore: 0, totalMaxScore: 0, count: 0, avg: 0 }; }
+            assignmentAverageScores[grade.assignmentName].totalScore += grade.score;
+            assignmentAverageScores[grade.assignmentName].totalMaxScore += grade.maxScore;
+            assignmentAverageScores[grade.assignmentName].count++;
+        }
+    });
+
+    for (const studentId in studentAverageGrades) { const studentData = studentAverageGrades[studentId]; studentData.avg = (studentData.totalScore / studentData.totalMaxScore) * 100 || 0; }
+    for (const assignmentName in assignmentAverageScores) { const assignmentData = assignmentAverageScores[assignmentName]; assignmentData.avg = (assignmentData.totalScore / assignmentData.totalMaxScore) * 100 || 0; }
+    if (topStudentsList) {
+        topStudentsList.innerHTML = '';
+        const sortedStudentsByGrade = Object.keys(studentAverageGrades)
+            .map(id => ({ id, name: students.find(s => s.id === id)?.name || 'Unknown Student', avg: studentAverageGrades[id].avg }))
+            .sort((a, b) => b.avg - a.avg).slice(0, 5);
+        if (sortedStudentsByGrade.length > 0) {
+            sortedStudentsByGrade.forEach(s => { const li = document.createElement('li'); li.textContent = `${s.name}: ${s.avg.toFixed(2)}%`; topStudentsList.appendChild(li); });
+        } else { topStudentsList.innerHTML = '<li>No graded assignments yet.</li>'; }
+    }
+
+    if (lowPerformingAssignments) {
+        lowPerformingAssignments.innerHTML = '';
+        const sortedAssignmentsByGrade = Object.keys(assignmentAverageScores)
+            .map(name => ({ name, avg: assignmentAverageScores[name].avg }))
+            .sort((a, b) => a.avg - b.avg).slice(0, 5);
+        if (sortedAssignmentsByGrade.length > 0) {
+            sortedAssignmentsByGrade.forEach(a => { const li = document.createElement('li'); li.textContent = `${a.name}: ${a.avg.toFixed(2)}%`; lowPerformingAssignments.appendChild(li); });
+        } else { lowPerformingAssignments.innerHTML = '<li>No graded assignments yet.</li>'; }
+    }
+
+    const courseCounts = {};
+    students.forEach(student => { courseCounts[student.course] = (courseCounts[student.course] || 0) + 1; });
+    if (coursePopularityList) {
+        coursePopularityList.innerHTML = '';
+        const sortedCourses = Object.keys(courseCounts).sort((a, b) => courseCounts[b] - courseCounts[a]);
+        if (sortedCourses.length > 0) {
+            sortedCourses.forEach(course => { const li = document.createElement('li'); li.textContent = `${course}: ${courseCounts[course]} students`; coursePopularityList.appendChild(li); });
+        } else { coursePopularityList.innerHTML = '<li>No courses with students yet.</li>'; }
+    }
+}
+
+
+// Settings Functions
+function loadSettings() {
+    const themeSelect = document.getElementById('themeSelect');
+    const notificationsToggle = document.getElementById('notificationsToggle');
+
+    if (themeSelect) {
+        const savedTheme = localStorage.getItem('schoolflowTheme');
+        if (savedTheme) { themeSelect.value = savedTheme; applyTheme(savedTheme); }
+    }
+    if (notificationsToggle) {
+        const savedNotifications = localStorage.getItem('schoolflowNotifications');
+        if (savedNotifications !== null) { notificationsToggle.checked = (savedNotifications === 'true'); }
+    }
+}
+
+function applyTheme(theme) { console.log(`Applying theme: ${theme}`); }
+
+// Function to render all UI components dependent on data
+// This function needs to be defined BEFORE it's called in loadAllData()
+function renderUIComponents() {
+    renderStudentTable();
+    populateCourseDropdowns();
+    // Re-get elements here as they might be null if not loaded yet
+    const selectStudentForGrades = document.getElementById('selectStudentForGrades');
+    const addAssignmentStudentSelect = document.getElementById('addAssignmentStudent');
+    if (selectStudentForGrades) populateStudentDropdowns(selectStudentForGrades);
+    if (addAssignmentStudentSelect) populateStudentDropdowns(addAssignmentStudentSelect);
+    updateReports();
+    // Only re-render current grades if a student is already selected
+    if (currentGradesStudentId) {
+        renderGradesTable(currentGradesStudentId);
+    }
+    renderAnnouncements(); // Ensure announcements render initially
+    // Also update attendance table for current selected date/course
+    const attendanceDateInput = document.getElementById('attendanceDate'); // Get this element here
+    const attendanceCourseFilter = document.getElementById('attendanceCourseFilter'); // Get this element here
+
+    const selectedDate = attendanceDateInput?.value;
+    const selectedCourse = attendanceCourseFilter?.value;
+    if (selectedDate) {
+        renderAttendanceTable(selectedCourse, selectedDate);
+    }
+}
+
 // Function to load all data and update UI
 async function loadAllData() {
     console.log("Loading all data from Parse...");
@@ -233,26 +919,6 @@ async function loadAllData() {
     // Render all UI components after data is loaded
     renderUIComponents();
     console.log("All data loaded and UI updated.");
-}
-
-// Function to render all UI components dependent on data
-function renderUIComponents() {
-    renderStudentTable();
-    populateCourseDropdowns();
-    populateStudentDropdowns(selectStudentForGrades);
-    populateStudentDropdowns(addAssignmentStudentSelect);
-    updateReports();
-    // Only re-render current grades if a student is already selected
-    if (currentGradesStudentId) {
-        renderGradesTable(currentGradesStudentId);
-    }
-    renderAnnouncements(); // Ensure announcements render initially
-    // Also update attendance table for current selected date/course
-    const selectedDate = document.getElementById('attendanceDate')?.value;
-    const selectedCourse = document.getElementById('attendanceCourseFilter')?.value;
-    if (selectedDate) {
-        renderAttendanceTable(selectedCourse, selectedDate);
-    }
 }
 
 
@@ -269,14 +935,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sidebarLinks = document.querySelectorAll('.sidebar ul li a');
     const dashboardSections = document.querySelectorAll('.dashboard-content-section');
 
-    // --- Student Management Section Elements ---
+    // --- Student Management Section Elements (Moved to top of scope if needed by other functions, or locally) ---
     const addStudentBtn = document.getElementById('addStudentBtn');
     const addStudentFormContainer = document.querySelector('.add-student-form-container');
     const addStudentForm = document.getElementById('addStudentForm');
     const studentTableBody = document.querySelector('#studentTable tbody');
     const cancelButton = addStudentForm.querySelector('.cancel-button');
-    const saveStudentButton = addStudentForm.querySelector('.submit-button');
-    const formHeading = addStudentFormContainer.querySelector('h3');
+    const saveStudentButton = addStudentForm.querySelector('.submit-button'); // Declare here
+    const formHeading = addStudentFormContainer.querySelector('h3'); // Declare here
+    // These inputs are now within the `addOrUpdateStudent` function scope when called directly, or accessed if globally needed.
+    // For local element access within DOMContentLoaded:
     const studentNameInput = document.getElementById('studentName');
     const courseEnrolledInput = document.getElementById('courseEnrolled');
     const seasonNumberInput = document.getElementById('seasonNumber');
@@ -285,7 +953,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nationalIDInput = document.getElementById('nationalID');
     const phoneNumberInput = document.getElementById('phoneNumber');
     const placeOfLivingInput = document.getElementById('placeOfLiving');
-    let editingStudentId = null;
+    window.editingStudentId = null; // Initialize globally for addOrUpdateStudent, editStudent to access
 
     // --- Bulk Student Upload Elements ---
     const fileUploadInput = document.getElementById('fileUploadInput');
@@ -294,7 +962,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Attendance Management Section Elements ---
     const attendanceCourseFilter = document.getElementById('attendanceCourseFilter');
-    const attendanceDateInput = document.getElementById('attendanceDate');
+    const attendanceDateInput = document.getElementById('attendanceDate'); // Corrected assignment
     const loadAttendanceBtn = document.getElementById('loadAttendanceBtn');
     const attendanceTableBody = document.getElementById('attendanceTableBody');
     const currentAttendanceDateDisplay = document.getElementById('currentAttendanceDateDisplay');
@@ -324,6 +992,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cancelAnnouncementBtn = document.getElementById('cancelAnnouncementBtn');
 
     // --- Reports & Analytics Section Elements ---
+    // Declared earlier in updateReports function scope directly, but also here for event listeners
     const totalStudentsReport = document.getElementById('totalStudentsReport');
     const webDevStudents = document.getElementById('webDevStudents');
     const graphicDesignStudents = document.getElementById('graphicDesignStudents');
@@ -336,6 +1005,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const topStudentsList = document.getElementById('topStudentsList');
     const lowPerformingAssignments = document.getElementById('lowPerformingAssignments');
     const coursePopularityList = document.getElementById('coursePopularityList');
+
 
     // --- Dashboard Overview Statistics Elements ---
     const totalStudentsCountElement = document.getElementById('totalStudentsCount');
@@ -412,155 +1082,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // --- Event Listeners and Initializations (DOM elements are now guaranteed to be available) ---
 
-    // --- Student Management Functions ---
-    function renderStudentTable() {
-        if (!studentTableBody) { console.error("studentTableBody not found."); return; }
-        studentTableBody.innerHTML = '';
-        if (students.length === 0) {
-            studentTableBody.innerHTML = '<tr><td colspan="9" style="text-align:center;">No students enrolled yet.</td></tr>';
-            return;
-        }
-        students.forEach(student => {
-            const row = studentTableBody.insertRow();
-            row.innerHTML = `
-                <td data-label="Name">${student.name}</td>
-                <td data-label="Course/Program">${student.course}</td>
-                <td data-label="Season No.">${student.season}</td>
-                <td data-label="Start Date">${student.startDate}</td>
-                <td data-label="End Date">${student.endDate}</td>
-                <td data-label="National ID">${student.nationalID}</td>
-                <td data-label="Contact">${student.phone}</td>
-                <td data-label="Location">${student.location}</td>
-                <td data-label="Actions" class="actions">
-                    <button class="edit-button" data-id="${student.id}">Edit</button>
-                    <button class="delete-button" data-id="${student.id}">Delete</button>
-                </td>
-            `;
+    // Hamburger Menu
+    if (hamburgerBtn && sidebar && sidebarOverlay) {
+        hamburgerBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            sidebarOverlay.classList.toggle('active');
         });
-        document.querySelectorAll('.edit-button').forEach(button => {
-            button.onclick = (event) => editStudent(event.target.dataset.id);
-        });
-        document.querySelectorAll('.delete-button').forEach(button => {
-            button.onclick = (event) => deleteStudent(event.target.dataset.id);
+
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('active');
         });
     }
 
-    // --- Phone Number Validation Function ---
-    function isValidKenyanPhoneNumber(phoneNumber) {
-        const kenyanPhoneRegex = /^(07|\+2547)\d{8}$/;
-        const cleanedPhoneNumber = phoneNumber.replace(/[\s-]/g, '');
-        return kenyanPhoneRegex.test(cleanedPhoneNumber);
-    }
+    // Sidebar Navigation
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', function(event) {
+            event.preventDefault();
+            const targetSectionId = this.getAttribute('href').substring(1);
+            dashboardSections.forEach(section => {
+                if (section.id === targetSectionId) {
+                    section.classList.add('active');
+                } else {
+                    section.classList.remove('active');
+                }
+            });
 
-    async function addOrUpdateStudent(event, studentDataFromUpload = null) {
-        if (event && event.preventDefault) { event.preventDefault(); }
-        let studentData;
-        if (studentDataFromUpload) {
-            studentData = studentDataFromUpload;
-        } else {
-            if (!studentNameInput || !courseEnrolledInput || !seasonNumberInput || !enrollmentStartDateInput ||
-                !enrollmentEndDateInput || !nationalIDInput || !phoneNumberInput || !placeOfLivingInput) {
-                showMessage('Error: One or more student input fields not found.', 'error');
-                return { success: false, message: 'Missing input fields.' };
+            // Update active class for sidebar links
+            sidebarLinks.forEach(item => item.classList.remove('active'));
+            this.classList.add('active');
+
+            // On mobile, close sidebar after selecting a link
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('open');
+                sidebarOverlay.classList.remove('active');
             }
-            studentData = {
-                name: studentNameInput.value.trim(),
-                course: courseEnrolledInput.value.trim(),
-                season: parseInt(seasonNumberInput.value),
-                startDate: enrollmentStartDateInput.value,
-                endDate: enrollmentEndDateInput.value,
-                nationalID: nationalIDInput.value.trim(),
-                phone: phoneNumberInput.value.trim(),
-                location: placeOfLivingInput.value.trim(),
-            };
-        }
-
-        if (!studentData.name || !studentData.course || isNaN(studentData.season) || studentData.season <= 0 ||
-            !studentData.startDate || !studentData.endDate || !studentData.nationalID ||
-            !studentData.phone || !studentData.location) {
-            showMessage('Error: Missing or invalid required student data fields. Name, Course, Season, Dates, ID, Phone, Location are required.', 'error', 5000);
-            return { success: false, message: 'Invalid data' };
-        }
-
-        if (!isValidKenyanPhoneNumber(studentData.phone)) {
-            showMessage('Error: Please enter a valid Kenyan phone number (e.g., 07XXXXXXXX or +2547XXXXXXXX).', 'error', 7000);
-            return { success: false, message: 'Invalid Kenyan phone number format.' };
-        }
-
-        let isDuplicate = false;
-        let duplicateMessage = '';
-        const studentsToCheck = students.filter(s => s.id !== editingStudentId);
-
-        if (studentData.nationalID !== '') {
-            isDuplicate = studentsToCheck.some(s => s.nationalID === studentData.nationalID);
-            if (isDuplicate) {
-                duplicateMessage = `A student with National ID '${studentData.nationalID}' already exists.`;
-            }
-        }
-        if (!isDuplicate && studentData.nationalID === '') {
-             isDuplicate = studentsToCheck.some(s =>
-                s.name.toLowerCase() === studentData.name.toLowerCase() &&
-                s.course.toLowerCase() === studentData.course.toLowerCase() &&
-                s.season === studentData.season
-            );
-            if (isDuplicate) {
-                duplicateMessage = `A student named '${studentData.name}' in '${studentData.course}' for Season ${studentData.season} already exists.`;
-            }
-        }
-
-        if (isDuplicate) {
-            const msg = `Duplicate entry detected: ${duplicateMessage}`;
-            showMessage(msg, 'error', 5000);
-            return { success: false, message: msg };
-        }
-
-        let savedId = null;
-        if (editingStudentId) {
-            savedId = await saveParseData('Student', studentData, editingStudentId);
-        } else {
-            savedId = await saveParseData('Student', studentData);
-        }
-
-        if (!studentDataFromUpload) {
-            if (addStudentForm) addStudentForm.reset();
-            if (addStudentFormContainer) addStudentFormContainer.style.display = 'none';
-            editingStudentId = null;
-            if (formHeading) formHeading.textContent = 'Add New Student';
-            if (saveStudentButton) saveStudentButton.textContent = 'Save Student';
-        }
-        return { success: !!savedId, id: savedId };
-    }
-
-    function editStudent(id) {
-        const studentToEdit = students.find(student => student.id === id);
-        if (studentToEdit) {
-            if (studentNameInput) studentNameInput.value = studentToEdit.name;
-            if (courseEnrolledInput) courseEnrolledInput.value = studentToEdit.course;
-            if (seasonNumberInput) seasonNumberInput.value = studentToEdit.season;
-            if (enrollmentStartDateInput) enrollmentStartDateInput.value = studentToEdit.startDate;
-            if (enrollmentEndDateInput) enrollmentEndDateInput.value = studentToEdit.endDate;
-            if (nationalIDInput) nationalIDInput.value = studentToEdit.nationalID;
-            if (phoneNumberInput) phoneNumberInput.value = studentToEdit.phone;
-            if (placeOfLivingInput) placeOfLivingInput.value = studentToEdit.location;
-
-            if (formHeading) formHeading.textContent = `Edit Student: ${studentToEdit.name}`;
-            if (addStudentFormContainer) addStudentFormContainer.style.display = 'block';
-            editingStudentId = id;
-            if (saveStudentButton) saveStudentButton.textContent = 'Update Student';
-        }
-    }
-
-    async function deleteStudent(id) {
-        showConfirmDialog('Are you sure you want to delete this student? This action cannot be undone.', async () => {
-            await deleteParseData('Student', id);
         });
-    }
+    });
 
+    // Student Management Event Listeners
     if (addStudentBtn) { addStudentBtn.addEventListener('click', () => {
         if (addStudentFormContainer) addStudentFormContainer.style.display = 'block';
         if (addStudentForm) addStudentForm.reset();
-        editingStudentId = null;
+        window.editingStudentId = null; // Reset global editing ID
         if (formHeading) formHeading.textContent = 'Add New Student';
         if (saveStudentButton) saveStudentButton.textContent = 'Save Student';
     }); }
@@ -568,122 +1134,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (cancelButton) { cancelButton.addEventListener('click', () => {
         if (addStudentFormContainer) addStudentFormContainer.style.display = 'none';
         if (addStudentForm) addStudentForm.reset();
-        editingStudentId = null;
+        window.editingStudentId = null; // Reset global editing ID
         if (formHeading) formHeading.textContent = 'Add New Student';
         if (saveStudentButton) saveStudentButton.textContent = 'Save Student';
     }); }
 
     if (addStudentForm) { addStudentForm.addEventListener('submit', addOrUpdateStudent); }
-
-    // --- Bulk Upload Functions ---
-    const expectedHeaders = [
-        "name", "course", "season", "enrollment start date",
-        "enrollment end date", "national id", "phone number", "place of living"
-    ];
-    const headerMap = {
-        "name": "name", "course": "course", "season": "season",
-        "enrollment start date": "startDate", "enrollment end date": "endDate",
-        "national id": "nationalID", "phone number": "phone", "place of living": "location"
-    };
-
-    async function handleFileUpload() {
-        if (!fileUploadInput || !uploadStatusDiv) { showMessage("File upload elements not found.", "error"); return; }
-        const file = fileUploadInput.files[0];
-        if (!file) { showMessage("Please select a file to upload.", "error"); return; }
-        uploadStatusDiv.textContent = 'Processing file...'; uploadStatusDiv.style.color = '#555';
-        const reader = new FileReader();
-
-        reader.onload = async (e) => {
-            try {
-                const content = e.target.result; let parsedData = []; let fileType = file.type;
-                if (fileType === "" || fileType === "application/octet-stream") {
-                    const fileName = file.name.toLowerCase();
-                    if (fileName.endsWith('.csv')) { fileType = 'text/csv'; }
-                    else if (fileName.endsWith('.json')) { fileType = 'application/json'; }
-                }
-                if (fileType === 'text/csv') { parsedData = parseCSV(content); }
-                else if (fileType === 'application/json') { parsedData = parseJSON(content); }
-                else { showMessage("Unsupported file type. Please upload a CSV or JSON file.", "error"); uploadStatusDiv.textContent = 'Unsupported file type.'; return; }
-
-                if (parsedData.length === 0) { showMessage("No data found in the file or file format is incorrect.", "error"); uploadStatusDiv.textContent = 'No data found or format incorrect.'; return; }
-                await processStudentRecords(parsedData);
-                fileUploadInput.value = '';
-            } catch (error) {
-                console.error("Error reading or processing file:", error);
-                showMessage(`Error processing file: ${error.message}`, "error", 7000);
-                uploadStatusDiv.textContent = `Error: ${error.message}`; uploadStatusDiv.style.color = 'red';
-            }
-        };
-        reader.onerror = () => { showMessage("Error reading file.", "error"); uploadStatusDiv.textContent = 'Error reading file.'; uploadStatusDiv.style.color = 'red'; };
-        reader.readAsText(file);
-    }
-
-    function parseCSV(csvText) {
-        const lines = csvText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-        if (lines.length < 2) { throw new Error("CSV file must contain a header row and at least one data row."); }
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        const records = [];
-        const missingHeaders = expectedHeaders.filter(eh => !headers.includes(eh));
-        if (missingHeaders.length > 0) { throw new Error(`Missing required CSV headers: ${missingHeaders.join(', ')}. Please ensure your CSV matches the specified format.`); }
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',');
-            if (values.length !== headers.length) { console.warn(`Skipping row ${i + 1} due to column count mismatch.`); continue; }
-            const record = {};
-            headers.forEach((header, index) => { record[headerMap[header] || header] = values[index].trim(); });
-            records.push(record);
-        }
-        return records;
-    }
-
-    function parseJSON(jsonText) {
-        try {
-            const data = JSON.parse(jsonText);
-            if (!Array.isArray(data)) { throw new Error("JSON file must contain an array of student objects."); }
-            if (data.length > 0) {
-                const firstRecord = data[0];
-                const recordKeys = Object.keys(firstRecord).map(key => key.toLowerCase());
-                const missingKeys = expectedHeaders.filter(eh => !recordKeys.includes(eh));
-                if (missingKeys.length > 0) { console.warn(`JSON data might be missing expected keys: ${missingKeys.join(', ')}.`); }
-            }
-            return data;
-        } catch (error) { throw new Error(`Invalid JSON file: ${error.message}`); }
-    }
-
-    async function processStudentRecords(records) {
-        let successCount = 0; let skipCount = 0;
-        const totalRecords = records.length;
-        uploadStatusDiv.textContent = `Processing ${totalRecords} records...`; uploadStatusDiv.style.color = '#555';
-        for (let i = 0; i < totalRecords; i++) {
-            const record = records[i];
-            const studentData = {
-                name: record.name || '', course: record.course || '', season: parseInt(record.season) || 0,
-                startDate: record.startDate || record['enrollment start date'] || '',
-                endDate: record.endDate || record['enrollment end date'] || '',
-                nationalID: record.nationalID || record['national id'] || '',
-                phone: record.phone || record['phone number'] || '',
-                location: record.location || record['place of living'] || ''
-            };
-            studentData.season = parseInt(studentData.season);
-            if (isNaN(studentData.season)) studentData.season = 0;
-
-            if (!isValidKenyanPhoneNumber(studentData.phone)) {
-                console.warn(`Skipping record ${i + 1}: Invalid Kenyan phone number format for ${studentData.name}.`);
-                skipCount++;
-                continue;
-            }
-
-            const result = await addOrUpdateStudent(null, studentData);
-            if (result.success) { successCount++; } else { skipCount++; console.warn(`Skipped record ${i + 1}: ${result.message || 'Unknown error'}. Data:`, record); }
-        }
-        const message = `Upload complete! Added ${successCount} students, skipped ${skipCount} duplicates/invalid records.`;
-        showMessage(message, 'success', 7000);
-        uploadStatusDiv.textContent = message; uploadStatusDiv.style.color = '#4CAF50';
-    }
-
     if (uploadFileBtn) { uploadFileBtn.addEventListener('click', handleFileUpload); }
 
 
-    // --- Quick Action Buttons Event Listeners ---
+    // Quick Action Buttons Event Listeners
     const goToAttendanceBtn = document.getElementById('goToAttendanceBtn');
     const enterGradesBtn = document.getElementById('enterGradesBtn');
     const addStudentQuickBtn = document.getElementById('addStudentQuickBtn');
@@ -703,105 +1163,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (addStudentQuickBtn) { addStudentQuickBtn.addEventListener('click', () => {
         switchDashboardSection('student-management');
         if (addStudentFormContainer) addStudentFormContainer.style.display = 'block';
-        if (addStudentForm) addStudentForm.reset(); editingStudentId = null;
+        if (addStudentForm) addStudentForm.reset(); window.editingStudentId = null; // Use window.editingStudentId
         if (formHeading) formHeading.textContent = 'Add New Student';
         if (saveStudentButton) saveStudentButton.textContent = 'Save Student';
     }); }
 
 
-    // --- Course and Student Dropdown Population ---
-    function getUniqueCourses() { return [...new Set(students.map(s => s.course))].sort(); }
-
-    function populateCourseDropdowns() {
-        const courses = getUniqueCourses();
-        const courseFilters = [attendanceCourseFilter, gradesCourseFilter, addAssignmentCourseFilter];
-        courseFilters.forEach(filter => {
-            if (filter) {
-                const currentValue = filter.value; filter.innerHTML = '<option value="">-- All Courses --</option>';
-                if (filter.id === 'addAssignmentCourseFilter') { filter.innerHTML = '<option value="">-- Select Course --</option>'; }
-                courses.forEach(course => { const option = document.createElement('option'); option.value = course; option.textContent = course; filter.appendChild(option); });
-                filter.value = currentValue;
-            }
-        });
-    }
-
-    function populateStudentDropdowns(selectElement, course = '') {
-        if (!selectElement) return;
-        const currentValue = selectElement.value; selectElement.innerHTML = '<option value="">-- Select a Student --</option>';
-        if (selectElement.id === 'addAssignmentStudent') { selectElement.innerHTML = '<option value="">-- Select Student --</doption>'; }
-        const filteredStudents = course ? students.filter(s => s.course === course) : students;
-        filteredStudents.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
-            const option = document.createElement('option'); option.value = student.id;
-            option.textContent = student.name + (course ? '' : ` (${student.course})`);
-            selectElement.appendChild(option);
-        });
-        selectElement.value = currentValue;
-    }
-
-
-    // --- Attendance Management Functions ---
-    function getTodayDateString() {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
+    // Attendance Management Event Listeners
+    // Set initial date
     if (attendanceDateInput) { attendanceDateInput.value = getTodayDateString(); }
-
-    async function renderAttendanceTable(selectedCourse = '', selectedDate) {
-        if (!attendanceTableBody) { console.error("attendanceTableBody not found."); return; }
-        attendanceTableBody.innerHTML = '';
-        if (currentAttendanceDateDisplay) { currentAttendanceDateDisplay.textContent = selectedDate; }
-        const filteredStudents = selectedCourse ? students.filter(s => s.course === selectedCourse) : students;
-        if (filteredStudents.length === 0) {
-            attendanceTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No students found for this course/date.</td></tr>';
-            if (saveAttendanceBtn) saveAttendanceBtn.style.display = 'none'; return;
-        }
-        if (saveAttendanceBtn) saveAttendanceBtn.style.display = 'block';
-        const existingAttendance = attendanceRecords.find(rec => rec.date === selectedDate && rec.course === selectedCourse);
-        const attendanceData = existingAttendance ? existingAttendance.records : {};
-        filteredStudents.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
-            const status = attendanceData[student.id] ? attendanceData[student.id].status : 'present';
-            const notes = attendanceData[student.id] ? attendanceData[student.id].notes : '';
-            const row = attendanceTableBody.insertRow();
-            row.dataset.studentId = student.id; row.dataset.course = student.course;
-            row.innerHTML = `
-                <td data-label="Student Name">${student.name}</td>
-                <td data-label="Status">
-                    <label><input type="radio" name="status-${student.id}" value="present" ${status === 'present' ? 'checked' : ''}> Present</label>
-                    <label><input type="radio" name="status-${student.id}" value="absent" ${status === 'absent' ? 'checked' : ''}> Absent</label>
-                    <label><input type="radio" name="status-${student.id}" value="late" ${status === 'late' ? 'checked' : ''}> Late</label>
-                </td>
-                <td data-label="Notes"><input type="text" value="${notes}" placeholder="Optional notes"></td>
-                <td data-label="Course">${student.course}</td>
-            `;
-        });
-    }
-
-    async function saveAttendance() {
-        const date = attendanceDateInput.value;
-        const course = attendanceCourseFilter.value;
-        if (!date) { showMessage('Please select a date for attendance.', 'error'); return; }
-        const records = {}; let allPresent = true;
-        if (attendanceTableBody) {
-            attendanceTableBody.querySelectorAll('tr').forEach(row => {
-                const studentId = row.dataset.studentId;
-                if (studentId) {
-                    const statusInput = row.querySelector(`input[name="status-${studentId}"]:checked`);
-                    const status = statusInput ? statusInput.value : 'present';
-                    const notesInput = row.querySelector('input[type="text"]');
-                    const notes = notesInput ? notesInput.value : '';
-                    records[studentId] = { status, notes };
-                    if (status !== 'present') { allPresent = false; }
-                }
-            });
-        }
-        const existingRecord = attendanceRecords.find(rec => rec.date === date && rec.course === course);
-        const attendanceData = { date: date, course: course, records: records, allPresent: allPresent };
-        if (existingRecord) { await saveParseData('AttendanceRecord', attendanceData, existingRecord.id); }
-        else { await saveParseData('AttendanceRecord', attendanceData); }
-    }
 
     if (loadAttendanceBtn) { loadAttendanceBtn.addEventListener('click', () => {
         const selectedDate = attendanceDateInput.value; const selectedCourse = attendanceCourseFilter.value;
@@ -816,73 +1186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (saveAttendanceBtn) { saveAttendanceBtn.addEventListener('click', saveAttendance); }
 
 
-    // --- Grades Management Functions ---
-    let currentGradesStudentId = null;
-
-    async function renderGradesTable(studentId) {
-        if (!gradesTableContainer || !gradesTableBody || !currentGradesStudentName || !saveGradesBtn) { console.error("Grades management elements not found."); return; }
-        gradesTableContainer.style.display = 'block'; gradesTableBody.innerHTML = '';
-        const student = students.find(s => s.id === studentId);
-        if (!student) {
-            gradesTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Student not found.</td></tr>';
-            currentGradesStudentName.textContent = 'N/A'; if (saveGradesBtn) saveGradesBtn.style.display = 'none'; return;
-        }
-        currentGradesStudentName.textContent = student.name; currentGradesStudentId = studentId;
-        const studentGrades = grades.filter(g => g.studentId === studentId);
-        if (studentGrades.length === 0) {
-            gradesTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No grades recorded for this student yet.</td></tr>';
-            if (saveGradesBtn) saveGradesBtn.style.display = 'none'; return;
-        }
-        if (saveGradesBtn) saveGradesBtn.style.display = 'block';
-        studentGrades.forEach(grade => {
-            const row = gradesTableBody.insertRow(); row.dataset.gradeId = grade.id; row.dataset.assignmentName = grade.assignmentName;
-            const statusClass = grade.score !== null && grade.score !== undefined ? 'graded' : 'pending';
-            const statusText = grade.score !== null && grade.score !== undefined ? 'Graded' : 'Pending';
-            row.innerHTML = `
-                <td data-label="Assignment Name">${grade.assignmentName}</td>
-                <td data-label="Max Score">${grade.maxScore}</td>
-                <td data-label="Student Score"><input type="number" min="0" max="${grade.maxScore}" value="${grade.score !== null && grade.score !== undefined ? grade.score : ''}" placeholder="Enter score"></td>
-                <td data-label="Status" class="grade-status ${statusClass}">${statusText}</td>
-            `;
-            const scoreInput = row.querySelector('input[type="number"]');
-            if (scoreInput) { scoreInput.addEventListener('input', (event) => {
-                const score = event.target.value.trim(); const statusCell = row.querySelector('.grade-status');
-                if (statusCell) {
-                    if (score !== '' && !isNaN(score) && Number(score) >= 0) { statusCell.textContent = 'Graded'; statusCell.className = 'grade-status graded'; }
-                    else { statusCell.textContent = 'Pending'; statusCell.className = 'grade-status pending'; }
-                }
-            }); }
-        });
-    }
-
-    async function saveGrades() {
-        if (!currentGradesStudentId) { showMessage('No student selected to save grades for.', 'error'); return; }
-        if (!gradesTableBody) { console.error("gradesTableBody not found."); return; }
-        const gradesToUpdate = [];
-        gradesTableBody.querySelectorAll('tr').forEach(row => {
-            const gradeId = row.dataset.gradeId; const assignmentName = row.dataset.assignmentName;
-            const scoreInput = row.querySelector('input[type="number"]');
-            const newScore = scoreInput && scoreInput.value.trim() !== '' ? parseFloat(scoreInput.value) : null;
-            const maxScore = parseFloat(row.children[1].textContent);
-            const existingGrade = grades.find(g => g.id === gradeId);
-            if (existingGrade) { gradesToUpdate.push({ ...existingGrade, score: newScore }); }
-        });
-        for (const gradeItem of gradesToUpdate) { await saveParseData('Grade', gradeItem, gradeItem.id); }
-    }
-
-    async function addAssignmentToStudent(event) {
-        event.preventDefault();
-        if (!addAssignmentStudentSelect || !newAssignmentNameInput || !newAssignmentMaxScoreInput || !addAssignmentCourseFilter) { showMessage('Error: Required assignment input fields not found.', 'error'); return; }
-        const studentId = addAssignmentStudentSelect.value;
-        const assignmentName = newAssignmentNameInput.value;
-        const maxScore = parseFloat(newAssignmentMaxScoreInput.value);
-        const course = addAssignmentCourseFilter.value;
-        if (!studentId || !assignmentName || isNaN(maxScore) || maxScore <= 0) { showMessage('Please fill all assignment fields correctly.', 'error'); return; }
-        const newAssignment = { studentId: studentId, assignmentName: assignmentName, maxScore: maxScore, score: null, course: course };
-        await saveParseData('Grade', newAssignment);
-        if (addAssignmentForm) addAssignmentForm.reset();
-    }
-
+    // Grades Management Event Listeners
     if (gradesCourseFilter) { gradesCourseFilter.addEventListener('change', () => {
         const selectedCourse = gradesCourseFilter.value; populateStudentDropdowns(selectStudentForGrades, selectedCourse);
         if (gradesTableContainer) gradesTableContainer.style.display = 'none';
@@ -905,43 +1209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }); }
 
 
-    // --- Announcements Functions ---
-    async function renderAnnouncements() {
-        if (!announcementsListDiv) { console.error("announcementsListDiv not found."); return; }
-        announcementsListDiv.innerHTML = '';
-        if (announcements.length === 0) { announcementsListDiv.innerHTML = '<p>No announcements to display yet.</p>'; return; }
-        const sortedAnnouncements = [...announcements].sort((a, b) => new Date(b.date) - new Date(a.date));
-        sortedAnnouncements.forEach(announcement => {
-            const announcementItem = document.createElement('div');
-            announcementItem.classList.add('announcement-item');
-            announcementItem.innerHTML = `
-                <h4>${announcement.title}</h4>
-                <p>${announcement.content}</p>
-                <small>Posted on: ${announcement.date}</small>
-                <button class="delete-button" data-id="${announcement.id}" style="margin-top: 10px; padding: 5px 10px; font-size: 0.8rem;">Delete</button>
-            `;
-            announcementsListDiv.appendChild(announcementItem);
-        });
-        document.querySelectorAll('.announcement-item .delete-button').forEach(button => {
-            button.onclick = (event) => deleteAnnouncement(event.target.dataset.id);
-        });
-    }
-
-    async function addAnnouncement(event) {
-        event.preventDefault();
-        if (!announcementTitleInput || !announcementContentInput || !announcementDateInput) { showMessage('Error: Required announcement input fields not found.', 'error'); return; }
-        const newAnnouncement = { title: announcementTitleInput.value, content: announcementContentInput.value, date: announcementDateInput.value };
-        await saveParseData('Announcement', newAnnouncement, null);
-        if (addAnnouncementForm) addAnnouncementForm.reset();
-        if (announcementDateInput) announcementDateInput.value = getTodayDateString();
-    }
-
-    async function deleteAnnouncement(id) {
-        showConfirmDialog('Are you sure you want to delete this announcement?', async () => {
-            await deleteParseData('Announcement', id);
-        });
-    }
-
+    // Announcements Event Listeners
     if (announcementDateInput) { announcementDateInput.value = getTodayDateString(); }
     if (addAnnouncementForm) { addAnnouncementForm.addEventListener('submit', addAnnouncement); }
     if (cancelAnnouncementBtn) { cancelAnnouncementBtn.addEventListener('click', () => {
@@ -950,121 +1218,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }); }
 
 
-    // --- Reports & Analytics Functions ---
-    function updateReports() {
-        if (totalStudentsCountElement) { totalStudentsCountElement.textContent = students.length; }
-        const todayDate = getTodayDateString(); let todayAbsences = 0;
-        attendanceRecords.forEach(record => {
-            if (record.date === todayDate) {
-                for (const studentId in record.records) {
-                    if (record.records[studentId].status === 'absent') { todayAbsences++; }
-                }
-            }
-        });
-        if (todayAbsencesCountElement) { totalStudentsCountElement.textContent = todayAbsences; } // Corrected target element
-        const pendingAssignmentsCount = grades.filter(g => g.score === null).length;
-        if (pendingAssignmentsCountElement) { pendingAssignmentsCountElement.textContent = pendingAssignmentsCount; }
-        if (totalStudentsReport) totalStudentsReport.textContent = students.length;
-        if (webDevStudents) webDevStudents.textContent = students.filter(s => s.course === 'Web Development Basics').length;
-        if (graphicDesignStudents) graphicDesignStudents.textContent = students.filter(s => s.course === 'Graphic Design Intro').length;
-        if (digitalMarketingStudents) digitalMarketingStudents.textContent = students.filter(s => s.course === 'Digital Marketing Mastery').length;
-
-        let totalAttendanceEntries = 0; let totalPresent = 0; let totalAbsent = 0; let totalLate = 0;
-        const studentAttendanceCounts = {};
-        attendanceRecords.forEach(record => {
-            for (const studentId in record.records) {
-                if (!studentAttendanceCounts[studentId]) { studentAttendanceCounts[studentId] = { present: 0, absent: 0, late: 0 }; }
-                const status = record.records[studentId].status;
-                if (status === 'present') { totalPresent++; studentAttendanceCounts[studentId].present++; }
-                else if (status === 'absent') { totalAbsent++; studentAttendanceCounts[studentId].absent++; }
-                else if (status === 'late') { totalLate++; studentAttendanceCounts[studentId].late++; }
-                totalAttendanceEntries++;
-            }
-        });
-        const overallPresentRateVal = totalAttendanceEntries > 0 ? ((totalPresent / totalAttendanceEntries) * 100).toFixed(2) : 0;
-        const overallAbsentRateVal = totalAttendanceEntries > 0 ? ((totalAbsent / totalAttendanceEntries) * 100).toFixed(2) : 0;
-        if (overallPresentRate) { overallPresentRate.textContent = `${overallPresentRateVal}%`; }
-        if (overallAbsentRate) { overallAbsentRate.textContent = `${overallAbsentRateVal}%`; }
-        if (absenteeStudentsList) {
-            absenteeStudentsList.innerHTML = '';
-            const absentStudents = [];
-            for (const studentId in studentAttendanceCounts) {
-                const student = students.find(s => s.id === studentId);
-                if (student && (studentAttendanceCounts[studentId].absent > 0 || studentAttendanceCounts[studentId].late > 0)) {
-                    absentStudents.push({ name: student.name, absent: studentAttendanceCounts[studentId].absent, late: studentAttendanceCounts[studentId].late });
-                }
-            }
-            if (absentStudents.length > 0) {
-                absentStudents.sort((a, b) => (b.absent + b.late) - (a.absent + a.late));
-                absentStudents.forEach(s => { const li = document.createElement('li'); li.textContent = `${s.name}: ${s.absent} Absent, ${s.late} Late`; absenteeStudentsList.appendChild(li); });
-            } else { absenteeStudentsList.innerHTML = '<li>No significant absences recorded.</li>'; }
-        }
-
-        let totalAssignmentsGradedCount = grades.filter(g => g.score !== null).length;
-        if (totalGradedAssignments) { totalGradedAssignments.textContent = totalAssignmentsGradedCount; }
-        if (totalPendingAssignmentsReport) { totalPendingAssignmentsReport.textContent = pendingAssignmentsCount; }
-        const studentAverageGrades = {};
-        const assignmentAverageScores = {};
-        grades.forEach(grade => {
-            if (grade.score !== null && grade.score !== undefined) {
-                if (!studentAverageGrades[grade.studentId]) { studentAverageGrades[grade.studentId] = { totalScore: 0, totalMaxScore: 0, count: 0, avg: 0 }; }
-                studentAverageGrades[grade.studentId].totalScore += grade.score;
-                studentAverageGrades[grade.studentId].totalMaxScore += grade.maxScore;
-                studentAverageGrades[grade.studentId].count++;
-                if (!assignmentAverageScores[grade.assignmentName]) { assignmentAverageScores[grade.assignmentName] = { totalScore: 0, totalMaxScore: 0, count: 0, avg: 0 }; }
-                assignmentAverageScores[grade.assignmentName].totalScore += grade.score;
-                assignmentAverageScores[grade.assignmentName].totalMaxScore += grade.maxScore;
-                assignmentAverageScores[grade.assignmentName].count++;
-            }
-        });
-
-        for (const studentId in studentAverageGrades) { const studentData = studentAverageGrades[studentId]; studentData.avg = (studentData.totalScore / studentData.totalMaxScore) * 100 || 0; }
-        for (const assignmentName in assignmentAverageScores) { const assignmentData = assignmentAverageScores[assignmentName]; assignmentData.avg = (assignmentData.totalScore / assignmentData.totalMaxScore) * 100 || 0; }
-        if (topStudentsList) {
-            topStudentsList.innerHTML = '';
-            const sortedStudentsByGrade = Object.keys(studentAverageGrades)
-                .map(id => ({ id, name: students.find(s => s.id === id)?.name || 'Unknown Student', avg: studentAverageGrades[id].avg }))
-                .sort((a, b) => b.avg - a.avg).slice(0, 5);
-            if (sortedStudentsByGrade.length > 0) {
-                sortedStudentsByGrade.forEach(s => { const li = document.createElement('li'); li.textContent = `${s.name}: ${s.avg.toFixed(2)}%`; topStudentsList.appendChild(li); });
-            } else { topStudentsList.innerHTML = '<li>No graded assignments yet.</li>'; }
-        }
-
-        if (lowPerformingAssignments) {
-            lowPerformingAssignments.innerHTML = '';
-            const sortedAssignmentsByGrade = Object.keys(assignmentAverageScores)
-                .map(name => ({ name, avg: assignmentAverageScores[name].avg }))
-                .sort((a, b) => a.avg - b.avg).slice(0, 5);
-            if (sortedAssignmentsByGrade.length > 0) {
-                sortedAssignmentsByGrade.forEach(a => { const li = document.createElement('li'); li.textContent = `${a.name}: ${a.avg.toFixed(2)}%`; lowPerformingAssignments.appendChild(li); });
-            } else { lowPerformingAssignments.innerHTML = '<li>No graded assignments yet.</li>'; }
-        }
-
-        const courseCounts = {};
-        students.forEach(student => { courseCounts[student.course] = (courseCounts[student.course] || 0) + 1; });
-        if (coursePopularityList) {
-            coursePopularityList.innerHTML = '';
-            const sortedCourses = Object.keys(courseCounts).sort((a, b) => courseCounts[b] - courseCounts[a]);
-            if (sortedCourses.length > 0) {
-                sortedCourses.forEach(course => { const li = document.createElement('li'); li.textContent = `${course}: ${courseCounts[course]} students`; coursePopularityList.appendChild(li); });
-            } else { coursePopularityList.innerHTML = '<li>No courses with students yet.</li>'; }
-        }
-    }
-
-
-    // --- Settings Functions ---
-    function loadSettings() {
-        if (themeSelect) {
-            const savedTheme = localStorage.getItem('schoolflowTheme');
-            if (savedTheme) { themeSelect.value = savedTheme; applyTheme(savedTheme); }
-        }
-        if (notificationsToggle) {
-            const savedNotifications = localStorage.getItem('schoolflowNotifications');
-            if (savedNotifications !== null) { notificationsToggle.checked = (savedNotifications === 'true'); }
-        }
-    }
-
-    function applyTheme(theme) { console.log(`Applying theme: ${theme}`); }
+    // Settings Event Listeners
     if (themeSelect) { themeSelect.addEventListener('change', () => {
         const selectedTheme = themeSelect.value; applyTheme(selectedTheme);
     }); loadSettings(); }
