@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Attendance Management Section Elements ---
     const attendanceCourseFilter = document.getElementById('attendanceCourseFilter');
-    const attendanceDateInput = document = document.getElementById('attendanceDate');
+    const attendanceDateInput = document.getElementById('attendanceDate'); // CORRECTED LINE
     const loadAttendanceBtn = document.getElementById('loadAttendanceBtn');
     const attendanceTableBody = document.getElementById('attendanceTableBody');
     const currentAttendanceDateDisplay = document.getElementById('currentAttendanceDateDisplay');
