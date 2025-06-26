@@ -1176,7 +1176,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (goToAttendanceBtn) { goToAttendanceBtn.addEventListener('click', () => { switchDashboardSection('attendance-management'); }); }
-    if (enterGradesBtn) { enterGradesBtn.addEventListener('click', () => { switchDashboardSection('grades-management'); }); });
+    // CORRECTED LINE: Removed the extra ')'
+    if (enterGradesBtn) { enterGradesBtn.addEventListener('click', () => { switchDashboardSection('grades-management'); }); }
     if (addStudentQuickBtn) { addStudentQuickBtn.addEventListener('click', () => {
         switchDashboardSection('student-management');
         if (addStudentFormContainer) addStudentFormContainer.style.display = 'block';
