@@ -769,7 +769,337 @@ async function deleteAnnouncement(id) {
     });
 }
 
+// --- CHART RENDERING FUNCTIONS ---
 
+/**
+ * Renders the Course Popularity Bar Chart.
+ * Destroys any existing chart instance before creating a new one.
+ */
+function renderCoursePopularityChart() {
+    const ctx = document.getElementById('coursePopularityChart');
+    if (!ctx) { console.warn("Course Popularity Chart canvas not found."); return; }
+
+    // Destroy existing chart instance if it exists
+    if (coursePopularityChartInstance) {
+        coursePopularityChartInstance.destroy();
+    }
+
+    const courseCounts = {};
+    students.forEach(student => {
+        courseCounts[student.course] = (courseCounts[student.course] || 0) + 1;
+    });
+
+    const labels = Object.keys(courseCounts).sort();
+    const data = labels.map(course => courseCounts[course]);
+
+    coursePopularityChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Number of Students',
+                data: data,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)', // Red
+                    'rgba(54, 162, 235, 0.7)', // Blue
+                    'rgba(255, 206, 86, 0.7)', // Yellow
+                    'rgba(75, 192, 192, 0.7)', // Green
+                    'rgba(153, 102, 255, 0.7)',// Purple
+                    'rgba(255, 159, 64, 0.7)'  // Orange
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false, // Allow canvas to resize freely
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Students'
+                    },
+                    ticks: {
+                        stepSize: 1 // Ensure whole numbers for student count
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Course/Program'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false // No need for legend with single dataset
+                },
+                title: {
+                    display: true,
+                    text: 'Student Enrollment by Course'
+                }
+            }
+        }
+    });
+    console.log("[Charts] Course Popularity Chart rendered.");
+}
+
+/**
+ * Renders the Overall Attendance Doughnut Chart.
+ * Destroys any existing chart instance before creating a new one.
+ */
+function renderOverallAttendanceChart() {
+    const ctx = document.getElementById('overallAttendanceChart');
+    if (!ctx) { console.warn("Overall Attendance Chart canvas not found."); return; }
+
+    if (overallAttendanceChartInstance) {
+        overallAttendanceChartInstance.destroy();
+    }
+
+    let totalPresent = 0;
+    let totalAbsent = 0;
+    let totalLate = 0;
+
+    attendanceRecords.forEach(record => {
+        for (const studentId in record.records) {
+            const status = record.records[studentId].status;
+            if (status === 'present') {
+                totalPresent++;
+            } else if (status === 'absent') {
+                totalAbsent++;
+            } else if (status === 'late') {
+                totalLate++;
+            }
+        }
+    });
+
+    const data = [totalPresent, totalAbsent, totalLate];
+    const labels = ['Present', 'Absent', 'Late'];
+    const backgroundColors = [
+        'rgba(75, 192, 192, 0.7)', // Green for Present
+        'rgba(255, 99, 132, 0.7)', // Red for Absent
+        'rgba(255, 159, 64, 0.7)'  // Orange for Late
+    ];
+    const borderColors = [
+        'rgba(75, 192, 192, 1)',
+        'rgba(255, 99, 132, 1)',
+        'rgba(255, 159, 64, 1)'
+    ];
+
+    overallAttendanceChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: backgroundColors,
+                borderColor: borderColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Overall Attendance Breakdown'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed !== null) {
+                                label += context.parsed;
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    console.log("[Charts] Overall Attendance Chart rendered.");
+}
+
+/**
+ * Renders the Top 5 Students by Average Grade Bar Chart.
+ * Destroys any existing chart instance before creating a new one.
+ */
+function renderTopStudentsChart() {
+    const ctx = document.getElementById('topStudentsChart');
+    if (!ctx) { console.warn("Top Students Chart canvas not found."); return; }
+
+    if (topStudentsChartInstance) {
+        topStudentsChartInstance.destroy();
+    }
+
+    const studentAverageGrades = {};
+    grades.forEach(grade => {
+        if (grade.score !== null && grade.score !== undefined && grade.maxScore > 0) {
+            if (!studentAverageGrades[grade.studentId]) {
+                studentAverageGrades[grade.studentId] = { totalScore: 0, totalMaxScore: 0 };
+            }
+            studentAverageGrades[grade.studentId].totalScore += grade.score;
+            studentAverageGrades[grade.studentId].totalMaxScore += grade.maxScore;
+        }
+    });
+
+    const sortedStudentsByGrade = Object.keys(studentAverageGrades)
+        .map(id => {
+            const studentData = studentAverageGrades[id];
+            const avg = (studentData.totalScore / studentData.totalMaxScore) * 100 || 0;
+            return { id, name: students.find(s => s.id === id)?.name || 'Unknown Student', avg: parseFloat(avg.toFixed(2)) };
+        })
+        .sort((a, b) => b.avg - a.avg) // Sort descending
+        .slice(0, 5); // Get top 5
+
+    const labels = sortedStudentsByGrade.map(s => s.name);
+    const data = sortedStudentsByGrade.map(s => s.avg);
+
+    topStudentsChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Average Grade (%)',
+                data: data,
+                backgroundColor: 'rgba(54, 162, 235, 0.7)', // Blue
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y', // Make it a horizontal bar chart
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Student Name'
+                    }
+                },
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Average Grade (%)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Top 5 Students by Average Grade'
+                }
+            }
+        }
+    });
+    console.log("[Charts] Top Students Chart rendered.");
+}
+
+/**
+ * Renders the Lowest 5 Performing Assignments Bar Chart.
+ * Destroys any existing chart instance before creating a new one.
+ */
+function renderLowPerformingAssignmentsChart() {
+    const ctx = document.getElementById('lowPerformingAssignmentsChart');
+    if (!ctx) { console.warn("Lowest Performing Assignments Chart canvas not found."); return; }
+
+    if (lowPerformingAssignmentsChartInstance) {
+        lowPerformingAssignmentsChartInstance.destroy();
+    }
+
+    const assignmentAverageScores = {};
+    grades.forEach(grade => {
+        if (grade.score !== null && grade.score !== undefined && grade.maxScore > 0) {
+            if (!assignmentAverageScores[grade.assignmentName]) {
+                assignmentAverageScores[grade.assignmentName] = { totalScore: 0, totalMaxScore: 0 };
+            }
+            assignmentAverageScores[grade.assignmentName].totalScore += grade.score;
+            assignmentAverageScores[grade.assignmentName].totalMaxScore += grade.maxScore;
+        }
+    });
+
+    const sortedAssignmentsByGrade = Object.keys(assignmentAverageScores)
+        .map(name => {
+            const assignmentData = assignmentAverageScores[name];
+            const avg = (assignmentData.totalScore / assignmentData.totalMaxScore) * 100 || 0;
+            return { name, avg: parseFloat(avg.toFixed(2)) };
+        })
+        .sort((a, b) => a.avg - b.avg) // Sort ascending for lowest
+        .slice(0, 5); // Get lowest 5
+
+    const labels = sortedAssignmentsByGrade.map(a => a.name);
+    const data = sortedAssignmentsByGrade.map(a => a.avg);
+
+    lowPerformingAssignmentsChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Average Score (%)',
+                data: data,
+                backgroundColor: 'rgba(255, 99, 132, 0.7)', // Red
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y', // Make it a horizontal bar chart
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Assignment Name'
+                    }
+                },
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Average Score (%)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Lowest 5 Performing Assignments'
+                }
+            }
+        }
+    });
+    console.log("[Charts] Lowest Performing Assignments Chart rendered.");
+}
 // Reports & Analytics Functions
 function updateReports() {
     const totalStudentsCountElement = document.getElementById('totalStudentsCount');
@@ -877,8 +1207,8 @@ function updateReports() {
         } else { lowPerformingAssignments.innerHTML = '<li>No graded assignments yet.</li>'; }
     }
 
-    const courseCounts = {};
-    students.forEach(student => { courseCounts[student.course] = (courseCounts[student.course] || 0) + 1; });
+  // The coursePopularityList is now replaced by a chart, so this list population is no longer strictly necessary
+    // but keeping it here for robustness if other parts of the code might still reference it.
     if (coursePopularityList) {
         coursePopularityList.innerHTML = '';
         const sortedCourses = Object.keys(courseCounts).sort((a, b) => courseCounts[b] - courseCounts[a]);
@@ -886,7 +1216,12 @@ function updateReports() {
             sortedCourses.forEach(course => { const li = document.createElement('li'); li.textContent = `${course}: ${courseCounts[course]} students`; coursePopularityList.appendChild(li); });
         } else { coursePopularityList.innerHTML = '<li>No courses with students yet.</li>'; }
     }
-}
+
+    // --- NEW: Render Charts ---
+    renderCoursePopularityChart();
+    renderOverallAttendanceChart(); // NEW
+    renderTopStudentsChart();       // NEW
+    renderLowPerformingAssignmentsChart(); // NEW
 
 
 // Settings Functions
