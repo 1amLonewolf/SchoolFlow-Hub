@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="dashboard.css">
     <!-- FontAwesome for hamburger icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+     <!-- NEW: Chart.js CDN for charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="dashboard-container">
@@ -307,7 +309,7 @@
                 <h2>Reports & Analytics</h2>
                 <p>Generate various reports and gain insights here.</p>
 
-                <div class="reports-grid">
+               <div class="reports-grid">
                     <div class="card report-card">
                         <h3>Student Enrollment Summary</h3>
                         <div class="report-content" id="studentEnrollmentSummary">
@@ -317,6 +319,58 @@
                             <p>Students in Digital Marketing Mastery: <span id="digitalMarketingStudents">0</span></p>
                             <!-- More detailed enrollment trends could go here -->
                         </div>
+                    </div>
+
+                    <!-- NEW CHART: Course Popularity -->
+                    <div class="card chart-card">
+                        <h3>Course Popularity</h3>
+                        <canvas id="coursePopularityChart"></canvas>
+                    </div>
+
+                    <div class="card report-card">
+                        <h3>Attendance Overview</h3>
+                        <div class="report-content" id="attendanceOverview">
+                            <p>Overall Present Rate: <span id="overallPresentRate">0%</span></p>
+                            <p>Overall Absent Rate: <span id="overallAbsentRate">0%</span></p>
+                            <h4>Absenteeism by Student:</h4>
+                            <ul id="absenteeStudentsList">
+                                <!-- Populated by JS -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- NEW CHART: Overall Attendance Breakdown -->
+                    <div class="card chart-card">
+                        <h3>Overall Attendance Breakdown</h3>
+                        <canvas id="overallAttendanceChart"></canvas>
+                    </div>
+
+                    <div class="card report-card">
+                        <h3>Grade Performance Summary</h3>
+                        <div class="report-content" id="gradePerformanceSummary">
+                            <p>Total Assignments Graded: <span id="totalGradedAssignments">0</span></p>
+                            <p>Total Assignments Pending: <span id="totalPendingAssignmentsReport">0</span></p>
+                            <h4>Top Performing Students (by average grade):</h4>
+                            <ol id="topStudentsList">
+                                <!-- Populated by JS -->
+                            </ol>
+                            <h4>Assignments with Lowest Average Scores:</h4>
+                            <ul id="lowPerformingAssignments">
+                                <!-- Populated by JS -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- NEW CHART: Top 5 Students -->
+                    <div class="card chart-card">
+                        <h3>Top 5 Students by Average Grade</h3>
+                        <canvas id="topStudentsChart"></canvas>
+                    </div>
+
+                    <!-- NEW CHART: Lowest 5 Performing Assignments -->
+                    <div class="card chart-card">
+                        <h3>Lowest 5 Performing Assignments</h3>
+                        <canvas id="lowPerformingAssignmentsChart"></canvas>
                     </div>
 
                     <div class="card report-card">

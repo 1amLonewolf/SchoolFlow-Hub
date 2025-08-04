@@ -11,6 +11,11 @@ let attendanceRecords = [];
 let grades = [];
 let announcements = [];
 
+// NEW: Chart instances (to destroy and re-create on updates to prevent memory leaks)
+let coursePopularityChartInstance = null;
+let overallAttendanceChartInstance = null;
+let topStudentsChartInstance = null;
+let lowPerformingAssignmentsChartInstance = null;
 // --- UTILITY FUNCTIONS ---
 
 // Utility for displaying messages (replaces alert)
