@@ -11,11 +11,16 @@ let attendanceRecords = [];
 let grades = [];
 let announcements = [];
 
-// NEW: Chart instances (to destroy and re-create on updates to prevent memory leaks)
+// Chart instances (to destroy and re-create on updates to prevent memory leaks)
 let coursePopularityChartInstance = null;
 let overallAttendanceChartInstance = null;
 let topStudentsChartInstance = null;
 let lowPerformingAssignmentsChartInstance = null;
+
+// Global state for student editing
+window.editingStudentId = null;
+
+
 // --- UTILITY FUNCTIONS ---
 
 // Utility for displaying messages (replaces alert)
@@ -131,13 +136,6 @@ function parseObjectToJson(parseObject) {
     json.id = json.objectId; // Map Parse objectId to 'id' for consistency
     delete json.objectId;
     delete json.className;
-    // If 'user' is a pointer, it will be an object {__type: "Pointer", className: "_User", objectId: "..."}
-    // We only need the objectId from it if we are explicitly storing it as a field.
-    // For now, we'll keep it as is, or you could optionally flatten it like:
-    // if (json.user && json.user.__type === "Pointer") {
-    //    json.userId = json.user.objectId;
-    //    delete json.user;
-    // }
     return json;
 }
 
@@ -169,7 +167,7 @@ async function saveParseData(className, data, id = null) {
             }
             obj.setACL(acl);
 
-            // --- IMPORTANT CHANGE: Set 'user' pointer for private data ---
+            // Set 'user' pointer for private data
             if (className !== 'Announcement') {
                 obj.set("user", Parse.User.current()); // Link the object to the current user
             }
@@ -185,7 +183,7 @@ async function saveParseData(className, data, id = null) {
         await obj.save();
         showMessage('Data saved successfully!', 'success');
         console.log(`[saveParseData] Data saved for class: ${className}. Reloading all data...`);
-        await loadAllData(); // <--- This should trigger the UI refresh
+        await loadAllData(); // This should trigger the UI refresh
         return obj.id;
     } catch (e) {
         console.error("Error saving document: ", e);
@@ -216,7 +214,7 @@ async function deleteParseData(className, id) {
 }
 
 // Function to load data from Parse (explicit fetch, not LiveQuery)
-async function loadParseData(className, isPublic = false) {
+async function loadParseData(className) {
     if (!Parse.User.current()) {
         console.warn(`User not logged in. Cannot load ${className} data.`);
         return [];
@@ -226,11 +224,11 @@ async function loadParseData(className, isPublic = false) {
     const query = new Parse.Query(ParseObject);
 
     if (className !== 'Announcement') { // Private data (Students, Attendance, Grades)
-        // --- IMPORTANT CHANGE: Filter by 'user' pointer ---
+        // Filter by 'user' pointer for private data
         query.equalTo("user", Parse.User.current());
     } else { // Public data (Announcements)
-        query.limit(1000); // Set a limit for announcements to avoid fetching too much data
-        query.descending("createdAt"); // Sort by newest first for announcements
+        query.limit(1000); // Set a limit for announcements
+        query.descending("createdAt"); // Sort by newest first
     }
 
     try {
@@ -246,14 +244,11 @@ async function loadParseData(className, isPublic = false) {
 
 // --- UI RENDERING & DATA MANAGEMENT FUNCTIONS ---
 
-let currentGradesStudentId = null; // Declare this globally
-
 // Student Management Functions
 function renderStudentTable() {
     const studentTableBody = document.querySelector('#studentTable tbody');
     if (!studentTableBody) { console.error("studentTableBody not found."); return; }
     console.log(`[renderStudentTable] Starting render. Current 'students' array length: ${students.length}`);
-    students.forEach(s => console.log(`[renderStudentTable] Student: ${s.name}, ID: ${s.id}`)); // Log each student
 
     studentTableBody.innerHTML = ''; // Clear existing rows
     if (students.length === 0) {
@@ -278,10 +273,10 @@ function renderStudentTable() {
         `;
     });
     // Re-attach event listeners to new buttons
-    document.querySelectorAll('.edit-button').forEach(button => {
+    document.querySelectorAll('#studentTable .edit-button').forEach(button => {
         button.onclick = (event) => editStudent(event.target.dataset.id);
     });
-    document.querySelectorAll('.delete-button').forEach(button => {
+    document.querySelectorAll('#studentTable .delete-button').forEach(button => {
         button.onclick = (event) => deleteStudent(event.target.dataset.id);
     });
     console.log("[renderStudentTable] Finished rendering student table.");
@@ -299,7 +294,6 @@ async function addOrUpdateStudent(event, studentDataFromUpload = null) {
     if (event && event.preventDefault) { event.preventDefault(); }
     let studentData;
 
-    // References to DOM elements, defined here for clarity if called outside DOMContentLoaded
     const studentNameInput = document.getElementById('studentName');
     const courseEnrolledInput = document.getElementById('courseEnrolled');
     const seasonNumberInput = document.getElementById('seasonNumber');
@@ -348,10 +342,7 @@ async function addOrUpdateStudent(event, studentDataFromUpload = null) {
 
     let isDuplicate = false;
     let duplicateMessage = '';
-    // Assume `editingStudentId` is available from an outer scope or passed.
-    // For this to work, editingStudentId must be a global variable or passed as an argument.
-    // Given the current structure, it's typically a global within the DOMContentLoaded scope.
-    const studentsToCheck = students.filter(s => s.id !== (window.editingStudentId || null)); // Access via window.editingStudentId if it's set in DOMContentLoaded
+    const studentsToCheck = students.filter(s => s.id !== (window.editingStudentId || null));
 
     if (studentData.nationalID !== '') {
         isDuplicate = studentsToCheck.some(s => s.nationalID === studentData.nationalID);
@@ -359,7 +350,7 @@ async function addOrUpdateStudent(event, studentDataFromUpload = null) {
             duplicateMessage = `A student with National ID '${studentData.nationalID}' already exists.`;
         }
     }
-    if (!isDuplicate && studentData.nationalID === '') {
+    if (!isDuplicate && studentData.nationalID === '') { // If National ID is empty, check by name/course/season
          isDuplicate = studentsToCheck.some(s =>
             s.name.toLowerCase() === studentData.name.toLowerCase() &&
             s.course.toLowerCase() === studentData.course.toLowerCase() &&
@@ -377,7 +368,7 @@ async function addOrUpdateStudent(event, studentDataFromUpload = null) {
     }
 
     let savedId = null;
-    if (window.editingStudentId) { // Access via window for global scope
+    if (window.editingStudentId) {
         savedId = await saveParseData('Student', studentData, window.editingStudentId);
     } else {
         savedId = await saveParseData('Student', studentData);
@@ -386,7 +377,7 @@ async function addOrUpdateStudent(event, studentDataFromUpload = null) {
     if (!studentDataFromUpload) {
         if (addStudentForm) addStudentForm.reset();
         if (addStudentFormContainer) addStudentFormContainer.style.display = 'none';
-        window.editingStudentId = null; // Set to null globally
+        window.editingStudentId = null;
         if (formHeading) formHeading.textContent = 'Add New Student';
         if (saveStudentButton) saveStudentButton.textContent = 'Save Student';
     }
@@ -394,7 +385,6 @@ async function addOrUpdateStudent(event, studentDataFromUpload = null) {
 }
 
 function editStudent(id) {
-    // References to DOM elements
     const studentNameInput = document.getElementById('studentName');
     const courseEnrolledInput = document.getElementById('courseEnrolled');
     const seasonNumberInput = document.getElementById('seasonNumber');
@@ -421,7 +411,7 @@ function editStudent(id) {
 
         if (formHeading) formHeading.textContent = `Edit Student: ${studentToEdit.name}`;
         if (addStudentFormContainer) addStudentFormContainer.style.display = 'block';
-        window.editingStudentId = id; // Set to global scope
+        window.editingStudentId = id;
         if (saveStudentButton) saveStudentButton.textContent = 'Update Student';
     }
 }
@@ -512,7 +502,7 @@ function parseJSON(jsonText) {
 async function processStudentRecords(records) {
     let successCount = 0; let skipCount = 0;
     const totalRecords = records.length;
-    const uploadStatusDiv = document.getElementById('uploadStatus'); // Re-get inside function for robustness
+    const uploadStatusDiv = document.getElementById('uploadStatus');
     if (uploadStatusDiv) {
         uploadStatusDiv.textContent = `Processing ${totalRecords} records...`; uploadStatusDiv.style.color = '#555';
     }
@@ -650,6 +640,8 @@ async function saveAttendance() {
 }
 
 // Grades Management Functions
+let currentGradesStudentId = null; // Re-declare locally for clarity, though it's global too.
+
 async function renderGradesTable(studentId) {
     const gradesTableContainer = document.getElementById('gradesTableContainer');
     const gradesTableBody = document.getElementById('gradesTableBody');
@@ -768,6 +760,7 @@ async function deleteAnnouncement(id) {
         await deleteParseData('Announcement', id);
     });
 }
+
 
 // --- CHART RENDERING FUNCTIONS ---
 
@@ -950,22 +943,17 @@ function renderTopStudentsChart() {
     }
 
     const studentAverageGrades = {};
-    grades.forEach(grade => {
-        if (grade.score !== null && grade.score !== undefined && grade.maxScore > 0) {
-            if (!studentAverageGrades[grade.studentId]) {
-                studentAverageGrades[grade.studentId] = { totalScore: 0, totalMaxScore: 0 };
-            }
-            studentAverageGrades[grade.studentId].totalScore += grade.score;
-            studentAverageGrades[grade.studentId].totalMaxScore += grade.maxScore;
+    students.forEach(student => {
+        const studentGrades = grades.filter(g => g.studentId === student.id && g.score !== null && g.score !== undefined && g.maxScore > 0);
+        if (studentGrades.length > 0) {
+            const totalScore = studentGrades.reduce((sum, g) => sum + g.score, 0);
+            const totalMaxScore = studentGrades.reduce((sum, g) => sum + g.maxScore, 0);
+            studentAverageGrades[student.id] = (totalScore / totalMaxScore) * 100;
         }
     });
 
     const sortedStudentsByGrade = Object.keys(studentAverageGrades)
-        .map(id => {
-            const studentData = studentAverageGrades[id];
-            const avg = (studentData.totalScore / studentData.totalMaxScore) * 100 || 0;
-            return { id, name: students.find(s => s.id === id)?.name || 'Unknown Student', avg: parseFloat(avg.toFixed(2)) };
-        })
+        .map(id => ({ id, name: students.find(s => s.id === id)?.name || 'Unknown Student', avg: parseFloat(studentAverageGrades[id].toFixed(2)) }))
         .sort((a, b) => b.avg - a.avg) // Sort descending
         .slice(0, 5); // Get top 5
 
@@ -1031,28 +1019,29 @@ function renderLowPerformingAssignmentsChart() {
         lowPerformingAssignmentsChartInstance.destroy();
     }
 
-    const assignmentAverageScores = {};
+    const assignmentScores = {}; // Stores { assignmentName: { totalScore: X, totalMaxScore: Y, count: Z } }
     grades.forEach(grade => {
         if (grade.score !== null && grade.score !== undefined && grade.maxScore > 0) {
-            if (!assignmentAverageScores[grade.assignmentName]) {
-                assignmentAverageScores[grade.assignmentName] = { totalScore: 0, totalMaxScore: 0 };
+            if (!assignmentScores[grade.assignmentName]) {
+                assignmentScores[grade.assignmentName] = { totalScore: 0, totalMaxScore: 0, count: 0 };
             }
-            assignmentAverageScores[grade.assignmentName].totalScore += grade.score;
-            assignmentAverageScores[grade.assignmentName].totalMaxScore += grade.maxScore;
+            assignmentScores[grade.assignmentName].totalScore += grade.score;
+            assignmentScores[grade.assignmentName].totalMaxScore += grade.maxScore;
+            assignmentScores[grade.assignmentName].count++;
         }
     });
 
-    const sortedAssignmentsByGrade = Object.keys(assignmentAverageScores)
+    const sortedAssignmentsByAvg = Object.keys(assignmentScores)
         .map(name => {
-            const assignmentData = assignmentAverageScores[name];
-            const avg = (assignmentData.totalScore / assignmentData.totalMaxScore) * 100 || 0;
+            const data = assignmentScores[name];
+            const avg = (data.totalScore / data.totalMaxScore) * 100;
             return { name, avg: parseFloat(avg.toFixed(2)) };
         })
-        .sort((a, b) => a.avg - b.avg) // Sort ascending for lowest
+        .sort((a, b) => a.avg - b.avg) // Sort ascending for lowest performing
         .slice(0, 5); // Get lowest 5
 
-    const labels = sortedAssignmentsByGrade.map(a => a.name);
-    const data = sortedAssignmentsByGrade.map(a => a.avg);
+    const labels = sortedAssignmentsByAvg.map(a => a.name);
+    const data = sortedAssignmentsByAvg.map(a => a.avg);
 
     lowPerformingAssignmentsChartInstance = new Chart(ctx, {
         type: 'bar',
@@ -1100,7 +1089,9 @@ function renderLowPerformingAssignmentsChart() {
     });
     console.log("[Charts] Lowest Performing Assignments Chart rendered.");
 }
-// Reports & Analytics Functions
+
+
+// Reports & Analytics Functions (Updated to call chart rendering functions)
 function updateReports() {
     const totalStudentsCountElement = document.getElementById('totalStudentsCount');
     const todayAbsencesCountElement = document.getElementById('todayAbsencesCount');
@@ -1116,7 +1107,7 @@ function updateReports() {
     const totalPendingAssignmentsReport = document.getElementById('totalPendingAssignmentsReport');
     const topStudentsList = document.getElementById('topStudentsList');
     const lowPerformingAssignments = document.getElementById('lowPerformingAssignments');
-    const coursePopularityList = document.getElementById('coursePopularityList');
+    // const coursePopularityList = document.getElementById('coursePopularityList'); // This list is now replaced by chart, but keeping for safety if referenced elsewhere.
 
 
     if (totalStudentsCountElement) { totalStudentsCountElement.textContent = students.length; }
@@ -1170,58 +1161,13 @@ function updateReports() {
     let totalAssignmentsGradedCount = grades.filter(g => g.score !== null).length;
     if (totalGradedAssignments) { totalGradedAssignments.textContent = totalAssignmentsGradedCount; }
     if (totalPendingAssignmentsReport) { totalPendingAssignmentsReport.textContent = pendingAssignmentsCount; }
-    const studentAverageGrades = {};
-    const assignmentAverageScores = {};
-    grades.forEach(grade => {
-        if (grade.score !== null && grade.score !== undefined) {
-            if (!studentAverageGrades[grade.studentId]) { studentAverageGrades[grade.studentId] = { totalScore: 0, totalMaxScore: 0, count: 0, avg: 0 }; }
-            studentAverageGrades[grade.studentId].totalScore += grade.score;
-            studentAverageGrades[grade.studentId].totalMaxScore += grade.maxScore;
-            studentAverageGrades[grade.studentId].count++;
-            if (!assignmentAverageScores[grade.assignmentName]) { assignmentAverageScores[grade.assignmentName] = { totalScore: 0, totalMaxScore: 0, count: 0, avg: 0 }; }
-            assignmentAverageScores[grade.assignmentName].totalScore += grade.score;
-            assignmentAverageScores[grade.assignmentName].totalMaxScore += grade.maxScore;
-            assignmentAverageScores[grade.assignmentName].count++;
-        }
-    });
-
-    for (const studentId in studentAverageGrades) { const studentData = studentAverageGrades[studentId]; studentData.avg = (studentData.totalScore / studentData.totalMaxScore) * 100 || 0; }
-    for (const assignmentName in assignmentAverageScores) { const assignmentData = assignmentAverageScores[assignmentName]; assignmentData.avg = (assignmentData.totalScore / assignmentData.totalMaxScore) * 100 || 0; }
-    if (topStudentsList) {
-        topStudentsList.innerHTML = '';
-        const sortedStudentsByGrade = Object.keys(studentAverageGrades)
-            .map(id => ({ id, name: students.find(s => s.id === id)?.name || 'Unknown Student', avg: studentAverageGrades[id].avg }))
-            .sort((a, b) => b.avg - a.avg).slice(0, 5);
-        if (sortedStudentsByGrade.length > 0) {
-            sortedStudentsByGrade.forEach(s => { const li = document.createElement('li'); li.textContent = `${s.name}: ${s.avg.toFixed(2)}%`; topStudentsList.appendChild(li); });
-        } else { topStudentsList.innerHTML = '<li>No graded assignments yet.</li>'; }
-    }
-
-    if (lowPerformingAssignments) {
-        lowPerformingAssignments.innerHTML = '';
-        const sortedAssignmentsByGrade = Object.keys(assignmentAverageScores)
-            .map(name => ({ name, avg: assignmentAverageScores[name].avg }))
-            .sort((a, b) => a.avg - b.avg).slice(0, 5);
-        if (sortedAssignmentsByGrade.length > 0) {
-            sortedAssignmentsByGrade.forEach(a => { const li = document.createElement('li'); li.textContent = `${a.name}: ${a.avg.toFixed(2)}%`; lowPerformingAssignments.appendChild(li); });
-        } else { lowPerformingAssignments.innerHTML = '<li>No graded assignments yet.</li>'; }
-    }
-
-  // The coursePopularityList is now replaced by a chart, so this list population is no longer strictly necessary
-    // but keeping it here for robustness if other parts of the code might still reference it.
-    if (coursePopularityList) {
-        coursePopularityList.innerHTML = '';
-        const sortedCourses = Object.keys(courseCounts).sort((a, b) => courseCounts[b] - courseCounts[a]);
-        if (sortedCourses.length > 0) {
-            sortedCourses.forEach(course => { const li = document.createElement('li'); li.textContent = `${course}: ${courseCounts[course]} students`; coursePopularityList.appendChild(li); });
-        } else { coursePopularityList.innerHTML = '<li>No courses with students yet.</li>'; }
-    }
 
     // --- NEW: Render Charts ---
     renderCoursePopularityChart();
-    renderOverallAttendanceChart(); // NEW
-    renderTopStudentsChart();       // NEW
-    renderLowPerformingAssignmentsChart(); // NEW
+    renderOverallAttendanceChart();
+    renderTopStudentsChart();
+    renderLowPerformingAssignmentsChart();
+}
 
 
 // Settings Functions
@@ -1242,25 +1188,23 @@ function loadSettings() {
 function applyTheme(theme) { console.log(`Applying theme: ${theme}`); }
 
 // Function to render all UI components dependent on data
-// This function needs to be defined BEFORE it's called in loadAllData()
 function renderUIComponents() {
     console.log("[renderUIComponents] Starting UI rendering.");
     renderStudentTable();
     populateCourseDropdowns();
-    // Re-get elements here as they might be null if not loaded yet
     const selectStudentForGrades = document.getElementById('selectStudentForGrades');
     const addAssignmentStudentSelect = document.getElementById('addAssignmentStudent');
     if (selectStudentForGrades) populateStudentDropdowns(selectStudentForGrades);
     if (addAssignmentStudentSelect) populateStudentDropdowns(addAssignmentStudentSelect);
-    updateReports();
+    updateReports(); // This now also renders charts
     // Only re-render current grades if a student is already selected
     if (currentGradesStudentId) {
         renderGradesTable(currentGradesStudentId);
     }
     renderAnnouncements(); // Ensure announcements render initially
     // Also update attendance table for current selected date/course
-    const attendanceDateInput = document.getElementById('attendanceDate'); // Get this element here
-    const attendanceCourseFilter = document.getElementById('attendanceCourseFilter'); // Get this element here
+    const attendanceDateInput = document.getElementById('attendanceDate');
+    const attendanceCourseFilter = document.getElementById('attendanceCourseFilter');
 
     const selectedDate = attendanceDateInput?.value;
     const selectedCourse = attendanceCourseFilter?.value;
@@ -1273,20 +1217,18 @@ function renderUIComponents() {
 // Function to load all data and update UI
 async function loadAllData() {
     console.log("Loading all data from Parse...");
-    students = await loadParseData('Student', false);
-    attendanceRecords = await loadParseData('AttendanceRecord', false);
-    grades = await loadParseData('Grade', false);
-    announcements = await loadParseData('Announcement', true); // Announcements are public
+    students = await loadParseData('Student');
+    attendanceRecords = await loadParseData('AttendanceRecord');
+    grades = await loadParseData('Grade');
+    announcements = await loadParseData('Announcement');
 
-    console.log("[loadAllData] Students data after fetch:", students); // Check the fetched student data
+    console.log("[loadAllData] Students data after fetch:", students);
     // Render all UI components after data is loaded
     renderUIComponents();
     console.log("All data loaded and UI updated. Session status after loadAllData:", Parse.User.current() ? 'VALID' : 'INVALID');
     // Check session status right after UI update
     if (!Parse.User.current()) {
         console.warn("Session found to be invalid immediately after loadAllData and UI update. Triggering redirect.");
-        // !!! DEBUGGER PAUSE POINT !!!
-        debugger; // This will pause execution right before redirect if session is null here
         window.location.href = 'index.html'; // Redirect to login
     }
 }
@@ -1296,93 +1238,58 @@ async function loadAllData() {
 document.addEventListener('DOMContentLoaded', async () => {
     document.body.style.opacity = '1'; // Make body visible
 
-    // --- Hamburger Menu Elements ---
+    // --- DOM Element References (Centralized for clarity) ---
+    // Hamburger Menu
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const sidebar = document.querySelector('.sidebar');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
 
-    // --- Sidebar Navigation and Content Section Elements ---
+    // Sidebar Navigation and Content Section Elements
     const sidebarLinks = document.querySelectorAll('.sidebar ul li a');
     const dashboardSections = document.querySelectorAll('.dashboard-content-section');
 
-    // --- Student Management Section Elements (Moved to top of scope if needed by other functions, or locally) ---
+    // Student Management Section
     const addStudentBtn = document.getElementById('addStudentBtn');
     const addStudentFormContainer = document.querySelector('.add-student-form-container');
     const addStudentForm = document.getElementById('addStudentForm');
-    const studentTableBody = document.querySelector('#studentTable tbody');
-    const cancelButton = addStudentForm.querySelector('.cancel-button');
-    const saveStudentButton = addStudentForm.querySelector('.submit-button'); // Declare here
-    const formHeading = addStudentFormContainer.querySelector('h3'); // Declare here
-    // These inputs are now within the `addOrUpdateStudent` function scope when called directly, or accessed if globally needed.
-    // For local element access within DOMContentLoaded:
-    const studentNameInput = document.getElementById('studentName');
-    const courseEnrolledInput = document.getElementById('courseEnrolled');
-    const seasonNumberInput = document.getElementById('seasonNumber');
-    const enrollmentStartDateInput = document.getElementById('enrollmentStartDate');
-    const enrollmentEndDateInput = document.getElementById('enrollmentEndDate');
-    const nationalIDInput = document.getElementById('nationalID');
-    const phoneNumberInput = document.getElementById('phoneNumber');
-    const placeOfLivingInput = document.getElementById('placeOfLiving');
-    window.editingStudentId = null; // Initialize globally for addOrUpdateStudent, editStudent to access
+    const cancelButton = addStudentForm ? addStudentForm.querySelector('.cancel-button') : null;
+    const saveStudentButton = addStudentForm ? addStudentForm.querySelector('.submit-button') : null;
+    const formHeading = addStudentFormContainer ? addStudentFormContainer.querySelector('h3') : null;
+    // window.editingStudentId is already global
 
-    // --- Bulk Student Upload Elements ---
+    // Bulk Student Upload
     const fileUploadInput = document.getElementById('fileUploadInput');
     const uploadFileBtn = document.getElementById('uploadFileBtn');
-    const uploadStatusDiv = document.getElementById('uploadStatus');
+    // const uploadStatusDiv = document.getElementById('uploadStatus'); // Accessed directly in handleFileUpload
 
-    // --- Attendance Management Section Elements ---
+    // Attendance Management Section
     const attendanceCourseFilter = document.getElementById('attendanceCourseFilter');
-    const attendanceDateInput = document.getElementById('attendanceDate'); // Corrected assignment
+    const attendanceDateInput = document.getElementById('attendanceDate');
     const loadAttendanceBtn = document.getElementById('loadAttendanceBtn');
-    const attendanceTableBody = document.getElementById('attendanceTableBody');
-    const currentAttendanceDateDisplay = document.getElementById('currentAttendanceDateDisplay');
     const saveAttendanceBtn = document.getElementById('saveAttendanceBtn');
 
-    // --- Grades Management Section Elements ---
+    // Grades Management Section
     const gradesCourseFilter = document.getElementById('gradesCourseFilter');
     const selectStudentForGrades = document.getElementById('selectStudentForGrades');
     const loadGradesBtn = document.getElementById('loadGradesBtn');
     const gradesTableContainer = document.getElementById('gradesTableContainer');
-    const currentGradesStudentName = document.getElementById('currentGradesStudentName');
-    const gradesTableBody = document.getElementById('gradesTableBody');
     const saveGradesBtn = document.getElementById('saveGradesBtn');
     const addAssignmentForm = document.getElementById('addAssignmentForm');
     const addAssignmentCourseFilter = document.getElementById('addAssignmentCourseFilter');
     const addAssignmentStudentSelect = document.getElementById('addAssignmentStudent');
-    const newAssignmentNameInput = document.getElementById('newAssignmentName');
-    const newAssignmentMaxScoreInput = document.getElementById('newAssignmentMaxScore');
     const cancelAddAssignmentBtn = document.getElementById('cancelAddAssignmentBtn');
 
-    // --- Announcements Section Elements ---
+    // Announcements Section
     const addAnnouncementForm = document.getElementById('addAnnouncementForm');
-    const announcementTitleInput = document.getElementById('announcementTitle');
-    const announcementContentInput = document.getElementById('announcementContent');
     const announcementDateInput = document.getElementById('announcementDate');
-    const announcementsListDiv = document.getElementById('announcementsList');
     const cancelAnnouncementBtn = document.getElementById('cancelAnnouncementBtn');
 
-    // --- Reports & Analytics Section Elements ---
-    // Declared earlier in updateReports function scope directly, but also here for event listeners
-    const totalStudentsReport = document.getElementById('totalStudentsReport');
-    const webDevStudents = document.getElementById('webDevStudents');
-    const graphicDesignStudents = document.getElementById('graphicDesignStudents');
-    const digitalMarketingStudents = document.getElementById('digitalMarketingStudents');
-    const overallPresentRate = document.getElementById('overallPresentRate');
-    const overallAbsentRate = document.getElementById('overallAbsentRate');
-    const absenteeStudentsList = document.getElementById('absenteeStudentsList');
-    const totalGradedAssignments = document.getElementById('totalGradedAssignments');
-    const totalPendingAssignmentsReport = document.getElementById('totalPendingAssignmentsReport');
-    const topStudentsList = document.getElementById('topStudentsList');
-    const lowPerformingAssignments = document.getElementById('lowPerformingAssignments');
-    const coursePopularityList = document.getElementById('coursePopularityList');
+    // Quick Action Buttons
+    const goToAttendanceBtn = document.getElementById('goToAttendanceBtn');
+    const enterGradesBtn = document.getElementById('enterGradesBtn');
+    const addStudentQuickBtn = document.getElementById('addStudentQuickBtn');
 
-
-    // --- Dashboard Overview Statistics Elements ---
-    const totalStudentsCountElement = document.getElementById('totalStudentsCount');
-    const todayAbsencesCountElement = document.getElementById('todayAbsencesCount');
-    const pendingAssignmentsCountElement = document.getElementById('pendingAssignmentsCount');
-
-    // --- Settings Section Elements ---
+    // Settings Section
     const themeSelect = document.getElementById('themeSelect');
     const notificationsToggle = document.getElementById('notificationsToggle');
     const editProfileBtn = document.querySelector('.setting-card .setting-content button.primary-button:nth-of-type(1)');
@@ -1397,19 +1304,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         Parse.serverURL = B4A_SERVER_URL;
         console.log("Back4App Parse SDK Initialized in Dashboard.");
 
-        // Check for current user and validate session
         const currentUser = Parse.User.current();
         console.log("Initial currentUser check on DOMContentLoaded:", currentUser ? currentUser.id : "NULL");
 
         if (currentUser) {
             try {
                 console.log("Attempting to validate user session with fetch()...");
-                await currentUser.fetch(); // This attempts to fetch user data from the server using the session token
+                await currentUser.fetch(); // Validate session token with server
                 console.log("User session is VALID after fetch():", currentUser.id);
                 await loadAllData(); // Load all data for the valid user
                 loadSettings(); // Load user settings
+                attachEventListeners(); // Attach event listeners ONLY after successful load
             } catch (error) {
-                // This catch block handles errors specifically from currentUser.fetch()
                 console.groupCollapsed("Session Validation Error Details (Click to expand)");
                 console.error("User session invalid or expired caught during fetch():", error);
                 console.error("Error Code:", error.code);
@@ -1417,60 +1323,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.groupEnd();
 
                 showMessage("Your session has expired. Please log in again.", "error", 5000);
-                await Parse.User.logOut(); // Clear invalid session from local storage
-                // !!! DEBUGGER PAUSE POINT (Session expired on initial load) !!!
-                debugger;
+                await Parse.User.logOut(); // Clear invalid session
                 window.location.href = 'index.html'; // Redirect to login
             }
         } else {
             console.warn("No Parse user found (currentUser is null). Redirecting to login page.");
-            // !!! DEBUGGER PAUSE POINT (No current user on initial load) !!!
-            debugger;
-            window.location.href = 'index.html'; // Redirect to login if no user token found locally
+            window.location.href = 'index.html'; // Redirect if no user token found locally
         }
     } else {
         console.error("Parse SDK not loaded in dashboard. Cannot connect to backend.");
         showMessage("Application error: Backend SDK not loaded. Cannot load data.", "error", 5000);
-        return;
+        return; // Stop execution if Parse SDK is not available
     }
+});
 
-
-    // --- Logout Functionality ---
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async (event) => {
-            event.preventDefault(); // Prevent default link behavior
-            if (Parse.User.current()) {
-                try {
-                    await Parse.User.logOut();
-                    console.log('User logged out successfully.');
-                    showMessage('Logged out successfully! Redirecting...', 'success');
-                    setTimeout(() => {
-                        // !!! DEBUGGER PAUSE POINT (Logout initiated) !!!
-                        debugger;
-                        window.location.href = 'index.html'; // Redirect to login page
-                    }, 1000);
-                } catch (error) {
-                    console.error('Error during logout:', error);
-                    showMessage('Error during logout: ' + error.message, 'error');
-                }
-            } else {
-                console.warn("Logout button clicked but no current user to log out. Redirecting anyway.");
-                // !!! DEBUGGER PAUSE POINT (Logout without current user) !!!
-                debugger;
-                window.location.href = 'index.html';
-            }
-        });
-    }
-
-    // --- Event Listeners and Initializations (DOM elements are now guaranteed to be available) ---
+// --- Function to Attach All Event Listeners ---
+// This function is called ONLY after Parse is initialized and data is loaded.
+function attachEventListeners() {
+    console.log("[attachEventListeners] Attaching all event listeners...");
 
     // Hamburger Menu
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
     if (hamburgerBtn && sidebar && sidebarOverlay) {
         hamburgerBtn.addEventListener('click', () => {
             sidebar.classList.toggle('open');
             sidebarOverlay.classList.toggle('active');
         });
-
         sidebarOverlay.addEventListener('click', () => {
             sidebar.classList.remove('open');
             sidebarOverlay.classList.remove('active');
@@ -1478,23 +1358,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Sidebar Navigation
+    const sidebarLinks = document.querySelectorAll('.sidebar ul li a');
+    const dashboardSections = document.querySelectorAll('.dashboard-content-section');
     sidebarLinks.forEach(link => {
         link.addEventListener('click', function(event) {
             event.preventDefault();
             const targetSectionId = this.getAttribute('href').substring(1);
+
             dashboardSections.forEach(section => {
+                section.classList.remove('active');
                 if (section.id === targetSectionId) {
                     section.classList.add('active');
-                } else {
-                    section.classList.remove('active');
                 }
             });
 
-            // Update active class for sidebar links
             sidebarLinks.forEach(item => item.classList.remove('active'));
             this.classList.add('active');
 
-            // On mobile, close sidebar after selecting a link
             if (window.innerWidth <= 768) {
                 sidebar.classList.remove('open');
                 sidebarOverlay.classList.remove('active');
@@ -1502,123 +1382,271 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    // Helper function to switch dashboard sections
+    function switchDashboardSection(targetSectionId) {
+        const sidebarLinksLocal = document.querySelectorAll('.sidebar ul li a'); // Re-query for safety
+        const dashboardSectionsLocal = document.querySelectorAll('.dashboard-content-section'); // Re-query for safety
+
+        sidebarLinksLocal.forEach(item => {
+            const href = item.getAttribute('href');
+            if (href === `#${targetSectionId}`) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+        dashboardSectionsLocal.forEach(section => {
+            if (section.id === targetSectionId) {
+                section.classList.add('active');
+            } else {
+                section.classList.remove('active');
+            }
+        });
+    }
+
     // Student Management Event Listeners
-    if (addStudentBtn) { addStudentBtn.addEventListener('click', () => {
-        if (addStudentFormContainer) addStudentFormContainer.style.display = 'block';
-        if (addStudentForm) addStudentForm.reset();
-        window.editingStudentId = null; // Reset global editing ID
-        if (formHeading) formHeading.textContent = 'Add New Student';
-        if (saveStudentButton) saveStudentButton.textContent = 'Save Student';
-    }); }
+    const addStudentBtn = document.getElementById('addStudentBtn');
+    const addStudentFormContainer = document.querySelector('.add-student-form-container');
+    const addStudentForm = document.getElementById('addStudentForm');
+    const cancelButton = addStudentForm ? addStudentForm.querySelector('.cancel-button') : null;
+    const saveStudentButton = addStudentForm ? addStudentForm.querySelector('.submit-button') : null;
+    const formHeading = addStudentFormContainer ? addStudentFormContainer.querySelector('h3') : null;
 
-    if (cancelButton) { cancelButton.addEventListener('click', () => {
-        if (addStudentFormContainer) addStudentFormContainer.style.display = 'none';
-        if (addStudentForm) addStudentForm.reset();
-        window.editingStudentId = null; // Reset global editing ID
-        if (formHeading) formHeading.textContent = 'Add New Student';
-        if (saveStudentButton) saveStudentButton.textContent = 'Save Student';
-    }); }
-
-    if (addStudentForm) { addStudentForm.addEventListener('submit', addOrUpdateStudent); }
-    if (uploadFileBtn) { uploadFileBtn.addEventListener('click', handleFileUpload); }
-
+    if (addStudentBtn) {
+        addStudentBtn.addEventListener('click', () => {
+            if (addStudentFormContainer) addStudentFormContainer.style.display = 'block';
+            if (addStudentForm) addStudentForm.reset();
+            window.editingStudentId = null;
+            if (formHeading) formHeading.textContent = 'Add New Student';
+            if (saveStudentButton) saveStudentButton.textContent = 'Save Student';
+        });
+    }
+    if (cancelButton) {
+        cancelButton.addEventListener('click', () => {
+            if (addStudentFormContainer) addStudentFormContainer.style.display = 'none';
+            if (addStudentForm) addStudentForm.reset();
+            window.editingStudentId = null;
+            if (formHeading) formHeading.textContent = 'Add New Student';
+            if (saveStudentButton) saveStudentButton.textContent = 'Save Student';
+        });
+    }
+    if (addStudentForm) {
+        addStudentForm.addEventListener('submit', addOrUpdateStudent);
+    }
+    const fileUploadInput = document.getElementById('fileUploadInput');
+    const uploadFileBtn = document.getElementById('uploadFileBtn');
+    const uploadStatusDiv = document.getElementById('uploadStatus'); // Re-query here for safety
+    if (fileUploadInput) {
+        fileUploadInput.addEventListener('change', () => {
+            if (fileUploadInput.files.length > 0) {
+                if (uploadFileBtn) uploadFileBtn.style.display = 'inline-block';
+                if (uploadStatusDiv) uploadStatusDiv.textContent = `File selected: ${fileUploadInput.files[0].name}`;
+            } else {
+                if (uploadFileBtn) uploadFileBtn.style.display = 'none';
+                if (uploadStatusDiv) uploadStatusDiv.textContent = '';
+            }
+        });
+    }
+    if (uploadFileBtn) {
+        uploadFileBtn.addEventListener('click', handleFileUpload);
+    }
 
     // Quick Action Buttons Event Listeners
     const goToAttendanceBtn = document.getElementById('goToAttendanceBtn');
     const enterGradesBtn = document.getElementById('enterGradesBtn');
     const addStudentQuickBtn = document.getElementById('addStudentQuickBtn');
 
-    function switchDashboardSection(targetSectionId) {
-        sidebarLinks.forEach(item => {
-            const href = item.getAttribute('href');
-            if (href === `#${targetSectionId}`) { item.classList.add('active'); } else { item.classList.remove('active'); }
-        });
-        dashboardSections.forEach(section => {
-            if (section.id === targetSectionId) { section.classList.add('active'); } else { section.classList.remove('active'); }
+    if (goToAttendanceBtn) {
+        goToAttendanceBtn.addEventListener('click', () => { switchDashboardSection('attendance-management'); });
+    }
+    if (enterGradesBtn) {
+        enterGradesBtn.addEventListener('click', () => { switchDashboardSection('grades-management'); });
+    }
+    if (addStudentQuickBtn) {
+        addStudentQuickBtn.addEventListener('click', () => {
+            switchDashboardSection('student-management');
+            if (addStudentFormContainer) addStudentFormContainer.style.display = 'block';
+            if (addStudentForm) addStudentForm.reset();
+            window.editingStudentId = null;
+            if (formHeading) formHeading.textContent = 'Add New Student';
+            if (saveStudentButton) saveStudentButton.textContent = 'Save Student';
         });
     }
 
-    if (goToAttendanceBtn) { goToAttendanceBtn.addEventListener('click', () => { switchDashboardSection('attendance-management'); }); }
-    if (enterGradesBtn) { enterGradesBtn.addEventListener('click', () => { switchDashboardSection('grades-management'); }); }
-    if (addStudentQuickBtn) { addStudentQuickBtn.addEventListener('click', () => {
-        switchDashboardSection('student-management');
-        if (addStudentFormContainer) addStudentFormContainer.style.display = 'block';
-        if (addStudentForm) addStudentForm.reset(); window.editingStudentId = null; // Use window.editingStudentId
-        if (formHeading) formHeading.textContent = 'Add New Student';
-        if (saveStudentButton) saveStudentButton.textContent = 'Save Student';
-    }); }
-
-
     // Attendance Management Event Listeners
-    // Set initial date
-    if (attendanceDateInput) { attendanceDateInput.value = getTodayDateString(); }
+    const attendanceDateInput = document.getElementById('attendanceDate');
+    const attendanceCourseFilter = document.getElementById('attendanceCourseFilter');
+    const loadAttendanceBtn = document.getElementById('loadAttendanceBtn');
+    const saveAttendanceBtn = document.getElementById('saveAttendanceBtn');
 
-    if (loadAttendanceBtn) { loadAttendanceBtn.addEventListener('click', () => {
-        const selectedDate = attendanceDateInput.value; const selectedCourse = attendanceCourseFilter.value;
-        if (selectedDate) { renderAttendanceTable(selectedCourse, selectedDate); }
-        else { showMessage('Please select a date to load attendance.', 'error'); }
-    }); }
-    if (attendanceCourseFilter) { attendanceCourseFilter.addEventListener('change', () => {
-        const selectedDate = attendanceDateInput.value; const selectedCourse = attendanceCourseFilter.value;
-        if (selectedDate) { renderAttendanceTable(selectedCourse, selectedDate); }
-        else { showMessage('Please select a date to load attendance.', 'error'); }
-    }); }
-    if (saveAttendanceBtn) { saveAttendanceBtn.addEventListener('click', saveAttendance); }
-
+    if (attendanceDateInput) {
+        attendanceDateInput.value = getTodayDateString(); // Set initial date
+    }
+    if (loadAttendanceBtn) {
+        loadAttendanceBtn.addEventListener('click', () => {
+            const selectedDate = attendanceDateInput.value;
+            const selectedCourse = attendanceCourseFilter.value;
+            if (selectedDate) {
+                renderAttendanceTable(selectedCourse, selectedDate);
+            } else {
+                showMessage('Please select a date to load attendance.', 'error');
+            }
+        });
+    }
+    if (attendanceCourseFilter) {
+        attendanceCourseFilter.addEventListener('change', () => {
+            const selectedDate = attendanceDateInput.value;
+            const selectedCourse = attendanceCourseFilter.value;
+            if (selectedDate) {
+                renderAttendanceTable(selectedCourse, selectedDate);
+            } else {
+                showMessage('Please select a date to load attendance.', 'error');
+            }
+        });
+    }
+    if (saveAttendanceBtn) {
+        saveAttendanceBtn.addEventListener('click', saveAttendance);
+    }
 
     // Grades Management Event Listeners
-    if (gradesCourseFilter) { gradesCourseFilter.addEventListener('change', () => {
-        const selectedCourse = gradesCourseFilter.value; populateStudentDropdowns(selectStudentForGrades, selectedCourse);
-        if (gradesTableContainer) gradesTableContainer.style.display = 'none';
-        if (selectStudentForGrades) selectStudentForGrades.value = '';
-    }); }
-    if (loadGradesBtn) { loadGradesBtn.addEventListener('click', () => {
-        const selectedStudentId = selectStudentForGrades.value;
-        if (selectedStudentId) { renderGradesTable(selectedStudentId); }
-        else { showMessage('Please select a student to load grades.', 'error'); if (gradesTableContainer) gradesTableContainer.style.display = 'none'; }
-    }); }
-    if (saveGradesBtn) { saveGradesBtn.addEventListener('click', saveGrades); }
-    if (addAssignmentCourseFilter) { addAssignmentCourseFilter.addEventListener('change', () => {
-        const selectedCourse = addAssignmentCourseFilter.value; populateStudentDropdowns(addAssignmentStudentSelect, selectedCourse);
-    }); }
-    if (addAssignmentForm) { addAssignmentForm.addEventListener('submit', addAssignmentToStudent); }
-    if (cancelAddAssignmentBtn) { cancelAddAssignmentBtn.addEventListener('click', () => {
-        if (addAssignmentForm) addAssignmentForm.reset();
-        if (addAssignmentCourseFilter) addAssignmentCourseFilter.value = '';
-        populateStudentDropdowns(addAssignmentStudentSelect, '');
-    }); }
+    const gradesCourseFilter = document.getElementById('gradesCourseFilter');
+    const selectStudentForGrades = document.getElementById('selectStudentForGrades');
+    const loadGradesBtn = document.getElementById('loadGradesBtn');
+    const gradesTableContainer = document.getElementById('gradesTableContainer');
+    const saveGradesBtn = document.getElementById('saveGradesBtn');
+    const addAssignmentForm = document.getElementById('addAssignmentForm');
+    const addAssignmentCourseFilter = document.getElementById('addAssignmentCourseFilter');
+    const addAssignmentStudentSelect = document.getElementById('addAssignmentStudent');
+    const cancelAddAssignmentBtn = document.getElementById('cancelAddAssignmentBtn');
 
+    if (gradesCourseFilter) {
+        gradesCourseFilter.addEventListener('change', () => {
+            const selectedCourse = gradesCourseFilter.value;
+            populateStudentDropdowns(selectStudentForGrades, selectedCourse);
+            if (gradesTableContainer) gradesTableContainer.style.display = 'none';
+            if (selectStudentForGrades) selectStudentForGrades.value = '';
+        });
+    }
+    if (loadGradesBtn) {
+        loadGradesBtn.addEventListener('click', () => {
+            const selectedStudentId = selectStudentForGrades.value;
+            if (selectedStudentId) {
+                renderGradesTable(selectedStudentId);
+            } else {
+                showMessage('Please select a student to load grades.', 'error');
+                if (gradesTableContainer) gradesTableContainer.style.display = 'none';
+            }
+        });
+    }
+    if (saveGradesBtn) {
+        saveGradesBtn.addEventListener('click', saveGrades);
+    }
+    if (addAssignmentCourseFilter) {
+        addAssignmentCourseFilter.addEventListener('change', () => {
+            const selectedCourse = addAssignmentCourseFilter.value;
+            populateStudentDropdowns(addAssignmentStudentSelect, selectedCourse);
+        });
+    }
+    if (addAssignmentForm) {
+        addAssignmentForm.addEventListener('submit', addAssignmentToStudent);
+    }
+    if (cancelAddAssignmentBtn) {
+        cancelAddAssignmentBtn.addEventListener('click', () => {
+            if (addAssignmentForm) addAssignmentForm.reset();
+            if (addAssignmentCourseFilter) addAssignmentCourseFilter.value = '';
+            populateStudentDropdowns(addAssignmentStudentSelect, '');
+        });
+    }
 
     // Announcements Event Listeners
-    if (announcementDateInput) { announcementDateInput.value = getTodayDateString(); }
-    if (addAnnouncementForm) { addAnnouncementForm.addEventListener('submit', addAnnouncement); }
-    if (cancelAnnouncementBtn) { cancelAnnouncementBtn.addEventListener('click', () => {
-        if (addAnnouncementForm) addAnnouncementForm.reset();
-        if (announcementDateInput) announcementDateInput.value = getTodayDateString();
-    }); }
+    const addAnnouncementForm = document.getElementById('addAnnouncementForm');
+    const announcementDateInput = document.getElementById('announcementDate');
+    const cancelAnnouncementBtn = document.getElementById('cancelAnnouncementBtn');
 
+    if (announcementDateInput) {
+        announcementDateInput.value = getTodayDateString();
+    }
+    if (addAnnouncementForm) {
+        addAnnouncementForm.addEventListener('submit', addAnnouncement);
+    }
+    if (cancelAnnouncementBtn) {
+        cancelAnnouncementBtn.addEventListener('click', () => {
+            if (addAnnouncementForm) addAnnouncementForm.reset();
+            if (announcementDateInput) announcementDateInput.value = getTodayDateString();
+        });
+    }
 
     // Settings Event Listeners
-    if (themeSelect) { themeSelect.addEventListener('change', () => {
-        const selectedTheme = themeSelect.value; applyTheme(selectedTheme);
-    }); loadSettings(); }
+    const themeSelect = document.getElementById('themeSelect');
+    const notificationsToggle = document.getElementById('notificationsToggle');
+    const editProfileBtn = document.querySelector('.setting-card .setting-content button.primary-button:nth-of-type(1)');
+    const changePasswordBtn = document.querySelector('.setting-card .setting-content button.secondary-button');
+    const saveGeneralSettingsBtn = document.querySelector('.setting-card button.primary-button:nth-of-type(2)');
+    const logoutBtn = document.querySelector('.logout-btn');
 
-    if (notificationsToggle) { notificationsToggle.addEventListener('change', () => {
-        if (notificationsToggle.checked) { showMessage('Notifications will be enabled on save.', 'info'); }
-        else { showMessage('Notifications will be disabled on save.', 'info'); }
-    }); }
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (event) => {
+            event.preventDefault();
+            if (Parse.User.current()) {
+                try {
+                    await Parse.User.logOut();
+                    console.log('User logged out successfully.');
+                    showMessage('Logged out successfully! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                } catch (error) {
+                    console.error('Error during logout:', error);
+                    showMessage('Error during logout: ' + error.message, 'error');
+                }
+            } else {
+                console.warn("Logout button clicked but no current user to log out. Redirecting anyway.");
+                window.location.href = 'index.html';
+            }
+        });
+    }
 
-    if (editProfileBtn) { editProfileBtn.addEventListener('click', () => {
-        showMessage('Edit Profile clicked! (Functionality to edit user data is not yet implemented)', 'info');
-    }); }
+    if (themeSelect) {
+        themeSelect.addEventListener('change', () => {
+            const selectedTheme = themeSelect.value;
+            applyTheme(selectedTheme);
+        });
+        loadSettings();
+    }
 
-    if (changePasswordBtn) { changePasswordBtn.addEventListener('click', () => {
-        showMessage('Change Password clicked! (Functionality to change password is not yet implemented)', 'info');
-    }); }
+    if (notificationsToggle) {
+        notificationsToggle.addEventListener('change', () => {
+            if (notificationsToggle.checked) {
+                showMessage('Notifications will be enabled on save.', 'info');
+            } else {
+                showMessage('Notifications will be disabled on save.', 'info');
+            }
+        });
+    }
 
-    if (saveGeneralSettingsBtn) { saveGeneralSettingsBtn.addEventListener('click', () => {
-        if (themeSelect) { localStorage.setItem('schoolflowTheme', themeSelect.value); }
-        if (notificationsToggle) { localStorage.setItem('schoolflowNotifications', notificationsToggle.checked); }
-        showMessage('General Settings saved successfully!', 'success');
-    }); }
-});
+    if (editProfileBtn) {
+        editProfileBtn.addEventListener('click', () => {
+            showMessage('Edit Profile clicked! (Functionality to edit user data is not yet implemented)', 'info');
+        });
+    }
+
+    if (changePasswordBtn) {
+        changePasswordBtn.addEventListener('click', () => {
+            showMessage('Change Password clicked! (Functionality to change password is not yet implemented)', 'info');
+        });
+    }
+
+    if (saveGeneralSettingsBtn) {
+        saveGeneralSettingsBtn.addEventListener('click', () => {
+            if (themeSelect) {
+                localStorage.setItem('schoolflowTheme', themeSelect.value);
+            }
+            if (notificationsToggle) {
+                localStorage.setItem('schoolflowNotifications', notificationsToggle.checked);
+            }
+            showMessage('General Settings saved successfully!', 'success');
+        });
+    }
+
+    console.log("[attachEventListeners] All event listeners attached.");
+}
