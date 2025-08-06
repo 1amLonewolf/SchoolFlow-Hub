@@ -1300,6 +1300,19 @@ async function loadSettings() {
     const userNameSpan = document.getElementById('userNameDisplay');
     const userEmailSpan = document.getElementById('userEmailDisplay');
 
+    // Always load from localStorage first as fallback
+    const savedTheme = localStorage.getItem('schoolflowTheme') || 'light';
+    const savedNotifications = localStorage.getItem('schoolflowNotifications');
+
+    if (themeSelect) {
+        themeSelect.value = savedTheme;
+        applyTheme(savedTheme);
+    }
+    
+    if (notificationsToggle) {
+        notificationsToggle.checked = savedNotifications !== null ? (savedNotifications === 'true') : true;
+    }
+
     // Load user profile from Parse
     const currentUser = Parse.User.current();
     if (currentUser) {
@@ -1308,7 +1321,7 @@ async function loadSettings() {
             if (userNameSpan) userNameSpan.textContent = currentUser.get('username') || 'Admin User';
             if (userEmailSpan) userEmailSpan.textContent = currentUser.get('email') || 'admin@schoolflow.com';
             
-            // Load user preferences from Parse
+            // Load user preferences from Parse (override localStorage if available)
             const userPrefs = currentUser.get('preferences');
             if (userPrefs) {
                 if (themeSelect && userPrefs.theme) {
@@ -1320,19 +1333,13 @@ async function loadSettings() {
                 }
             }
         } catch (error) {
-            console.error('Error loading user settings:', error);
-            showMessage('Error loading user settings: ' + error.message, 'error');
+            console.warn('Could not load user settings from Parse, using local settings:', error);
+            // We already loaded from localStorage above, so continue with that
         }
-    }
-
-    // Fallback to localStorage if Parse data unavailable
-    if (themeSelect && !themeSelect.value) {
-        const savedTheme = localStorage.getItem('schoolflowTheme');
-        if (savedTheme) { themeSelect.value = savedTheme; applyTheme(savedTheme); }
-    }
-    if (notificationsToggle && !notificationsToggle.checked) {
-        const savedNotifications = localStorage.getItem('schoolflowNotifications');
-        if (savedNotifications !== null) { notificationsToggle.checked = (savedNotifications === 'true'); }
+    } else {
+        // Set default values if no user is logged in
+        if (userNameSpan) userNameSpan.textContent = 'Admin User';
+        if (userEmailSpan) userEmailSpan.textContent = 'admin@schoolflow.com';
     }
 }
 
@@ -1340,8 +1347,16 @@ function applyTheme(theme) {
     console.log(`Applying theme: ${theme}`);
     if (theme === 'dark') {
         document.body.classList.add('dark-mode');
+        console.log('Dark mode applied');
     } else {
         document.body.classList.remove('dark-mode');
+        console.log('Light mode applied');
+    }
+    
+    // Also update the theme select if it exists
+    const themeSelect = document.getElementById('themeSelect');
+    if (themeSelect && themeSelect.value !== theme) {
+        themeSelect.value = theme;
     }
 }
 
@@ -1361,15 +1376,23 @@ async function saveUserSettings() {
             notifications: notificationsToggle ? notificationsToggle.checked : true
         };
 
-        currentUser.set('preferences', preferences);
-        await currentUser.save();
-
-        // Also save to localStorage as backup
+        // Save to localStorage first as backup
         localStorage.setItem('schoolflowTheme', preferences.theme);
-        localStorage.setItem('schoolflowNotifications', preferences.notifications);
+        localStorage.setItem('schoolflowNotifications', preferences.notifications.toString());
 
+        // Apply theme immediately
         applyTheme(preferences.theme);
-        showMessage('Settings saved successfully!', 'success');
+
+        // Try to save to Parse, but don't fail if it doesn't work
+        try {
+            currentUser.set('preferences', preferences);
+            await currentUser.save();
+            showMessage('Settings saved successfully!', 'success');
+        } catch (parseError) {
+            console.warn('Could not save to Parse, but settings applied locally:', parseError);
+            showMessage('Settings applied locally. Backend sync may be unavailable.', 'info');
+        }
+
         return true;
     } catch (error) {
         console.error('Error saving settings:', error);
@@ -1844,12 +1867,12 @@ function attachEventListeners() {
         });
     }
 
-    // Settings Event Listeners
+    // Settings Event Listeners - Fixed selectors
     const themeSelect = document.getElementById('themeSelect');
     const notificationsToggle = document.getElementById('notificationsToggle');
-    const editProfileBtn = document.querySelector('.setting-card .setting-content button.primary-button:nth-of-type(1)');
-    const changePasswordBtn = document.querySelector('.setting-card .setting-content button.secondary-button');
-    const saveGeneralSettingsBtn = document.querySelector('.setting-card button.primary-button:nth-of-type(2)');
+    const editProfileBtn = document.querySelector('#settings .setting-card button.primary-button');
+    const changePasswordBtn = document.querySelector('#settings .setting-card button.secondary-button');
+    const saveGeneralSettingsBtn = document.querySelector('#settings .setting-card:nth-child(2) button.primary-button');
     const logoutBtn = document.querySelector('.logout-btn');
 
     if (logoutBtn) {
@@ -1875,38 +1898,58 @@ function attachEventListeners() {
     }
 
     if (themeSelect) {
+        console.log('Theme select found, attaching event listener');
         themeSelect.addEventListener('change', () => {
             const selectedTheme = themeSelect.value;
+            console.log('Theme changed to:', selectedTheme);
             applyTheme(selectedTheme);
         });
+    } else {
+        console.warn('Theme select element not found');
     }
 
     if (notificationsToggle) {
+        console.log('Notifications toggle found, attaching event listener');
         notificationsToggle.addEventListener('change', () => {
             if (notificationsToggle.checked) {
-                showMessage('Notifications will be enabled on save.', 'info');
+                showMessage('Notifications will be enabled on save.', 'info', 2000);
             } else {
-                showMessage('Notifications will be disabled on save.', 'info');
+                showMessage('Notifications will be disabled on save.', 'info', 2000);
             }
         });
+    } else {
+        console.warn('Notifications toggle element not found');
     }
 
     if (editProfileBtn) {
-        editProfileBtn.addEventListener('click', () => {
+        console.log('Edit profile button found, attaching event listener');
+        editProfileBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             showEditProfileDialog();
         });
+    } else {
+        console.warn('Edit profile button not found');
     }
 
     if (changePasswordBtn) {
-        changePasswordBtn.addEventListener('click', () => {
+        console.log('Change password button found, attaching event listener');
+        changePasswordBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             showChangePasswordDialog();
         });
+    } else {
+        console.warn('Change password button not found');
     }
 
     if (saveGeneralSettingsBtn) {
-        saveGeneralSettingsBtn.addEventListener('click', async () => {
+        console.log('Save general settings button found, attaching event listener');
+        saveGeneralSettingsBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            console.log('Save settings button clicked');
             await saveUserSettings();
         });
+    } else {
+        console.warn('Save general settings button not found');
     }
 
     console.log("[attachEventListeners] All event listeners attached.");
