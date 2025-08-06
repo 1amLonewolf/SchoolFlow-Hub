@@ -1,38 +1,3 @@
-/* CSS Variables for Light and Dark Mode */
-:root {
-    /* Light Mode Colors */
-    --bg-gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-    --login-box-bg: #fff;
-    --text-primary: #333;
-    --text-secondary: #666;
-    --text-tertiary: #555;
-    --border-color: #ddd;
-    --input-bg: #fff;
-    --button-bg: #2575fc;
-    --button-hover-bg: #1a5ac7;
-    --link-color: #2575fc;
-    --link-hover-color: #1a5ac7;
-    --shadow-color: rgba(0, 0, 0, 0.25);
-    --shadow-hover-color: rgba(0, 0, 0, 0.3);
-}
-
-/* Dark Mode Colors */
-[data-theme="dark"] {
-    --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    --login-box-bg: #2d2d2d;
-    --text-primary: #e0e0e0;
-    --text-secondary: #b0b0b0;
-    --text-tertiary: #a0a0a0;
-    --border-color: #404040;
-    --input-bg: #333;
-    --button-bg: #2575fc;
-    --button-hover-bg: #1a5ac7;
-    --link-color: #5a9bff;
-    --link-hover-color: #4a8bef;
-    --shadow-color: rgba(0, 0, 0, 0.4);
-    --shadow-hover-color: rgba(0, 0, 0, 0.5);
-}
-
 /* Basic Reset & Body Styling */
 html, body {
     height: 100%; /* Crucial for full viewport height */
@@ -46,12 +11,101 @@ body {
     justify-content: center; /* Centers horizontally */
     align-items: center; /* Centers vertically */
     min-height: 100vh; /* Ensures body is at least full viewport height */
-    background: var(--bg-gradient);
-    color: var(--text-primary);
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); /* Gradient background */
+    color: #333;
     overflow: hidden; /* Hide overflow during initial animations */
 
     /* NEW FOR PAGE FADE-OUT TRANSITION */
-    transition: opacity 0.5s ease-out, transform 0.5s ease-out, background 0.3s ease, color 0.3s ease;
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out; /* Smooth transition for the page itself */
+}
+
+/* Dark Mode Toggle */
+.dark-mode-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(45deg, #FFD700, #FFA500);
+    border: none;
+    border-radius: 25px;
+    width: 50px;
+    height: 25px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.dark-mode-toggle:hover {
+    transform: scale(1.05);
+}
+
+.dark-mode-toggle .sun-icon,
+.dark-mode-toggle .moon-icon {
+    position: absolute;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.dark-mode-toggle .sun-icon {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.dark-mode-toggle .moon-icon {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+/* Dark mode styles */
+body.dark-mode {
+    background: linear-gradient(135deg, #2c1810 0%, #1a1a2e 100%);
+    color: #e0e0e0;
+}
+
+body.dark-mode .dark-mode-toggle {
+    background: linear-gradient(45deg, #4A4A4A, #2D2D2D);
+}
+
+body.dark-mode .dark-mode-toggle .sun-icon {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+body.dark-mode .dark-mode-toggle .moon-icon {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+body.dark-mode .login-box {
+    background-color: #2d2d2d;
+    color: #e0e0e0;
+}
+
+body.dark-mode h1 {
+    color: #e0e0e0;
+}
+
+body.dark-mode p {
+    color: #b0b0b0;
+}
+
+body.dark-mode label {
+    color: #b0b0b0;
+}
+
+body.dark-mode input[type="text"],
+body.dark-mode input[type="password"] {
+    background-color: #404040;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+body.dark-mode input[type="text"]:focus,
+body.dark-mode input[type="password"]:focus {
+    border-color: #6a11cb;
 }
 
 /* Class added by JS for page fade-out */
@@ -70,22 +124,22 @@ body.fade-out-page {
 }
 
 .login-box {
-    background-color: var(--login-box-bg);
+    background-color: #fff;
     padding: 60px 40px; /* Increased padding for expanded feel */
     border-radius: 15px;
-    box-shadow: 0 15px 40px var(--shadow-color);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25); /* Deeper shadow */
     text-align: center;
     width: 100%; /* Makes it fill its container */
     max-width: 500px; /* Max width for the internal box */
     opacity: 0; /* Starts hidden for the main box animation */
     transform: translateY(-50px); /* Starts slightly above its final position */
     animation: fadeInSlideDown 1s ease-out forwards; /* Main box entrance animation */
-    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, opacity 0.8s ease-out, background-color 0.3s ease;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, opacity 0.8s ease-out; /* Smooth transitions for hover AND JS fade */
 }
 
 .login-box:hover {
     transform: translateY(-5px) scale(1.01); /* Lifts slightly and scales a tiny bit */
-    box-shadow: 0 20px 50px var(--shadow-hover-color);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); /* Deeper shadow on hover */
 }
 
 /* Keyframe for the main login-box entrance */
@@ -97,25 +151,23 @@ body.fade-out-page {
 }
 
 h1 {
-    color: var(--text-primary);
+    color: #333;
     margin-bottom: 15px; /* Adjusted margin */
     font-size: 2.8em; /* Made title bigger */
     opacity: 0; /* Start hidden for staggered animation */
     transform: translateY(20px); /* Start slightly below */
     animation: fadeInSlideUp 0.8s ease-out forwards;
     animation-delay: 0.5s; /* Staggered delay */
-    transition: color 0.3s ease;
 }
 
 p {
-    color: var(--text-secondary);
+    color: #666;
     margin-bottom: 40px; /* Adjusted margin */
     font-size: 1.1em; /* Made tagline bigger */
     opacity: 0;
     transform: translateY(20px);
     animation: fadeInSlideUp 0.8s ease-out forwards;
     animation-delay: 0.7s; /* Staggered delay */
-    transition: color 0.3s ease;
 }
 
 .input-group {
@@ -138,20 +190,19 @@ label {
     display: block;
     margin-bottom: 8px;
     font-weight: bold;
-    color: var(--text-tertiary);
-    transition: color 0.3s ease;
+    color: #555;
 }
 
 input[type="text"],
 input[type="password"] {
     width: calc(100% - 24px); /* Account for padding */
     padding: 14px 12px; /* Slightly more padding for a bigger feel */
-    border: 1px solid var(--border-color);
+    border: 1px solid #ddd;
     border-radius: 8px;
     font-size: 17px; /* Slightly larger font */
-    transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-    background-color: var(--input-bg);
-    color: var(--text-primary);
+    transition: border-color 0.3s ease; /* Smooth transition for focus */
+    background-color: #fff; /* Ensure they have a white background */
+    color: #333; /* Ensure text is a dark color */
 }
 
 input[type="text"]:focus,
@@ -161,7 +212,7 @@ input[type="password"]:focus {
 }
 
 .login-button {
-    background-color: var(--button-bg);
+    background-color: #2575fc;
     color: white;
     padding: 15px 25px; /* Bigger button */
     border: none;
@@ -178,14 +229,14 @@ input[type="password"]:focus {
 }
 
 .login-button:hover {
-    background-color: var(--button-hover-bg);
+    background-color: #1a5ac7;
     transform: translateY(-2px); /* Slight lift on hover */
 }
 
 .forgot-password {
     display: block;
     margin-top: 20px;
-    color: var(--link-color);
+    color: #2575fc;
     text-decoration: none;
     font-size: 14px;
     transition: color 0.3s ease;
@@ -196,7 +247,7 @@ input[type="password"]:focus {
 }
 
 .forgot-password:hover {
-    color: var(--link-hover-color);
+    color: #1a5ac7;
     text-decoration: underline;
 }
 

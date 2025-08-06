@@ -50,30 +50,34 @@ function showMessage(message, type = "info", duration = 3000) {
 }
 
 
+// --- DOM Content Loaded Event ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Get references to DOM elements
     const loginForm = document.getElementById('loginForm');
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
-    const loginButton = document.querySelector('.login-button');
+    const loginButton = loginForm.querySelector('button[type="submit"]');
     const loginBox = document.querySelector('.login-box');
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const darkModeToggle = document.getElementById('darkModeToggle');
 
-    // Load theme preference on page load
-    const savedTheme = localStorage.getItem('schoolflowTheme') || 'light';
-    applyTheme(savedTheme);
-    updateThemeToggleButton(savedTheme);
+    // Create message div dynamically
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message';
+    loginForm.appendChild(messageDiv);
 
-    // Add theme toggle functionality
-    if (themeToggleBtn) {
-        themeToggleBtn.addEventListener('click', toggleTheme);
-    }
+    // --- Dark Mode Toggle Event Listeners ---
+    if (darkModeToggle) {
+        // Load saved dark mode preference
+        const isDarkMode = localStorage.getItem('darkMode') === 'true';
+        if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+        }
 
-    // Create an element for displaying messages (success/error) if not already present
-    let messageDiv = loginForm.querySelector('.message');
-    if (!messageDiv) {
-        messageDiv = document.createElement('div');
-        messageDiv.className = 'message';
-        loginForm.insertBefore(messageDiv, loginButton);
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark);
+        });
     }
 
 
@@ -150,33 +154,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-
-// Theme management functions
-function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('schoolflowTheme', theme);
-}
-
-function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    applyTheme(newTheme);
-    updateThemeToggleButton(newTheme);
-    showMessage(`Switched to ${newTheme} mode!`, 'success', 2000);
-}
-
-function updateThemeToggleButton(theme) {
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
-    if (themeToggleBtn) {
-        const icon = themeToggleBtn.querySelector('i');
-        const text = themeToggleBtn.querySelector('span');
-        
-        if (theme === 'dark') {
-            icon.className = 'fas fa-sun';
-            text.textContent = 'Light';
-        } else {
-            icon.className = 'fas fa-moon';
-            text.textContent = 'Dark';
-        }
-    }
-}

@@ -2,68 +2,17 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 
-/* CSS Variables for Light and Dark Mode */
-:root {
-    /* Light Mode Colors */
-    --bg-primary: #f4f7f6;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #f8f9fa;
-    --text-primary: #333;
-    --text-secondary: #555;
-    --text-tertiary: #666;
-    --text-muted: #777;
-    --border-color: #ddd;
-    --border-light: #eee;
-    --border-lighter: #e0e0e0;
-    --shadow-color: rgba(0, 0, 0, 0.08);
-    --shadow-color-light: rgba(0, 0, 0, 0.05);
-    --sidebar-bg: linear-gradient(180deg, #2F1857 0%, #1A237E 100%);
-    --sidebar-text: #e0e0e0;
-    --sidebar-text-active: #ffffff;
-    --sidebar-hover: rgba(255, 255, 255, 0.1);
-    --sidebar-active: rgba(255, 255, 255, 0.2);
-    --input-bg: #fcfcfc;
-    --table-header-bg: #eff3f9;
-    --table-row-hover: #fcfdfe;
-    --announcement-bg: #fefefe;
-}
-
-/* Dark Mode Colors */
-[data-theme="dark"] {
-    --bg-primary: #1a1a1a;
-    --bg-secondary: #2d2d2d;
-    --bg-tertiary: #242424;
-    --text-primary: #e0e0e0;
-    --text-secondary: #b0b0b0;
-    --text-tertiary: #a0a0a0;
-    --text-muted: #888;
-    --border-color: #404040;
-    --border-light: #383838;
-    --border-lighter: #454545;
-    --shadow-color: rgba(0, 0, 0, 0.3);
-    --shadow-color-light: rgba(0, 0, 0, 0.2);
-    --sidebar-bg: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-    --sidebar-text: #b0b0b0;
-    --sidebar-text-active: #ffffff;
-    --sidebar-hover: rgba(255, 255, 255, 0.1);
-    --sidebar-active: rgba(255, 255, 255, 0.2);
-    --input-bg: #333;
-    --table-header-bg: #383838;
-    --table-row-hover: #353535;
-    --announcement-bg: #353535;
-}
-
 /* General Body and HTML Reset */
 body, html {
     margin: 0;
     padding: 0;
     font-family: 'Roboto', sans-serif;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
+    background-color: #f4f7f6; /* Light grey background for content areas */
+    color: #333;
     line-height: 1.6;
     height: 100vh; /* Ensures 100% viewport height */
     overflow: hidden; /* Prevent body scroll, sidebar handles its own */
-    transition: opacity 0.5s ease-in-out, background-color 0.3s ease, color 0.3s ease;
+    transition: opacity 0.5s ease-in-out; /* Smooth transition for dashboard load */
     opacity: 1; /* Initial state for transition, controlled by JS */
 }
 
@@ -181,10 +130,10 @@ body, html {
 /* Sidebar */
 .sidebar {
     width: 250px;
-    background: var(--sidebar-bg);
+    background: linear-gradient(180deg, #2F1857 0%, #1A237E 100%); /* Deep indigo/purple gradient */
     color: white;
     padding: 20px;
-    box-shadow: 2px 0 10px var(--shadow-color);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2); /* More pronounced shadow */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -193,7 +142,7 @@ body, html {
     overflow-y: auto; /* Enable scrolling for long content in sidebar */
     z-index: 1000; /* Ensure sidebar is above other content */
     /* Transition for sliding effect when opened/closed on mobile */
-    transition: transform 0.3s ease-in-out, background 0.3s ease;
+    transition: transform 0.3s ease-in-out;
 }
 
 .sidebar .logo {
@@ -221,7 +170,7 @@ body, html {
 }
 
 .sidebar nav ul li a {
-    color: var(--sidebar-text);
+    color: #e0e0e0; /* Off-white for general links */
     text-decoration: none;
     padding: 12px 15px;
     display: block; /* Make the whole area clickable */
@@ -231,13 +180,13 @@ body, html {
 }
 
 .sidebar nav ul li a:hover {
-    background-color: var(--sidebar-hover);
-    color: var(--sidebar-text-active);
+    background-color: rgba(255, 255, 255, 0.1); /* Subtle white overlay on hover */
+    color: #ffffff;
 }
 
 .sidebar nav ul li a.active {
-    background-color: var(--sidebar-active);
-    color: var(--sidebar-text-active);
+    background-color: rgba(255, 255, 255, 0.2); /* More prominent white overlay for active */
+    color: #ffffff;
     box-shadow: inset 3px 0 0 0 #2575fc; /* Vibrant blue accent on left */
 }
 
@@ -270,33 +219,30 @@ body, html {
     margin-left: 250px; /* Offset for the fixed sidebar */
     flex-grow: 1;
     padding: 30px; /* Increased padding */
-    background-color: var(--bg-tertiary);
+    background-color: #f8f9fa; /* Very light off-white background */
     overflow-y: auto;
     min-height: 100vh; /* Ensures it can expand vertically if content exceeds one screen height */
-    transition: background-color 0.3s ease;
 }
 
 .main-header {
-    background-color: var(--bg-secondary);
+    background-color: #ffffff;
     padding: 25px 30px; /* Increased padding */
     border-radius: 10px; /* Slightly more rounded corners */
-    box-shadow: 0 4px 15px var(--shadow-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Softer, more diffuse shadow */
     margin-bottom: 30px; /* Increased margin */
     display: flex; /* Use flex to align hamburger and title */
     align-items: center;
     justify-content: space-between; /* Space between hamburger/title */
     position: relative; /* For hamburger button positioning */
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .main-header h1 {
     margin: 0;
-    color: var(--text-primary);
+    color: #333;
     font-size: 2rem; /* Larger heading */
     font-weight: 700;
     flex-grow: 1; /* Allow title to take available space */
     text-align: center; /* Center the title by default */
-    transition: color 0.3s ease;
 }
 
 /* Hamburger Button Styling */
@@ -304,7 +250,7 @@ body, html {
     background: none;
     border: none;
     font-size: 1.8rem; /* Size of the icon */
-    color: var(--text-primary);
+    color: #2F1857; /* Matches sidebar logo color */
     cursor: pointer;
     padding: 5px 10px;
     display: none; /* Hidden by default on large screens */
@@ -317,42 +263,15 @@ body, html {
     color: #2575fc; /* Primary blue on hover */
 }
 
-/* Dark Mode Toggle Button */
-.theme-toggle-btn {
-    background: none;
-    border: 2px solid var(--text-primary);
-    color: var(--text-primary);
-    cursor: pointer;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    margin-left: 15px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.theme-toggle-btn:hover {
-    background-color: var(--text-primary);
-    color: var(--bg-secondary);
-    transform: translateY(-2px);
-}
-
-.theme-toggle-btn i {
-    font-size: 1.1rem;
-}
-
 
 /* Dashboard Content Sections (shared styles) */
 .dashboard-content-section {
-    background-color: var(--bg-secondary);
+    background-color: #ffffff;
     padding: 30px; /* Increased padding */
     border-radius: 10px; /* Consistent rounded corners */
-    box-shadow: 0 4px 15px var(--shadow-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Consistent shadow */
     margin-bottom: 30px;
     display: none; /* Hidden by default, shown by JS */
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .dashboard-content-section.active {
@@ -366,24 +285,23 @@ body, html {
 }
 
 .dashboard-content-section h2 {
-    color: var(--text-primary);
+    color: #2F1857; /* Deep indigo for section headings */
     margin-top: 0;
     margin-bottom: 25px; /* Increased margin */
-    border-bottom: 2px solid var(--border-light);
+    border-bottom: 2px solid #eee; /* Slightly thicker separator */
     padding-bottom: 15px; /* Increased padding */
     font-size: 2.2rem; /* Larger heading */
     font-weight: 700;
-    transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Cards (general style for content blocks within sections) */
 .card {
-    background-color: var(--bg-secondary);
+    background-color: #ffffff;
     padding: 25px; /* Consistent padding */
     border-radius: 10px; /* Consistent rounded corners */
-    box-shadow: 0 4px 15px var(--shadow-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Consistent shadow */
     margin-bottom: 25px;
-    transition: transform 0.2s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.2s ease; /* Added hover effect */
 }
 
 .card:hover {
@@ -391,12 +309,11 @@ body, html {
 }
 
 .card h3 {
-    color: var(--text-primary);
+    color: #333;
     margin-top: 0;
     margin-bottom: 20px;
     font-size: 1.7rem; /* Larger heading */
     font-weight: 600;
-    transition: color 0.3s ease;
 }
 
 /* Dashboard Overview Specifics */
@@ -535,8 +452,7 @@ body, html {
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
-    color: var(--text-secondary);
-    transition: color 0.3s ease;
+    color: #444;
 }
 
 .form-group input[type="text"],
@@ -547,13 +463,12 @@ body, html {
 .form-group textarea {
     width: 100%;
     padding: 12px 15px;
-    border: 1px solid var(--border-color);
+    border: 1px solid #ccc;
     border-radius: 8px; /* Consistent rounded corners */
     box-sizing: border-box;
     font-size: 1rem;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-    background-color: var(--input-bg);
-    color: var(--text-primary);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background-color: #fcfcfc; /* Slightly off-white input background */
 }
 
 .form-group input:focus,
@@ -589,25 +504,22 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
-    background-color: var(--bg-secondary);
-    box-shadow: 0 4px 15px var(--shadow-color);
+    background-color: #ffffff; /* White table background */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Consistent shadow */
     border-radius: 10px; /* Consistent rounded corners */
     overflow: hidden; /* Ensures border-radius applies to table content */
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 table thead {
-    background-color: var(--table-header-bg);
-    color: var(--text-primary);
-    transition: background-color 0.3s ease, color 0.3s ease;
+    background-color: #eff3f9; /* Lighter blue-grey for header */
+    color: #333;
 }
 
 table th, table td {
     padding: 15px 20px; /* Increased padding */
     text-align: left;
-    border-bottom: 1px solid var(--border-lighter);
-    color: var(--text-primary);
-    transition: color 0.3s ease, border-color 0.3s ease;
+    border-bottom: 1px solid #e0e0e0; /* Softer border */
+    color: #333;
 }
 
 table th {
@@ -617,7 +529,7 @@ table th {
 }
 
 table tr:hover {
-    background-color: var(--table-row-hover);
+    background-color: #fcfdfe; /* Very subtle hover effect */
 }
 
 /* Specific table actions column */
@@ -717,18 +629,18 @@ table td.actions {
 }
 
 .announcement-item {
-    border: 1px solid var(--border-lighter);
+    border: 1px solid #e0e0e0;
     border-radius: 10px; /* Consistent rounded corners */
     padding: 20px;
     margin-bottom: 20px;
-    background-color: var(--announcement-bg);
-    box-shadow: 0 2px 8px var(--shadow-color-light);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
+    background-color: #fefefe;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Softer shadow */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .announcement-item:hover {
     transform: translateY(-3px);
-    box-shadow: 0 4px 12px var(--shadow-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .announcement-item h4 {
@@ -741,17 +653,15 @@ table td.actions {
 
 .announcement-item p {
     margin-bottom: 12px;
-    color: var(--text-secondary);
+    color: #444;
     line-height: 1.7;
-    transition: color 0.3s ease;
 }
 
 .announcement-item small {
     display: block;
     text-align: right;
-    color: var(--text-muted);
+    color: #777;
     font-size: 0.9rem;
-    transition: color 0.3s ease;
 }
 
 
@@ -1383,4 +1293,161 @@ input:checked + .slider:before {
   max-width: 100%;
   display: block;
   margin: 0 auto;
+}
+
+/* Dark Mode Toggle Button */
+.dark-mode-toggle {
+    background: linear-gradient(45deg, #FFD700, #FFA500); /* Yellow to Orange gradient */
+    border: none;
+    border-radius: 25px; /* Rounded button */
+    width: 50px; /* Fixed width */
+    height: 25px; /* Fixed height */
+    cursor: pointer;
+    position: relative; /* For positioning icons */
+    overflow: hidden; /* Hide parts of icons that go out of bounds */
+    transition: all 0.3s ease; /* Smooth transition for hover and state changes */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 20px; /* Spacing from header title */
+}
+
+.dark-mode-toggle:hover {
+    transform: scale(1.05); /* Slight enlargement on hover */
+}
+
+/* Icons inside the toggle */
+.dark-mode-toggle .sun-icon,
+.dark-mode-toggle .moon-icon {
+    position: absolute; /* Position icons absolutely within the button */
+    font-size: 14px; /* Size of the icon */
+    color: #fff; /* White color for icons */
+    transition: all 0.3s ease; /* Smooth transition for opacity and transform */
+}
+
+.dark-mode-toggle .sun-icon {
+    opacity: 1; /* Sun is visible by default */
+    transform: translateY(0); /* Sun is centered vertically */
+}
+
+.dark-mode-toggle .moon-icon {
+    opacity: 0; /* Moon is hidden by default */
+    transform: translateY(20px); /* Moon is pushed down, out of view */
+}
+
+/* Dark mode styles applied to the body */
+body.dark-mode {
+    background-color: #1a1a1a; /* Dark background */
+    color: #e0e0e0; /* Light text */
+}
+
+/* Dark mode specific styles for header */
+body.dark-mode .header {
+    background-color: #2d2d2d; /* Darker header background */
+    border-bottom-color: #404040; /* Darker border */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3); /* Stronger shadow for dark mode */
+}
+
+body.dark-mode .header h1 {
+    color: #e0e0e0; /* Light heading text */
+}
+
+/* Dark mode styles for the toggle button itself */
+body.dark-mode .dark-mode-toggle {
+    background: linear-gradient(45deg, #4A4A4A, #2D2D2D); /* Darker gradient for toggle */
+}
+
+/* Hiding and showing icons in dark mode */
+body.dark-mode .dark-mode-toggle .sun-icon {
+    opacity: 0; /* Hide sun */
+    transform: translateY(-20px); /* Push sun up, out of view */
+}
+
+body.dark-mode .dark-mode-toggle .moon-icon {
+    opacity: 1; /* Show moon */
+    transform: translateY(0); /* Center moon vertically */
+}
+
+/* Dark mode styles for the sidebar */
+body.dark-mode .sidebar {
+    background-color: #2d2d2d; /* Dark sidebar background */
+    border-right-color: #404040; /* Dark border */
+}
+
+body.dark-mode .sidebar ul li a {
+    color: #e0e0e0; /* Light link text in sidebar */
+}
+
+body.dark-mode .sidebar ul li a:hover {
+    background-color: #404040; /* Darker hover background */
+}
+
+/* Dark mode styles for the main content area */
+body.dark-mode .main-content {
+    background-color: #1a1a1a; /* Dark main content background */
+}
+
+/* Dark mode styles for dashboard sections */
+body.dark-mode .dashboard-content-section {
+    background-color: #2d2d2d; /* Dark section background */
+    border-color: #404040; /* Dark section border */
+}
+
+body.dark-mode .dashboard-content-section h2 {
+    color: #e0e0e0; /* Light section heading text */
+}
+
+/* Dark mode styles for form inputs */
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+    background-color: #404040; /* Dark input background */
+    border-color: #555; /* Darker border */
+    color: #e0e0e0; /* Light input text */
+}
+
+/* Dark mode styles for buttons */
+body.dark-mode button {
+    background-color: #404040; /* Dark button background */
+    color: #e0e0e0; /* Light button text */
+    border-color: #555; /* Darker border */
+}
+
+body.dark-mode button:hover {
+    background-color: #555; /* Slightly lighter dark background on hover */
+}
+
+/* Dark mode styles for tables */
+body.dark-mode table {
+    background-color: #2d2d2d; /* Dark table background */
+}
+
+body.dark-mode table th {
+    background-color: #404040; /* Dark table header background */
+    color: #e0e0e0; /* Light table header text */
+}
+
+body.dark-mode table td {
+    background-color: #2d2d2d; /* Dark table cell background */
+    color: #e0e0e0; /* Light table cell text */
+    border-color: #404040; /* Darker cell border */
+}
+
+/* Specific styles for dark mode dropdowns */
+body.dark-mode select {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="%23e0e0e0"><path d="M7 10l5 5 5-5z"/></svg>'); /* Light arrow for dropdown */
+    border-color: #555;
+}
+
+/* Dark mode styles for the toggle switch */
+body.dark-mode .switch .slider {
+    background-color: #555; /* Darker slider track */
+}
+
+body.dark-mode input:checked + .slider {
+    background-color: #007bff; /* Blue when toggled on in dark mode */
+}
+
+body.dark-mode .switch label {
+    color: #e0e0e0; /* Light label text */
 }

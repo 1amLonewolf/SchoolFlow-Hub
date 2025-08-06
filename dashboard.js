@@ -1183,48 +1183,9 @@ function loadSettings() {
         const savedNotifications = localStorage.getItem('schoolflowNotifications');
         if (savedNotifications !== null) { notificationsToggle.checked = (savedNotifications === 'true'); }
     }
-    
-    // Load theme preference on page load
-    const savedTheme = localStorage.getItem('schoolflowTheme') || 'light';
-    applyTheme(savedTheme);
-    updateThemeToggleButton(savedTheme);
 }
 
-function applyTheme(theme) {
-    console.log(`Applying theme: ${theme}`);
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('schoolflowTheme', theme);
-    
-    // Update theme select dropdown if it exists
-    const themeSelect = document.getElementById('themeSelect');
-    if (themeSelect) {
-        themeSelect.value = theme;
-    }
-}
-
-function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    applyTheme(newTheme);
-    updateThemeToggleButton(newTheme);
-    showMessage(`Switched to ${newTheme} mode!`, 'success', 2000);
-}
-
-function updateThemeToggleButton(theme) {
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
-    if (themeToggleBtn) {
-        const icon = themeToggleBtn.querySelector('i');
-        const text = themeToggleBtn.querySelector('span');
-        
-        if (theme === 'dark') {
-            icon.className = 'fas fa-sun';
-            text.textContent = 'Light';
-        } else {
-            icon.className = 'fas fa-moon';
-            text.textContent = 'Dark';
-        }
-    }
-}
+function applyTheme(theme) { console.log(`Applying theme: ${theme}`); }
 
 // Function to render all UI components dependent on data
 function renderUIComponents() {
@@ -1275,13 +1236,16 @@ async function loadAllData() {
 
 // --- DOM Content Loaded and Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
-    document.body.style.opacity = '1'; // Make body visible
+    // document.body.style.opacity = '1'; // Make body visible (This might be handled by CSS)
 
     // --- DOM Element References (Centralized for clarity) ---
     // Hamburger Menu
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const sidebar = document.querySelector('.sidebar');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+    // Dark Mode Toggle
+    const darkModeToggle = document.getElementById('darkModeToggle'); // Assuming this element exists in your HTML
 
     // Sidebar Navigation and Content Section Elements
     const sidebarLinks = document.querySelectorAll('.sidebar ul li a');
@@ -1387,12 +1351,29 @@ function attachEventListeners() {
     const sidebarOverlay = document.getElementById('sidebar-overlay');
     if (hamburgerBtn && sidebar && sidebarOverlay) {
         hamburgerBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
+            sidebar.classList.toggle('active');
             sidebarOverlay.classList.toggle('active');
         });
+
         sidebarOverlay.addEventListener('click', () => {
-            sidebar.classList.remove('open');
+            sidebar.classList.remove('active');
             sidebarOverlay.classList.remove('active');
+        });
+    }
+
+    // Dark Mode Toggle Event Listeners
+    const darkModeToggle = document.getElementById('darkModeToggle'); // Assuming this element exists in your HTML
+    if (darkModeToggle) {
+        // Load saved dark mode preference
+        const isDarkMode = localStorage.getItem('darkMode') === 'true';
+        if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+        }
+
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark);
         });
     }
 
@@ -1617,7 +1598,6 @@ function attachEventListeners() {
 
     // Settings Event Listeners
     const themeSelect = document.getElementById('themeSelect');
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
     const notificationsToggle = document.getElementById('notificationsToggle');
     const editProfileBtn = document.querySelector('.setting-card .setting-content button.primary-button:nth-of-type(1)');
     const changePasswordBtn = document.querySelector('.setting-card .setting-content button.secondary-button');
@@ -1646,15 +1626,10 @@ function attachEventListeners() {
         });
     }
 
-    if (themeToggleBtn) {
-        themeToggleBtn.addEventListener('click', toggleTheme);
-    }
-
     if (themeSelect) {
         themeSelect.addEventListener('change', () => {
             const selectedTheme = themeSelect.value;
             applyTheme(selectedTheme);
-            updateThemeToggleButton(selectedTheme);
         });
         loadSettings();
     }
