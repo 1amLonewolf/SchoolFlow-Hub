@@ -242,6 +242,129 @@ async function loadParseData(className) {
     }
 }
 
+// Profile Management Dialog Functions
+function showEditProfileDialog() {
+    const currentUser = Parse.User.current();
+    if (!currentUser) {
+        showMessage('You must be logged in to edit profile.', 'error');
+        return;
+    }
+
+    const dialogHtml = `
+        <div id="editProfileDialog" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 10000; min-width: 300px;">
+            <h3 style="margin: 0 0 20px 0; color: #333;">Edit Profile</h3>
+            <form id="editProfileForm">
+                <div style="margin-bottom: 15px;">
+                    <label for="editUsername" style="display: block; margin-bottom: 5px; font-weight: bold;">Username:</label>
+                    <input type="text" id="editUsername" value="${currentUser.get('username') || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="editEmail" style="display: block; margin-bottom: 5px; font-weight: bold;">Email:</label>
+                    <input type="email" id="editEmail" value="${currentUser.get('email') || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label for="editFullName" style="display: block; margin-bottom: 5px; font-weight: bold;">Full Name:</label>
+                    <input type="text" id="editFullName" value="${currentUser.get('fullName') || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" style="flex: 1; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Update Profile</button>
+                    <button type="button" id="cancelEditProfile" style="flex: 1; padding: 10px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Cancel</button>
+                </div>
+            </form>
+        </div>
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;" id="editProfileOverlay"></div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', dialogHtml);
+
+    const form = document.getElementById('editProfileForm');
+    const overlay = document.getElementById('editProfileOverlay');
+    const cancelBtn = document.getElementById('cancelEditProfile');
+
+    const closeDialog = () => {
+        document.getElementById('editProfileDialog')?.remove();
+        document.getElementById('editProfileOverlay')?.remove();
+    };
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newData = {
+            username: document.getElementById('editUsername').value.trim(),
+            email: document.getElementById('editEmail').value.trim(),
+            fullName: document.getElementById('editFullName').value.trim()
+        };
+        
+        if (await updateUserProfile(newData)) {
+            closeDialog();
+        }
+    });
+
+    cancelBtn.addEventListener('click', closeDialog);
+    overlay.addEventListener('click', closeDialog);
+}
+
+function showChangePasswordDialog() {
+    const dialogHtml = `
+        <div id="changePasswordDialog" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 10000; min-width: 300px;">
+            <h3 style="margin: 0 0 20px 0; color: #333;">Change Password</h3>
+            <form id="changePasswordForm">
+                <div style="margin-bottom: 15px;">
+                    <label for="currentPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">Current Password:</label>
+                    <input type="password" id="currentPassword" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="newPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">New Password:</label>
+                    <input type="password" id="newPassword" required minlength="6" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label for="confirmPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">Confirm New Password:</label>
+                    <input type="password" id="confirmPassword" required minlength="6" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" style="flex: 1; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Change Password</button>
+                    <button type="button" id="cancelChangePassword" style="flex: 1; padding: 10px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Cancel</button>
+                </div>
+            </form>
+        </div>
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;" id="changePasswordOverlay"></div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', dialogHtml);
+
+    const form = document.getElementById('changePasswordForm');
+    const overlay = document.getElementById('changePasswordOverlay');
+    const cancelBtn = document.getElementById('cancelChangePassword');
+
+    const closeDialog = () => {
+        document.getElementById('changePasswordDialog')?.remove();
+        document.getElementById('changePasswordOverlay')?.remove();
+    };
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (newPassword !== confirmPassword) {
+            showMessage('New passwords do not match.', 'error');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            showMessage('New password must be at least 6 characters long.', 'error');
+            return;
+        }
+        
+        if (await changeUserPassword(currentPassword, newPassword)) {
+            closeDialog();
+        }
+    });
+
+    cancelBtn.addEventListener('click', closeDialog);
+    overlay.addEventListener('click', closeDialog);
+}
+
 // --- UI RENDERING & DATA MANAGEMENT FUNCTIONS ---
 
 // Student Management Functions
@@ -1171,21 +1294,146 @@ function updateReports() {
 
 
 // Settings Functions
-function loadSettings() {
+async function loadSettings() {
     const themeSelect = document.getElementById('themeSelect');
     const notificationsToggle = document.getElementById('notificationsToggle');
+    const userNameSpan = document.getElementById('userNameDisplay');
+    const userEmailSpan = document.getElementById('userEmailDisplay');
 
-    if (themeSelect) {
+    // Load user profile from Parse
+    const currentUser = Parse.User.current();
+    if (currentUser) {
+        try {
+            await currentUser.fetch(); // Refresh user data
+            if (userNameSpan) userNameSpan.textContent = currentUser.get('username') || 'Admin User';
+            if (userEmailSpan) userEmailSpan.textContent = currentUser.get('email') || 'admin@schoolflow.com';
+            
+            // Load user preferences from Parse
+            const userPrefs = currentUser.get('preferences');
+            if (userPrefs) {
+                if (themeSelect && userPrefs.theme) {
+                    themeSelect.value = userPrefs.theme;
+                    applyTheme(userPrefs.theme);
+                }
+                if (notificationsToggle && userPrefs.notifications !== undefined) {
+                    notificationsToggle.checked = userPrefs.notifications;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading user settings:', error);
+            showMessage('Error loading user settings: ' + error.message, 'error');
+        }
+    }
+
+    // Fallback to localStorage if Parse data unavailable
+    if (themeSelect && !themeSelect.value) {
         const savedTheme = localStorage.getItem('schoolflowTheme');
         if (savedTheme) { themeSelect.value = savedTheme; applyTheme(savedTheme); }
     }
-    if (notificationsToggle) {
+    if (notificationsToggle && !notificationsToggle.checked) {
         const savedNotifications = localStorage.getItem('schoolflowNotifications');
         if (savedNotifications !== null) { notificationsToggle.checked = (savedNotifications === 'true'); }
     }
 }
 
-function applyTheme(theme) { console.log(`Applying theme: ${theme}`); }
+function applyTheme(theme) {
+    console.log(`Applying theme: ${theme}`);
+    if (theme === 'dark') {
+        document.body.classList.add('dark-mode');
+    } else {
+        document.body.classList.remove('dark-mode');
+    }
+}
+
+async function saveUserSettings() {
+    const themeSelect = document.getElementById('themeSelect');
+    const notificationsToggle = document.getElementById('notificationsToggle');
+    const currentUser = Parse.User.current();
+
+    if (!currentUser) {
+        showMessage('You must be logged in to save settings.', 'error');
+        return false;
+    }
+
+    try {
+        const preferences = {
+            theme: themeSelect ? themeSelect.value : 'light',
+            notifications: notificationsToggle ? notificationsToggle.checked : true
+        };
+
+        currentUser.set('preferences', preferences);
+        await currentUser.save();
+
+        // Also save to localStorage as backup
+        localStorage.setItem('schoolflowTheme', preferences.theme);
+        localStorage.setItem('schoolflowNotifications', preferences.notifications);
+
+        applyTheme(preferences.theme);
+        showMessage('Settings saved successfully!', 'success');
+        return true;
+    } catch (error) {
+        console.error('Error saving settings:', error);
+        showMessage('Error saving settings: ' + error.message, 'error');
+        return false;
+    }
+}
+
+async function updateUserProfile(newData) {
+    const currentUser = Parse.User.current();
+    if (!currentUser) {
+        showMessage('You must be logged in to update profile.', 'error');
+        return false;
+    }
+
+    try {
+        if (newData.email && newData.email !== currentUser.get('email')) {
+            currentUser.set('email', newData.email);
+        }
+        if (newData.username && newData.username !== currentUser.get('username')) {
+            currentUser.set('username', newData.username);
+        }
+        if (newData.fullName) {
+            currentUser.set('fullName', newData.fullName);
+        }
+
+        await currentUser.save();
+        showMessage('Profile updated successfully!', 'success');
+        await loadSettings(); // Refresh the display
+        return true;
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showMessage('Error updating profile: ' + error.message, 'error');
+        return false;
+    }
+}
+
+async function changeUserPassword(currentPassword, newPassword) {
+    const currentUser = Parse.User.current();
+    if (!currentUser) {
+        showMessage('You must be logged in to change password.', 'error');
+        return false;
+    }
+
+    try {
+        // Verify current password by attempting to login
+        await Parse.User.logIn(currentUser.get('username'), currentPassword);
+        
+        // Change password
+        currentUser.set('password', newPassword);
+        await currentUser.save();
+        
+        showMessage('Password changed successfully!', 'success');
+        return true;
+    } catch (error) {
+        console.error('Error changing password:', error);
+        if (error.code === 101) {
+            showMessage('Current password is incorrect.', 'error');
+        } else {
+            showMessage('Error changing password: ' + error.message, 'error');
+        }
+        return false;
+    }
+}
 
 // Function to render all UI components dependent on data
 function renderUIComponents() {
@@ -1631,7 +1879,6 @@ function attachEventListeners() {
             const selectedTheme = themeSelect.value;
             applyTheme(selectedTheme);
         });
-        loadSettings();
     }
 
     if (notificationsToggle) {
@@ -1646,25 +1893,19 @@ function attachEventListeners() {
 
     if (editProfileBtn) {
         editProfileBtn.addEventListener('click', () => {
-            showMessage('Edit Profile clicked! (Functionality to edit user data is not yet implemented)', 'info');
+            showEditProfileDialog();
         });
     }
 
     if (changePasswordBtn) {
         changePasswordBtn.addEventListener('click', () => {
-            showMessage('Change Password clicked! (Functionality to change password is not yet implemented)', 'info');
+            showChangePasswordDialog();
         });
     }
 
     if (saveGeneralSettingsBtn) {
-        saveGeneralSettingsBtn.addEventListener('click', () => {
-            if (themeSelect) {
-                localStorage.setItem('schoolflowTheme', themeSelect.value);
-            }
-            if (notificationsToggle) {
-                localStorage.setItem('schoolflowNotifications', notificationsToggle.checked);
-            }
-            showMessage('General Settings saved successfully!', 'success');
+        saveGeneralSettingsBtn.addEventListener('click', async () => {
+            await saveUserSettings();
         });
     }
 
