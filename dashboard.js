@@ -10,7 +10,7 @@ let students = [];
 let attendanceRecords = [];
 let grades = [];
 let announcements = [];
-let studentFiles = []; // New array for student files
+
 
 // Chart instances (to destroy and re-create on updates to prevent memory leaks)
 let coursePopularityChartInstance = null;
@@ -1474,164 +1474,7 @@ async function changeUserPassword(currentPassword, newPassword) {
     }
 }
 
-// Student File Management Functions
-function getFileIcon(fileName) {
-    const extension = fileName.split('.').pop().toLowerCase();
-    const iconMap = {
-        'pdf': '📄',
-        'doc': '📝', 'docx': '📝',
-        'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️',
-        'txt': '📄',
-        'csv': '📊', 'xls': '📊', 'xlsx': '📊',
-        'zip': '📦', 'rar': '📦'
-    };
-    return iconMap[extension] || '📎';
-}
 
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-async function uploadStudentFiles() {
-    const studentFileSelect = document.getElementById('studentFileSelect');
-    const studentFileInput = document.getElementById('studentFileInput');
-    const fileUploadProgress = document.getElementById('fileUploadProgress');
-    const progressBar = document.getElementById('progressBar');
-    const progressText = document.getElementById('progressText');
-
-    if (!studentFileSelect?.value) {
-        showMessage('Please select a student first.', 'error');
-        return;
-    }
-
-    if (!studentFileInput?.files?.length) {
-        showMessage('Please select files to upload.', 'error');
-        return;
-    }
-
-    const studentId = studentFileSelect.value;
-    const files = Array.from(studentFileInput.files);
-    
-    // Show progress
-    fileUploadProgress.style.display = 'block';
-    progressBar.style.width = '0%';
-    progressText.textContent = 'Starting upload...';
-
-    try {
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            const progress = ((i + 1) / files.length) * 100;
-            
-            progressBar.style.width = progress + '%';
-            progressText.textContent = `Uploading ${file.name}... (${i + 1}/${files.length})`;
-
-            // Create file data object
-            const fileData = {
-                studentId: studentId,
-                fileName: file.name,
-                fileSize: file.size,
-                fileType: file.type,
-                uploadDate: new Date().toISOString().split('T')[0]
-            };
-
-            // In a real application, you would upload to Parse Files or a cloud storage service
-            // For now, we'll simulate the upload by saving file metadata
-            await saveParseData('StudentFile', fileData);
-        }
-
-        showMessage(`Successfully uploaded ${files.length} file(s)!`, 'success');
-        studentFileInput.value = ''; // Clear file input
-        await loadStudentFiles(studentId); // Refresh the files display
-    } catch (error) {
-        console.error('Error uploading files:', error);
-        showMessage('Error uploading files: ' + error.message, 'error');
-    } finally {
-        // Hide progress bar after a short delay
-        setTimeout(() => {
-            fileUploadProgress.style.display = 'none';
-        }, 1000);
-    }
-}
-
-async function loadStudentFiles(studentId) {
-    if (!studentId) return;
-
-    const student = students.find(s => s.id === studentId);
-    if (!student) return;
-
-    const studentFilesContainer = document.getElementById('studentFilesContainer');
-    const selectedStudentName = document.getElementById('selectedStudentName');
-    const studentFilesList = document.getElementById('studentFilesList');
-
-    if (selectedStudentName) selectedStudentName.textContent = student.name;
-    if (studentFilesContainer) studentFilesContainer.style.display = 'block';
-
-    // Filter files for this student
-    const files = studentFiles.filter(f => f.studentId === studentId);
-
-    if (!studentFilesList) return;
-
-    if (files.length === 0) {
-        studentFilesList.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #666;">No files uploaded for this student yet.</p>';
-        return;
-    }
-
-    studentFilesList.innerHTML = '';
-    files.forEach(file => {
-        const fileItem = document.createElement('div');
-        fileItem.className = 'file-item';
-        fileItem.innerHTML = `
-            <span class="file-icon">${getFileIcon(file.fileName)}</span>
-            <div class="file-name">${file.fileName}</div>
-            <div class="file-size">${formatFileSize(file.fileSize)}</div>
-            <div class="file-actions">
-                <button class="download-btn" onclick="downloadFile('${file.id}', '${file.fileName}')">Download</button>
-                <button class="delete-file-btn" onclick="deleteStudentFile('${file.id}')">Delete</button>
-            </div>
-        `;
-        studentFilesList.appendChild(fileItem);
-    });
-}
-
-async function deleteStudentFile(fileId) {
-    showConfirmDialog('Are you sure you want to delete this file?', async () => {
-        const success = await deleteParseData('StudentFile', fileId);
-        if (success) {
-            // Refresh the current student's files display
-            const studentFileSelect = document.getElementById('studentFileSelect');
-            if (studentFileSelect?.value) {
-                await loadStudentFiles(studentFileSelect.value);
-            }
-        }
-    });
-}
-
-function downloadFile(fileId, fileName) {
-    // In a real application, this would download the actual file from cloud storage
-    // For now, we'll show a message since we're only storing metadata
-    showMessage(`Download functionality would retrieve: ${fileName}`, 'info', 3000);
-}
-
-function populateStudentFileDropdown() {
-    const studentFileSelect = document.getElementById('studentFileSelect');
-    if (!studentFileSelect) return;
-
-    const currentValue = studentFileSelect.value;
-    studentFileSelect.innerHTML = '<option value="">-- Select Student --</option>';
-    
-    students.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
-        const option = document.createElement('option');
-        option.value = student.id;
-        option.textContent = `${student.name} (${student.course})`;
-        studentFileSelect.appendChild(option);
-    });
-    
-    studentFileSelect.value = currentValue;
-}
 
 // Function to render all UI components dependent on data
 function renderUIComponents() {
@@ -1642,7 +1485,7 @@ function renderUIComponents() {
     const addAssignmentStudentSelect = document.getElementById('addAssignmentStudent');
     if (selectStudentForGrades) populateStudentDropdowns(selectStudentForGrades);
     if (addAssignmentStudentSelect) populateStudentDropdowns(addAssignmentStudentSelect);
-    populateStudentFileDropdown(); // Populate file upload dropdown
+    
     updateReports(); // This now also renders charts
     // Only re-render current grades if a student is already selected
     if (currentGradesStudentId) {
@@ -1668,7 +1511,7 @@ async function loadAllData() {
     attendanceRecords = await loadParseData('AttendanceRecord');
     grades = await loadParseData('Grade');
     announcements = await loadParseData('Announcement');
-    studentFiles = await loadParseData('StudentFile'); // Load student files
+    
 
     console.log("[loadAllData] Students data after fetch:", students);
     // Render all UI components after data is loaded
@@ -1880,10 +1723,6 @@ function attachEventListeners() {
     const saveStudentButton = addStudentForm ? addStudentForm.querySelector('.submit-button') : null;
     const formHeading = addStudentFormContainer ? addStudentFormContainer.querySelector('h3') : null;
     
-    // Student File Management Event Listeners
-    const uploadStudentFilesBtn = document.getElementById('uploadStudentFilesBtn');
-    const studentFileSelect = document.getElementById('studentFileSelect');
-
     if (addStudentBtn) {
         addStudentBtn.addEventListener('click', () => {
             if (addStudentFormContainer) addStudentFormContainer.style.display = 'block';
@@ -1923,21 +1762,7 @@ function attachEventListeners() {
         uploadFileBtn.addEventListener('click', handleFileUpload);
     }
     
-    // Student File Upload Event Listeners
-    if (uploadStudentFilesBtn) {
-        uploadStudentFilesBtn.addEventListener('click', uploadStudentFiles);
-    }
-    if (studentFileSelect) {
-        studentFileSelect.addEventListener('change', (e) => {
-            const studentId = e.target.value;
-            if (studentId) {
-                loadStudentFiles(studentId);
-            } else {
-                const studentFilesContainer = document.getElementById('studentFilesContainer');
-                if (studentFilesContainer) studentFilesContainer.style.display = 'none';
-            }
-        });
-    }
+    
 
     // Quick Action Buttons Event Listeners
     const goToAttendanceBtn = document.getElementById('goToAttendanceBtn');
