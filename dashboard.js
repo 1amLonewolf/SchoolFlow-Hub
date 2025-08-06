@@ -1183,9 +1183,48 @@ function loadSettings() {
         const savedNotifications = localStorage.getItem('schoolflowNotifications');
         if (savedNotifications !== null) { notificationsToggle.checked = (savedNotifications === 'true'); }
     }
+    
+    // Load theme preference on page load
+    const savedTheme = localStorage.getItem('schoolflowTheme') || 'light';
+    applyTheme(savedTheme);
+    updateThemeToggleButton(savedTheme);
 }
 
-function applyTheme(theme) { console.log(`Applying theme: ${theme}`); }
+function applyTheme(theme) {
+    console.log(`Applying theme: ${theme}`);
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('schoolflowTheme', theme);
+    
+    // Update theme select dropdown if it exists
+    const themeSelect = document.getElementById('themeSelect');
+    if (themeSelect) {
+        themeSelect.value = theme;
+    }
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    applyTheme(newTheme);
+    updateThemeToggleButton(newTheme);
+    showMessage(`Switched to ${newTheme} mode!`, 'success', 2000);
+}
+
+function updateThemeToggleButton(theme) {
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    if (themeToggleBtn) {
+        const icon = themeToggleBtn.querySelector('i');
+        const text = themeToggleBtn.querySelector('span');
+        
+        if (theme === 'dark') {
+            icon.className = 'fas fa-sun';
+            text.textContent = 'Light';
+        } else {
+            icon.className = 'fas fa-moon';
+            text.textContent = 'Dark';
+        }
+    }
+}
 
 // Function to render all UI components dependent on data
 function renderUIComponents() {
@@ -1578,6 +1617,7 @@ function attachEventListeners() {
 
     // Settings Event Listeners
     const themeSelect = document.getElementById('themeSelect');
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
     const notificationsToggle = document.getElementById('notificationsToggle');
     const editProfileBtn = document.querySelector('.setting-card .setting-content button.primary-button:nth-of-type(1)');
     const changePasswordBtn = document.querySelector('.setting-card .setting-content button.secondary-button');
@@ -1606,10 +1646,15 @@ function attachEventListeners() {
         });
     }
 
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', toggleTheme);
+    }
+
     if (themeSelect) {
         themeSelect.addEventListener('change', () => {
             const selectedTheme = themeSelect.value;
             applyTheme(selectedTheme);
+            updateThemeToggleButton(selectedTheme);
         });
         loadSettings();
     }

@@ -2,17 +2,68 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 
+/* CSS Variables for Light and Dark Mode */
+:root {
+    /* Light Mode Colors */
+    --bg-primary: #f4f7f6;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f8f9fa;
+    --text-primary: #333;
+    --text-secondary: #555;
+    --text-tertiary: #666;
+    --text-muted: #777;
+    --border-color: #ddd;
+    --border-light: #eee;
+    --border-lighter: #e0e0e0;
+    --shadow-color: rgba(0, 0, 0, 0.08);
+    --shadow-color-light: rgba(0, 0, 0, 0.05);
+    --sidebar-bg: linear-gradient(180deg, #2F1857 0%, #1A237E 100%);
+    --sidebar-text: #e0e0e0;
+    --sidebar-text-active: #ffffff;
+    --sidebar-hover: rgba(255, 255, 255, 0.1);
+    --sidebar-active: rgba(255, 255, 255, 0.2);
+    --input-bg: #fcfcfc;
+    --table-header-bg: #eff3f9;
+    --table-row-hover: #fcfdfe;
+    --announcement-bg: #fefefe;
+}
+
+/* Dark Mode Colors */
+[data-theme="dark"] {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #242424;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --text-tertiary: #a0a0a0;
+    --text-muted: #888;
+    --border-color: #404040;
+    --border-light: #383838;
+    --border-lighter: #454545;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --shadow-color-light: rgba(0, 0, 0, 0.2);
+    --sidebar-bg: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    --sidebar-text: #b0b0b0;
+    --sidebar-text-active: #ffffff;
+    --sidebar-hover: rgba(255, 255, 255, 0.1);
+    --sidebar-active: rgba(255, 255, 255, 0.2);
+    --input-bg: #333;
+    --table-header-bg: #383838;
+    --table-row-hover: #353535;
+    --announcement-bg: #353535;
+}
+
 /* General Body and HTML Reset */
 body, html {
     margin: 0;
     padding: 0;
     font-family: 'Roboto', sans-serif;
-    background-color: #f4f7f6; /* Light grey background for content areas */
-    color: #333;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     line-height: 1.6;
     height: 100vh; /* Ensures 100% viewport height */
     overflow: hidden; /* Prevent body scroll, sidebar handles its own */
-    transition: opacity 0.5s ease-in-out; /* Smooth transition for dashboard load */
+    transition: opacity 0.5s ease-in-out, background-color 0.3s ease, color 0.3s ease;
     opacity: 1; /* Initial state for transition, controlled by JS */
 }
 
@@ -130,10 +181,10 @@ body, html {
 /* Sidebar */
 .sidebar {
     width: 250px;
-    background: linear-gradient(180deg, #2F1857 0%, #1A237E 100%); /* Deep indigo/purple gradient */
+    background: var(--sidebar-bg);
     color: white;
     padding: 20px;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2); /* More pronounced shadow */
+    box-shadow: 2px 0 10px var(--shadow-color);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -142,7 +193,7 @@ body, html {
     overflow-y: auto; /* Enable scrolling for long content in sidebar */
     z-index: 1000; /* Ensure sidebar is above other content */
     /* Transition for sliding effect when opened/closed on mobile */
-    transition: transform 0.3s ease-in-out;
+    transition: transform 0.3s ease-in-out, background 0.3s ease;
 }
 
 .sidebar .logo {
@@ -170,7 +221,7 @@ body, html {
 }
 
 .sidebar nav ul li a {
-    color: #e0e0e0; /* Off-white for general links */
+    color: var(--sidebar-text);
     text-decoration: none;
     padding: 12px 15px;
     display: block; /* Make the whole area clickable */
@@ -180,13 +231,13 @@ body, html {
 }
 
 .sidebar nav ul li a:hover {
-    background-color: rgba(255, 255, 255, 0.1); /* Subtle white overlay on hover */
-    color: #ffffff;
+    background-color: var(--sidebar-hover);
+    color: var(--sidebar-text-active);
 }
 
 .sidebar nav ul li a.active {
-    background-color: rgba(255, 255, 255, 0.2); /* More prominent white overlay for active */
-    color: #ffffff;
+    background-color: var(--sidebar-active);
+    color: var(--sidebar-text-active);
     box-shadow: inset 3px 0 0 0 #2575fc; /* Vibrant blue accent on left */
 }
 
@@ -219,30 +270,33 @@ body, html {
     margin-left: 250px; /* Offset for the fixed sidebar */
     flex-grow: 1;
     padding: 30px; /* Increased padding */
-    background-color: #f8f9fa; /* Very light off-white background */
+    background-color: var(--bg-tertiary);
     overflow-y: auto;
     min-height: 100vh; /* Ensures it can expand vertically if content exceeds one screen height */
+    transition: background-color 0.3s ease;
 }
 
 .main-header {
-    background-color: #ffffff;
+    background-color: var(--bg-secondary);
     padding: 25px 30px; /* Increased padding */
     border-radius: 10px; /* Slightly more rounded corners */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Softer, more diffuse shadow */
+    box-shadow: 0 4px 15px var(--shadow-color);
     margin-bottom: 30px; /* Increased margin */
     display: flex; /* Use flex to align hamburger and title */
     align-items: center;
     justify-content: space-between; /* Space between hamburger/title */
     position: relative; /* For hamburger button positioning */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .main-header h1 {
     margin: 0;
-    color: #333;
+    color: var(--text-primary);
     font-size: 2rem; /* Larger heading */
     font-weight: 700;
     flex-grow: 1; /* Allow title to take available space */
     text-align: center; /* Center the title by default */
+    transition: color 0.3s ease;
 }
 
 /* Hamburger Button Styling */
@@ -250,7 +304,7 @@ body, html {
     background: none;
     border: none;
     font-size: 1.8rem; /* Size of the icon */
-    color: #2F1857; /* Matches sidebar logo color */
+    color: var(--text-primary);
     cursor: pointer;
     padding: 5px 10px;
     display: none; /* Hidden by default on large screens */
@@ -263,15 +317,42 @@ body, html {
     color: #2575fc; /* Primary blue on hover */
 }
 
+/* Dark Mode Toggle Button */
+.theme-toggle-btn {
+    background: none;
+    border: 2px solid var(--text-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    margin-left: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.theme-toggle-btn:hover {
+    background-color: var(--text-primary);
+    color: var(--bg-secondary);
+    transform: translateY(-2px);
+}
+
+.theme-toggle-btn i {
+    font-size: 1.1rem;
+}
+
 
 /* Dashboard Content Sections (shared styles) */
 .dashboard-content-section {
-    background-color: #ffffff;
+    background-color: var(--bg-secondary);
     padding: 30px; /* Increased padding */
     border-radius: 10px; /* Consistent rounded corners */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Consistent shadow */
+    box-shadow: 0 4px 15px var(--shadow-color);
     margin-bottom: 30px;
     display: none; /* Hidden by default, shown by JS */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .dashboard-content-section.active {
@@ -285,23 +366,24 @@ body, html {
 }
 
 .dashboard-content-section h2 {
-    color: #2F1857; /* Deep indigo for section headings */
+    color: var(--text-primary);
     margin-top: 0;
     margin-bottom: 25px; /* Increased margin */
-    border-bottom: 2px solid #eee; /* Slightly thicker separator */
+    border-bottom: 2px solid var(--border-light);
     padding-bottom: 15px; /* Increased padding */
     font-size: 2.2rem; /* Larger heading */
     font-weight: 700;
+    transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Cards (general style for content blocks within sections) */
 .card {
-    background-color: #ffffff;
+    background-color: var(--bg-secondary);
     padding: 25px; /* Consistent padding */
     border-radius: 10px; /* Consistent rounded corners */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Consistent shadow */
+    box-shadow: 0 4px 15px var(--shadow-color);
     margin-bottom: 25px;
-    transition: transform 0.2s ease; /* Added hover effect */
+    transition: transform 0.2s ease, background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card:hover {
@@ -309,11 +391,12 @@ body, html {
 }
 
 .card h3 {
-    color: #333;
+    color: var(--text-primary);
     margin-top: 0;
     margin-bottom: 20px;
     font-size: 1.7rem; /* Larger heading */
     font-weight: 600;
+    transition: color 0.3s ease;
 }
 
 /* Dashboard Overview Specifics */
@@ -452,7 +535,8 @@ body, html {
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
-    color: #444;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
 }
 
 .form-group input[type="text"],
@@ -463,12 +547,13 @@ body, html {
 .form-group textarea {
     width: 100%;
     padding: 12px 15px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-color);
     border-radius: 8px; /* Consistent rounded corners */
     box-sizing: border-box;
     font-size: 1rem;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    background-color: #fcfcfc; /* Slightly off-white input background */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
 }
 
 .form-group input:focus,
@@ -504,22 +589,25 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
-    background-color: #ffffff; /* White table background */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Consistent shadow */
+    background-color: var(--bg-secondary);
+    box-shadow: 0 4px 15px var(--shadow-color);
     border-radius: 10px; /* Consistent rounded corners */
     overflow: hidden; /* Ensures border-radius applies to table content */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 table thead {
-    background-color: #eff3f9; /* Lighter blue-grey for header */
-    color: #333;
+    background-color: var(--table-header-bg);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 table th, table td {
     padding: 15px 20px; /* Increased padding */
     text-align: left;
-    border-bottom: 1px solid #e0e0e0; /* Softer border */
-    color: #333;
+    border-bottom: 1px solid var(--border-lighter);
+    color: var(--text-primary);
+    transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 table th {
@@ -529,7 +617,7 @@ table th {
 }
 
 table tr:hover {
-    background-color: #fcfdfe; /* Very subtle hover effect */
+    background-color: var(--table-row-hover);
 }
 
 /* Specific table actions column */
@@ -629,18 +717,18 @@ table td.actions {
 }
 
 .announcement-item {
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-lighter);
     border-radius: 10px; /* Consistent rounded corners */
     padding: 20px;
     margin-bottom: 20px;
-    background-color: #fefefe;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Softer shadow */
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background-color: var(--announcement-bg);
+    box-shadow: 0 2px 8px var(--shadow-color-light);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .announcement-item:hover {
     transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .announcement-item h4 {
@@ -653,15 +741,17 @@ table td.actions {
 
 .announcement-item p {
     margin-bottom: 12px;
-    color: #444;
+    color: var(--text-secondary);
     line-height: 1.7;
+    transition: color 0.3s ease;
 }
 
 .announcement-item small {
     display: block;
     text-align: right;
-    color: #777;
+    color: var(--text-muted);
     font-size: 0.9rem;
+    transition: color 0.3s ease;
 }
 
 

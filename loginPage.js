@@ -56,6 +56,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordInput = document.getElementById('password');
     const loginButton = document.querySelector('.login-button');
     const loginBox = document.querySelector('.login-box');
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+    // Load theme preference on page load
+    const savedTheme = localStorage.getItem('schoolflowTheme') || 'light';
+    applyTheme(savedTheme);
+    updateThemeToggleButton(savedTheme);
+
+    // Add theme toggle functionality
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', toggleTheme);
+    }
 
     // Create an element for displaying messages (success/error) if not already present
     let messageDiv = loginForm.querySelector('.message');
@@ -139,3 +150,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// Theme management functions
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('schoolflowTheme', theme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    applyTheme(newTheme);
+    updateThemeToggleButton(newTheme);
+    showMessage(`Switched to ${newTheme} mode!`, 'success', 2000);
+}
+
+function updateThemeToggleButton(theme) {
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    if (themeToggleBtn) {
+        const icon = themeToggleBtn.querySelector('i');
+        const text = themeToggleBtn.querySelector('span');
+        
+        if (theme === 'dark') {
+            icon.className = 'fas fa-sun';
+            text.textContent = 'Light';
+        } else {
+            icon.className = 'fas fa-moon';
+            text.textContent = 'Dark';
+        }
+    }
+}
