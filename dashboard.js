@@ -1293,6 +1293,17 @@ function updateReports() {
 }
 
 
+// Function to update welcome message with username
+function updateWelcomeMessage() {
+    const welcomeMessage = document.getElementById('welcomeMessage');
+    const currentUser = Parse.User.current();
+    
+    if (welcomeMessage && currentUser) {
+        const username = currentUser.get('username') || currentUser.get('fullName') || 'Admin';
+        welcomeMessage.textContent = `Welcome, ${username}!`;
+    }
+}
+
 // Settings Functions
 async function loadSettings() {
     const themeSelect = document.getElementById('themeSelect');
@@ -1320,6 +1331,9 @@ async function loadSettings() {
             await currentUser.fetch(); // Refresh user data
             if (userNameSpan) userNameSpan.textContent = currentUser.get('username') || 'Admin User';
             if (userEmailSpan) userEmailSpan.textContent = currentUser.get('email') || 'admin@schoolflow.com';
+            
+            // Update welcome message with current username
+            updateWelcomeMessage();
             
             // Load user preferences from Parse (override localStorage if available)
             const userPrefs = currentUser.get('preferences');
@@ -1422,6 +1436,7 @@ async function updateUserProfile(newData) {
         await currentUser.save();
         showMessage('Profile updated successfully!', 'success');
         await loadSettings(); // Refresh the display
+        updateWelcomeMessage(); // Update welcome message with new username
         return true;
     } catch (error) {
         console.error('Error updating profile:', error);
