@@ -135,9 +135,43 @@
                 </div>
                 <!-- END NEW/MODIFIED: Bulk Student Upload Section -->
 
+                <!-- NEW: Student File Upload Section -->
+                <div class="card" style="margin-bottom: 25px;">
+                    <h3>Student File Management</h3>
+                    <p>Upload documents, images, or other files for students (PDFs, images, Word docs, etc.)</p>
+                    <div class="form-group" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px; margin-bottom: 15px;">
+                        <div style="flex-grow: 1; min-width: 200px;">
+                            <label for="studentFileSelect">Select Student:</label>
+                            <select id="studentFileSelect" name="studentFileSelect" class="input-select-custom">
+                                <option value="">-- Select Student --</option>
+                                <!-- Students populated by JS -->
+                            </select>
+                        </div>
+                        <div style="flex-grow: 1; min-width: 200px;">
+                            <label for="studentFileInput">Select Files:</label>
+                            <input type="file" id="studentFileInput" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt,.csv,.xls,.xlsx">
+                        </div>
+                        <button id="uploadStudentFilesBtn" class="action-button">Upload Files</button>
+                    </div>
+                    <div id="fileUploadProgress" style="margin-bottom: 15px; display: none;">
+                        <div style="background: #f0f0f0; border-radius: 10px; height: 20px; overflow: hidden;">
+                            <div id="progressBar" style="background: #4CAF50; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <span id="progressText">Uploading...</span>
+                    </div>
+                    
+                    <!-- Student Files Display -->
+                    <div id="studentFilesContainer" style="display: none;">
+                        <h4>Files for <span id="selectedStudentName">Student</span></h4>
+                        <div id="studentFilesList" class="files-grid">
+                            <!-- Files will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card">
                     <h3>Student Roster</h3>
-                    <div class="table-responsive">
+                    <div class="table-responsive"></div></div>
                         <table id="studentTable">
                             <thead>
                                 <tr>
