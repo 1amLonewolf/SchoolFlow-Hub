@@ -31,6 +31,7 @@
                     <li><a href="#announcements">Announcements</a></li>
                     <li><a href="#reports-analytics">Reports & Analytics</a></li>
                     <li><a href="#settings">Settings</a></li>
+<li><a href="#teacher-management">Teacher Management</a></li>
                 </ul>
             </nav>
             <div class="sidebar-footer">
@@ -277,7 +278,50 @@
                     </form>
                 </div>
             </section>
+<section id="teacher-management" class="dashboard-content-section">
+    <h2>Teacher Management</h2>
 
+    <button id="addTeacherBtn" class="action-button" style="margin-bottom: 20px;">Add New Teacher</button>
+
+    <div class="add-teacher-form-container card" style="display: none; margin-bottom: 25px;">
+        <h3 style="margin-bottom: 15px;">Add New Teacher</h3>
+        <form id="addTeacherForm">
+            <div class="form-group">
+                <label for="teacherName">Teacher Name:</label>
+                <input type="text" id="teacherName" name="teacherName" required>
+            </div>
+            <div class="form-group">
+                <label for="subject">Subject:</label>
+                <input type="text" id="subject" name="subject" required>
+            </div>
+            <div class="form-group">
+                <label for="phoneNumber">Phone Number:</label>
+                <input type="tel" id="teacherPhoneNumber" name="teacherPhoneNumber" required>
+            </div>
+            <button type="submit" class="submit-button">Save Teacher</button>
+            <button type="button" class="cancel-button">Cancel</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>Teacher Roster</h3>
+        <div class="table-responsive">
+            <table id="teacherTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Subject</th>
+                        <th>Contact</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Teacher rows will be dynamically inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
             <section id="announcements" class="dashboard-content-section">
                 <h2>Announcements</h2>
 

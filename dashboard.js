@@ -840,6 +840,31 @@ async function addAssignmentToStudent(event) {
     await saveParseData('Grade', newAssignment);
     if (addAssignmentForm) addAssignmentForm.reset();
 }
+// Teacher Management Event Listeners
+const addTeacherBtn = document.getElementById('addTeacherBtn');
+const addTeacherFormContainer = document.querySelector('.add-teacher-form-container');
+const addTeacherForm = document.getElementById('addTeacherForm');
+
+if (addTeacherBtn) {
+    addTeacherBtn.addEventListener('click', () => {
+        addTeacherFormContainer.style.display = 'block';
+        addTeacherForm.reset();
+    });
+}
+
+if (addTeacherForm) {
+    addTeacherForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const teacherName = document.getElementById('teacherName').value;
+        const subject = document.getElementById('subject').value;
+        const teacherPhoneNumber = document.getElementById('teacherPhoneNumber').value;
+
+        // Here you would add code to save the teacher details (e.g., to a database)
+
+        console.log(`Teacher ${teacherName} added. Subject: ${subject}, Phone: ${teacherPhoneNumber}`);
+        addTeacherFormContainer.style.display = 'none';
+    });
+}
 
 // Announcements Functions
 async function renderAnnouncements() {
