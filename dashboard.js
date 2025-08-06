@@ -11,7 +11,6 @@ let attendanceRecords = [];
 let grades = [];
 let announcements = [];
 
-
 // Chart instances (to destroy and re-create on updates to prevent memory leaks)
 let coursePopularityChartInstance = null;
 let overallAttendanceChartInstance = null;
@@ -1474,8 +1473,6 @@ async function changeUserPassword(currentPassword, newPassword) {
     }
 }
 
-
-
 // Function to render all UI components dependent on data
 function renderUIComponents() {
     console.log("[renderUIComponents] Starting UI rendering.");
@@ -1485,7 +1482,6 @@ function renderUIComponents() {
     const addAssignmentStudentSelect = document.getElementById('addAssignmentStudent');
     if (selectStudentForGrades) populateStudentDropdowns(selectStudentForGrades);
     if (addAssignmentStudentSelect) populateStudentDropdowns(addAssignmentStudentSelect);
-    
     updateReports(); // This now also renders charts
     // Only re-render current grades if a student is already selected
     if (currentGradesStudentId) {
@@ -1511,7 +1507,6 @@ async function loadAllData() {
     attendanceRecords = await loadParseData('AttendanceRecord');
     grades = await loadParseData('Grade');
     announcements = await loadParseData('Announcement');
-    
 
     console.log("[loadAllData] Students data after fetch:", students);
     // Render all UI components after data is loaded
@@ -1722,7 +1717,7 @@ function attachEventListeners() {
     const cancelButton = addStudentForm ? addStudentForm.querySelector('.cancel-button') : null;
     const saveStudentButton = addStudentForm ? addStudentForm.querySelector('.submit-button') : null;
     const formHeading = addStudentFormContainer ? addStudentFormContainer.querySelector('h3') : null;
-    
+
     if (addStudentBtn) {
         addStudentBtn.addEventListener('click', () => {
             if (addStudentFormContainer) addStudentFormContainer.style.display = 'block';
@@ -1761,8 +1756,6 @@ function attachEventListeners() {
     if (uploadFileBtn) {
         uploadFileBtn.addEventListener('click', handleFileUpload);
     }
-    
-    
 
     // Quick Action Buttons Event Listeners
     const goToAttendanceBtn = document.getElementById('goToAttendanceBtn');

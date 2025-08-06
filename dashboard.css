@@ -159,30 +159,24 @@ body, html {
     color: #ffffff; /* Pure white for logo */
 }
 
-/* Sidebar Navigation */
 .sidebar nav ul {
-    list-style-type: none;
+    list-style: none;
     padding: 0;
     margin: 0;
-    overflow-y: auto; /* Allow scrolling if needed */
-    max-height: calc(100vh - 150px); /* Ensure all nav items are accessible */
 }
 
 .sidebar nav ul li {
-    margin-bottom: 5px;
+    margin-bottom: 10px;
 }
 
 .sidebar nav ul li a {
-    display: block;
-    padding: 15px 20px;
-    color: #e0e0e0;
+    color: #e0e0e0; /* Off-white for general links */
     text-decoration: none;
-    transition: background-color 0.3s ease;
+    padding: 12px 15px;
+    display: block; /* Make the whole area clickable */
     border-radius: 5px;
-    margin: 0 10px;
-    white-space: nowrap; /* Prevent text wrapping */
-    overflow: hidden;
-    text-overflow: ellipsis;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-weight: 500;
 }
 
 .sidebar nav ul li a:hover {
@@ -674,9 +668,9 @@ table td.actions {
 /* Reports & Analytics Specifics */
 .reports-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Adjusted min-width */
+    gap: 25px; /* Consistent gap */
+    margin-top: 25px;
 }
 
 .report-card {
@@ -709,8 +703,6 @@ table td.actions {
 .report-content li {
     margin-bottom: 6px;
 }
-
-
 
 
 /* Settings Specifics */
