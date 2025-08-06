@@ -1276,3 +1276,21 @@ input:checked + .slider:before {
         font-size: 0.9rem;
     }
 }
+
+/* Ensure chart canvases in reports tab are visible and responsive */
+#reports-analytics .chart-card {
+  min-height: 320px;
+  height: 340px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+#reports-analytics .chart-card canvas {
+  min-height: 260px;
+  height: 260px !important;
+  width: 100% !important;
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+}
