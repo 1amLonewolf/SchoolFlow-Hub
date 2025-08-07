@@ -46,7 +46,7 @@ function showMessage(message, type = "info", duration = 3000) {
             transform: translateY(-20px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         `;
-        document.body.appendChild(messageBox);
+        document.body.appendChild(messageBox);  
     }
 
     messageBox.textContent = message;
@@ -683,11 +683,15 @@ function populateCourseDropdowns() {
 
 function populateStudentDropdowns(selectElement, course = '') {
     if (!selectElement) return;
-    const currentValue = selectElement.value; selectElement.innerHTML = '<option value="">-- Select a Student --</option>';
-    if (selectElement.id === 'addAssignmentStudent') { selectElement.innerHTML = '<option value="">-- Select Student --</doption>'; }
+    const currentValue = selectElement.value;
+    selectElement.innerHTML = '<option value="">-- Select a Student --</option>';
+    if (selectElement.id === 'addAssignmentStudent') {
+        selectElement.innerHTML = '<option value="">-- Select Student --</option>';
+    }
     const filteredStudents = course ? students.filter(s => s.course === course) : students;
     filteredStudents.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
-        const option = document.createElement('option'); option.value = student.id;
+        const option = document.createElement('option');
+        option.value = student.id;
         option.textContent = student.name + (course ? '' : ` (${student.course})`);
         selectElement.appendChild(option);
     });
