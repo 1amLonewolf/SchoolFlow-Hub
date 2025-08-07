@@ -3,9 +3,9 @@
 // Back4App Parse SDK Initialization (IMPORTANT: These are now filled with your keys)
 const B4A_APP_ID = '1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0';
 const B4A_JS_KEY = '7CE7gnknAyyfSZRTWpqvuDvNhLOMsF0DNYk8qvgn';
-const B4A_SERVER_URL = 'https://parseapi.back4app.com/'; // Confirmed correct URL
+const B4A_SERVER_URL = 'https://parseapi.back4app.com/';
 
-// Global data arrays (will be populated by explicit fetches from Parse)
+// Global data arrays
 let students = [];
 let attendanceRecords = [];
 let grades = [];
@@ -13,20 +13,19 @@ let announcements = [];
 let teachers = [];
 let courses = [];
 
-// Chart instances (to destroy and re-create on updates to prevent memory leaks)
+// Chart instances
 let coursePopularityChartInstance = null;
 let overallAttendanceChartInstance = null;
 let topStudentsChartInstance = null;
 let lowPerformingAssignmentsChartInstance = null;
 
-// Global state for student editing
+// Global state for editing
 window.editingStudentId = null;
 window.editingTeacherId = null;
 window.editingCourseId = null;
 
 // --- UTILITY FUNCTIONS ---
 
-// Utility for displaying messages (replaces alert)
 function showMessage(message, type = "info", duration = 3000) {
     let messageBox = document.getElementById('appMessage');
     if (!messageBox) {
@@ -49,9 +48,8 @@ function showMessage(message, type = "info", duration = 3000) {
         document.body.appendChild(messageBox);
     }
     
-    // Set message and style based on type
     messageBox.textContent = message;
-    let backgroundColor = '#333'; // Default info
+    let backgroundColor = '#333';
     if (type === 'success') { backgroundColor = '#4CAF50'; }
     if (type === 'error') { backgroundColor = '#f44336'; }
     if (type === 'warning') { backgroundColor = '#ff9800'; }
@@ -66,7 +64,6 @@ function showMessage(message, type = "info", duration = 3000) {
     }, duration);
 }
 
-// Utility function for confirmation dialogs
 function showConfirmDialog(message, onConfirm) {
     const dialog = document.createElement('div');
     dialog.className = 'confirm-dialog';
@@ -90,9 +87,9 @@ function showConfirmDialog(message, onConfirm) {
     };
 }
 
+
 // --- BACKEND COMMUNICATION FUNCTIONS ---
 
-// The core function for all Parse data fetching
 async function loadParseData(className) {
     try {
         const query = new Parse.Query(className);
@@ -105,7 +102,6 @@ async function loadParseData(className) {
     }
 }
 
-// The core function for all Parse data saving/updating
 async function saveParseData(className, data, id = null) {
     try {
         const Class = Parse.Object.extend(className);
@@ -127,7 +123,6 @@ async function saveParseData(className, data, id = null) {
     }
 }
 
-// The core function for all Parse data deleting
 async function deleteParseData(className, id) {
     try {
         const object = new Parse.Object(className);
@@ -143,6 +138,7 @@ async function deleteParseData(className, id) {
 
 
 // --- STUDENT MANAGEMENT FUNCTIONS ---
+
 function renderStudentTable() {
     const studentTableBody = document.querySelector('#studentTable tbody');
     if (!studentTableBody) return;
@@ -165,7 +161,6 @@ function renderStudentTable() {
             </td>
         `;
     });
-    // Re-attach event listeners
     document.querySelectorAll('#studentTable .edit-button').forEach(button => {
         button.onclick = (event) => editStudent(event.target.dataset.id);
     });
@@ -174,7 +169,6 @@ function renderStudentTable() {
     });
 }
 
-// Fixed function for adding/updating students
 async function addOrUpdateStudent(studentId, studentData) {
     try {
         let student;
@@ -185,14 +179,11 @@ async function addOrUpdateStudent(studentId, studentData) {
             query.equalTo('nationalID', studentData.nationalID);
             const results = await query.find();
             if (results.length > 0) {
-                // Update existing student
                 student = results[0];
             } else {
-                // Create new student
                 student = new Parse.Object('Student');
             }
         }
-
         student.set('name', studentData.name);
         student.set('course', studentData.course);
         student.set('season', studentData.season);
@@ -210,7 +201,6 @@ async function addOrUpdateStudent(studentId, studentData) {
         return { success: false, message: error.message };
     }
 }
-
 
 function editStudent(id) {
     const studentToEdit = students.find(s => s.id === id);
@@ -243,11 +233,12 @@ function resetStudentForm() {
 }
 
 
-// --- NEW: TEACHER MANAGEMENT FUNCTIONS ---
+// --- TEACHER MANAGEMENT FUNCTIONS ---
+
 function renderTeacherTable() {
     const teacherTableBody = document.querySelector('#teacherTable tbody');
     if (!teacherTableBody) return;
-    teacherTableBody.innerHTML = ''; // Clear existing rows
+    teacherTableBody.innerHTML = '';
     if (teachers.length === 0) {
         teacherTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No teachers added yet.</td></tr>';
         return;
@@ -264,7 +255,6 @@ function renderTeacherTable() {
             </td>
         `;
     });
-    // Re-attach event listeners
     document.querySelectorAll('#teacherTable .edit-button').forEach(button => {
         button.onclick = (event) => editTeacher(event.target.dataset.id);
     });
@@ -300,7 +290,6 @@ async function addOrUpdateTeacher(event) {
     } else {
         await saveParseData('Teacher', teacherData);
     }
-
     resetTeacherForm();
 }
 
@@ -331,12 +320,13 @@ function resetTeacherForm() {
     window.editingTeacherId = null;
 }
 
-// --- NEW: COURSE MANAGEMENT FUNCTIONS ---
+
+// --- COURSE MANAGEMENT FUNCTIONS ---
 
 function renderCourseTable() {
     const courseTableBody = document.querySelector('#courseTable tbody');
     if (!courseTableBody) return;
-    courseTableBody.innerHTML = ''; // Clear existing rows
+    courseTableBody.innerHTML = '';
     if (courses.length === 0) {
         courseTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No courses added yet.</td></tr>';
         return;
@@ -354,7 +344,6 @@ function renderCourseTable() {
             </td>
         `;
     });
-    // Re-attach event listeners
     document.querySelectorAll('#courseTable .edit-button').forEach(button => {
         button.onclick = (event) => editCourse(event.target.dataset.id);
     });
@@ -386,7 +375,7 @@ async function addOrUpdateCourse(event) {
     const courseData = {
         name: courseNameInput.value.trim(),
         description: courseDescriptionInput.value.trim(),
-        assignedTeacher: assignedTeacherSelect.value, // This will be the teacher's ID
+        assignedTeacher: assignedTeacherSelect.value,
     };
 
     if (!courseData.name || !courseData.description || !courseData.assignedTeacher) {
@@ -399,7 +388,6 @@ async function addOrUpdateCourse(event) {
     } else {
         await saveParseData('Course', courseData);
     }
-
     resetCourseForm();
 }
 
@@ -439,7 +427,8 @@ function resetCourseForm() {
     window.editingCourseId = null;
 }
 
-// --- NEW: SESSION MANAGEMENT FUNCTIONS ---
+
+// --- SESSION MANAGEMENT FUNCTIONS ---
 
 async function refreshSessionToken() {
     console.log("[refreshSessionToken] Checking user session...");
@@ -463,6 +452,7 @@ async function refreshSessionToken() {
         return false;
     }
 }
+
 
 // --- ATTENDANCE FUNCTIONS ---
 
@@ -562,6 +552,7 @@ async function deleteAttendanceRecord(id) {
     });
 }
 
+
 // --- GRADES MANAGEMENT FUNCTIONS ---
 
 function renderGradesTable() {
@@ -614,6 +605,7 @@ async function deleteGrade(id) {
         await deleteParseData('Grade', id);
     });
 }
+
 
 // --- DASHBOARD OVERVIEW FUNCTIONS ---
 
@@ -708,6 +700,7 @@ function renderTopStudentsChart() {
     });
 }
 
+
 // --- FILE UPLOAD FUNCTIONS ---
 
 const expectedHeaders = ['name', 'course', 'season', 'enrollment start date', 'enrollment end date', 'national id', 'phone number', 'place of living'];
@@ -754,7 +747,6 @@ function parseJSON(jsonText) {
     }
 }
 
-// Corrected function for processing student records
 async function processStudentRecords(records) {
     let successCount = 0;
     let skipCount = 0;
@@ -820,20 +812,18 @@ async function loadAllData() {
 
 function updateUI() {
     console.log("[updateUI] Starting UI update...");
-    // Render all tables
+
     renderStudentTable();
     renderAttendanceTable();
     renderGradesTable();
     renderTeacherTable();
     renderCourseTable();
 
-    // Populate all dropdowns
     populateCourseDropdowns();
     populateStudentDropdowns(document.getElementById('gradesStudentFilter'));
     populateStudentDropdowns(document.getElementById('addGradeStudent'));
     populateTeacherDropdown();
 
-    // Re-draw charts
     renderCoursePopularityChart();
     renderOverallAttendanceChart();
     renderTopStudentsChart();
@@ -941,7 +931,6 @@ function attachEventListeners() {
         });
     }
 
-    // NEW: Teacher and Course Management Listeners
     const addTeacherForm = document.getElementById('addTeacherForm');
     if (addTeacherForm) {
         addTeacherForm.addEventListener('submit', addOrUpdateTeacher);
@@ -974,15 +963,14 @@ function attachEventListeners() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check user session and refresh token on page load
+    // FIX: Parse SDK must be initialized before any Parse calls are made.
+    Parse.initialize(B4A_APP_ID, B4A_JS_KEY);
+    Parse.serverURL = B4A_SERVER_URL;
+    
     const isSessionValid = await refreshSessionToken();
     if (!isSessionValid) {
         return;
     }
-    
-    // All other functions that require a valid session token should be here.
-    Parse.initialize(B4A_APP_ID, B4A_JS_KEY);
-    Parse.serverURL = B4A_SERVER_URL;
     
     attachEventListeners();
     loadAllData();
