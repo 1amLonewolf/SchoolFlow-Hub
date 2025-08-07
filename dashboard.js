@@ -10,6 +10,8 @@ let students = [];
 let attendanceRecords = [];
 let grades = [];
 let announcements = [];
+let teachers = [];
+let courses = [];
 
 // Chart instances (to destroy and re-create on updates to prevent memory leaks)
 let coursePopularityChartInstance = null;
@@ -19,7 +21,8 @@ let lowPerformingAssignmentsChartInstance = null;
 
 // Global state for student editing
 window.editingStudentId = null;
-
+window.editingTeacherId = null;
+window.editingCourseId = null;
 
 // --- UTILITY FUNCTIONS ---
 
@@ -1503,6 +1506,10 @@ function renderUIComponents() {
     console.log("[renderUIComponents] Starting UI rendering.");
     renderStudentTable();
     populateCourseDropdowns();
+    renderTeacherTable();
+    renderCourseTable();
+    populateTeacherDropdown(); // Populate the dropdown in the course form
+
     const selectStudentForGrades = document.getElementById('selectStudentForGrades');
     const addAssignmentStudentSelect = document.getElementById('addAssignmentStudent');
     if (selectStudentForGrades) populateStudentDropdowns(selectStudentForGrades);
@@ -1513,6 +1520,9 @@ function renderUIComponents() {
         renderGradesTable(currentGradesStudentId);
     }
     renderAnnouncements(); // Ensure announcements render initially
+    // Re-draw charts
+    updateDashboardCharts(); 
+    console.log("[updateUI] UI update complete.");
     // Also update attendance table for current selected date/course
     const attendanceDateInput = document.getElementById('attendanceDate');
     const attendanceCourseFilter = document.getElementById('attendanceCourseFilter');
@@ -1532,11 +1542,13 @@ async function loadAllData() {
     attendanceRecords = await loadParseData('AttendanceRecord');
     grades = await loadParseData('Grade');
     announcements = await loadParseData('Announcement');
+    teachers = await loadParseData('Teacher');
+    courses = await loadParseData('Course');
 
-    console.log("[loadAllData] Students data after fetch:", students);
-    // Render all UI components after data is loaded
-    renderUIComponents();
-    console.log("All data loaded and UI updated. Session status after loadAllData:", Parse.User.current() ? 'VALID' : 'INVALID');
+    console.log(`[loadAllData] Data loaded. Students: ${students.length}, Teachers: ${teachers.length}, Courses: ${courses.length}`);
+    updateUI(); // This function will now use the updated data arrays
+    console.log("[loadAllData] All data loaded and UI updated.");
+    console.log("[loadAllData]All data loaded and UI updated. Session status after loadAllData:", Parse.User.current() ? 'VALID' : 'INVALID');
     // Check session status right after UI update
     if (!Parse.User.current()) {
         console.warn("Session found to be invalid immediately after loadAllData and UI update. Triggering redirect.");
@@ -1575,6 +1587,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const fileUploadInput = document.getElementById('fileUploadInput');
     const uploadFileBtn = document.getElementById('uploadFileBtn');
     // const uploadStatusDiv = document.getElementById('uploadStatus'); // Accessed directly in handleFileUpload
+
+    // NEW: Teacher and Course Management Listeners
+    const addTeacherForm = document.getElementById('addTeacherForm');
+    if (addTeacherForm) {
+        addTeacherForm.addEventListener('submit', addOrUpdateTeacher);
+    }
+    const cancelTeacherBtn = document.getElementById('cancelTeacherBtn');
+    if (cancelTeacherBtn) {
+        cancelTeacherBtn.addEventListener('click', resetTeacherForm);
+    }
+
+    const addCourseForm = document.getElementById('addCourseForm');
+    if (addCourseForm) {
+        addCourseForm.addEventListener('submit', addOrUpdateCourse);
+    }
+    const cancelCourseBtn = document.getElementById('cancelCourseBtn');
+    if (cancelCourseBtn) {
+        cancelCourseBtn.addEventListener('click', resetCourseForm);
+    }
+    
+    // Initial data load at start
+    loadAllData();
 
     // Attendance Management Section
     const attendanceCourseFilter = document.getElementById('attendanceCourseFilter');
@@ -1993,4 +2027,192 @@ function attachEventListeners() {
     }
 
     console.log("[attachEventListeners] All event listeners attached.");
+}
+// --- NEW: TEACHER MANAGEMENT FUNCTIONS ---
+function renderTeacherTable() {
+    const teacherTableBody = document.querySelector('#teacherTable tbody');
+    if (!teacherTableBody) return;
+    teacherTableBody.innerHTML = ''; // Clear existing rows
+    if (teachers.length === 0) {
+        teacherTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No teachers added yet.</td></tr>';
+        return;
+    }
+    teachers.forEach(teacher => {
+        const row = teacherTableBody.insertRow();
+        row.innerHTML = `
+            <td data-label="Name">${teacher.name}</td>
+            <td data-label="Email">${teacher.email}</td>
+            <td data-label="Phone">${teacher.phone || ''}</td>
+            <td data-label="Actions" class="actions">
+                <button class="edit-button" data-id="${teacher.id}">Edit</button>
+                <button class="delete-button" data-id="${teacher.id}">Delete</button>
+            </td>
+        `;
+    });
+    // Re-attach event listeners
+    document.querySelectorAll('#teacherTable .edit-button').forEach(button => {
+        button.onclick = (event) => editTeacher(event.target.dataset.id);
+    });
+    document.querySelectorAll('#teacherTable .delete-button').forEach(button => {
+        button.onclick = (event) => deleteTeacher(event.target.dataset.id);
+    });
+}
+
+async function addOrUpdateTeacher(event) {
+    event.preventDefault();
+    const teacherNameInput = document.getElementById('teacherName');
+    const teacherEmailInput = document.getElementById('teacherEmail');
+    const teacherPhoneInput = document.getElementById('teacherPhone');
+
+    const teacherData = {
+        name: teacherNameInput.value.trim(),
+        email: teacherEmailInput.value.trim(),
+        phone: teacherPhoneInput.value.trim(),
+    };
+
+    if (!teacherData.name || !teacherData.email) {
+        showMessage('Teacher name and email are required.', 'error');
+        return;
+    }
+    
+    // Simple validation for email
+    if (!teacherData.email.includes('@')) {
+        showMessage('Please enter a valid email address.', 'error');
+        return;
+    }
+
+    if (window.editingTeacherId) {
+        await saveParseData('Teacher', teacherData, window.editingTeacherId);
+    } else {
+        await saveParseData('Teacher', teacherData);
+    }
+
+    resetTeacherForm();
+}
+
+function editTeacher(id) {
+    const teacherToEdit = teachers.find(t => t.id === id);
+    if (teacherToEdit) {
+        document.getElementById('teacherName').value = teacherToEdit.name;
+        document.getElementById('teacherEmail').value = teacherToEdit.email;
+        document.getElementById('teacherPhone').value = teacherToEdit.phone;
+        document.getElementById('teacher-form-heading').textContent = `Edit Teacher: ${teacherToEdit.name}`;
+        document.getElementById('saveTeacherBtn').textContent = 'Update Teacher';
+        document.getElementById('cancelTeacherBtn').style.display = 'inline-block';
+        window.editingTeacherId = id;
+    }
+}
+
+async function deleteTeacher(id) {
+    showConfirmDialog('Are you sure you want to delete this teacher? This action cannot be undone.', async () => {
+        await deleteParseData('Teacher', id);
+    });
+}
+
+function resetTeacherForm() {
+    document.getElementById('addTeacherForm').reset();
+    document.getElementById('teacher-form-heading').textContent = 'Add New Teacher';
+    document.getElementById('saveTeacherBtn').textContent = 'Save Teacher';
+    document.getElementById('cancelTeacherBtn').style.display = 'none';
+    window.editingTeacherId = null;
+}
+
+// --- NEW: COURSE MANAGEMENT FUNCTIONS ---
+
+function renderCourseTable() {
+    const courseTableBody = document.querySelector('#courseTable tbody');
+    if (!courseTableBody) return;
+    courseTableBody.innerHTML = ''; // Clear existing rows
+    if (courses.length === 0) {
+        courseTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No courses added yet.</td></tr>';
+        return;
+    }
+    courses.forEach(course => {
+        const teacher = teachers.find(t => t.id === course.assignedTeacher);
+        const row = courseTableBody.insertRow();
+        row.innerHTML = `
+            <td data-label="Course Name">${course.name}</td>
+            <td data-label="Description">${course.description}</td>
+            <td data-label="Assigned Teacher">${teacher ? teacher.name : 'N/A'}</td>
+            <td data-label="Actions" class="actions">
+                <button class="edit-button" data-id="${course.id}">Edit</button>
+                <button class="delete-button" data-id="${course.id}">Delete</button>
+            </td>
+        `;
+    });
+    // Re-attach event listeners
+    document.querySelectorAll('#courseTable .edit-button').forEach(button => {
+        button.onclick = (event) => editCourse(event.target.dataset.id);
+    });
+    document.querySelectorAll('#courseTable .delete-button').forEach(button => {
+        button.onclick = (event) => deleteCourse(event.target.dataset.id);
+    });
+}
+
+// Function to populate the teacher dropdown in the course form
+function populateTeacherDropdown() {
+    const assignedTeacherSelect = document.getElementById('assignedTeacher');
+    if (!assignedTeacherSelect) return;
+    const currentValue = assignedTeacherSelect.value;
+    assignedTeacherSelect.innerHTML = '<option value="">-- Select Teacher --</option>';
+    teachers.forEach(teacher => {
+        const option = document.createElement('option');
+        option.value = teacher.id;
+        option.textContent = teacher.name;
+        assignedTeacherSelect.appendChild(option);
+    });
+    assignedTeacherSelect.value = currentValue;
+}
+
+async function addOrUpdateCourse(event) {
+    event.preventDefault();
+    const courseNameInput = document.getElementById('courseName');
+    const courseDescriptionInput = document.getElementById('courseDescription');
+    const assignedTeacherSelect = document.getElementById('assignedTeacher');
+    
+    const courseData = {
+        name: courseNameInput.value.trim(),
+        description: courseDescriptionInput.value.trim(),
+        assignedTeacher: assignedTeacherSelect.value, // This will be the teacher's ID
+    };
+
+    if (!courseData.name || !courseData.description || !courseData.assignedTeacher) {
+        showMessage('All course fields are required.', 'error');
+        return;
+    }
+
+    if (window.editingCourseId) {
+        await saveParseData('Course', courseData, window.editingCourseId);
+    } else {
+        await saveParseData('Course', courseData);
+    }
+    
+    resetCourseForm();
+}
+
+function editCourse(id) {
+    const courseToEdit = courses.find(c => c.id === id);
+    if (courseToEdit) {
+        document.getElementById('courseName').value = courseToEdit.name;
+        document.getElementById('courseDescription').value = courseToEdit.description;
+        document.getElementById('assignedTeacher').value = courseToEdit.assignedTeacher;
+        document.getElementById('course-form-heading').textContent = `Edit Course: ${courseToEdit.name}`;
+        document.getElementById('saveCourseBtn').textContent = 'Update Course';
+        document.getElementById('cancelCourseBtn').style.display = 'inline-block';
+        window.editingCourseId = id;
+    }
+}
+
+async function deleteCourse(id) {
+    showConfirmDialog('Are you sure you want to delete this course? This action cannot be undone.', async () => {
+        await deleteParseData('Course', id);
+    });
+}
+
+function resetCourseForm() {
+    document.getElementById('addCourseForm').reset();
+    document.getElementById('course-form-heading').textContent = 'Add New Course';
+    document.getElementById('saveCourseBtn').textContent = 'Save Course';
+    document.getElementById('cancelCourseBtn').style.display = 'none';
+    window.editingCourseId = null;
 }
