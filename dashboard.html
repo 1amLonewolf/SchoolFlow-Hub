@@ -27,6 +27,7 @@
                     <li><a href="#dashboard-overview" class="active">Dashboard Overview</a></li>
                     <li><a href="#student-management">Student Management</a></li>
 		    <li><a href="#teacher-management">Teacher Management</a></li>
+		    <li><a href="#course-management">Teacher Management</a></li>
                     <li><a href="#attendance-management">Attendance</a></li>
                     <li><a href="#grades-management">Grades</a></li>
                     <li><a href="#announcements">Announcements</a></li>
@@ -318,6 +319,40 @@
                 </thead>
                 <tbody>
                     <!-- Teacher rows will be dynamically inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+<section id="course-management" class="dashboard-content-section">
+    <h2>Course Management</h2>
+
+    <button id="addCourseBtn" class="action-button" style="margin-bottom: 20px;">Add New Course</button>
+
+    <div class="add-course-form-container card" style="display: none; margin-bottom: 25px;">
+        <h3 style="margin-bottom: 15px;">Add New Course</h3>
+        <form id="addCourseForm">
+            <div class="form-group">
+                <label for="courseName">Course Name:</label>
+                <input type="text" id="courseName" name="courseName" required>
+            </div>
+            <button type="submit" class="submit-button">Save Course</button>
+            <button type="button" class="cancel-button">Cancel</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>Courses Roster</h3>
+        <div class="table-responsive">
+            <table id="courseTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- course rows will be dynamically inserted here -->
                 </tbody>
             </table>
         </div>
