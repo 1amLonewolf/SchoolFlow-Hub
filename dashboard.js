@@ -2222,6 +2222,7 @@ function resetCourseForm() {
     document.getElementById('cancelCourseBtn').style.display = 'none';
     window.editingCourseId = null;
 }
+
 // --- NEW: SESSION MANAGEMENT FUNCTIONS ---
 
 async function refreshSessionToken() {
