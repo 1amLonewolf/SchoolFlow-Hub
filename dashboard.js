@@ -564,6 +564,14 @@ function renderGradesTable() {
     tableBody.innerHTML = '';
     grades.forEach(grade => {
         const student = students.find(s => s.id === grade.studentId);
+ // Get the date object from the Parse grade object
+        const gradeDate = grade.get('date');
+        let formattedDate = '';
+
+        // Check if the date object exists before trying to format it
+        if (gradeDate) {
+            formattedDate = gradeDate.toISOString().split('T')[0];
+        }
         const row = tableBody.insertRow();
         row.innerHTML = `
             <td data-label="Student">${student ? student.name : 'N/A'}</td>
