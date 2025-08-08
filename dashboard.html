@@ -18,7 +18,7 @@
 <body>
 
     <div class="dashboard">
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar" role="navigation">
             <a href="#overview" class="active">Overview</a>
             <a href="#students">Students</a>
             <a href="#teachers">Teachers</a>
@@ -36,7 +36,7 @@
             <header>
                 <div class="header-content">
                     <h1>Student Management Dashboard</h1>
-                    <div class="burger">&#9776;</div>
+                    <button class="burger" type="button" aria-label="Toggle sidebar" aria-controls="sidebar" aria-expanded="false">&#9776;</button>
                 </div>
             </header>
 
@@ -68,19 +68,32 @@
                 <div class="card form-container">
                     <h3 id="student-form-heading">Add New Student</h3>
                     <form id="addStudentForm">
-                        <input type="text" id="studentName" placeholder="Student Name" required>
-                        <input type="text" id="studentID" placeholder="National ID" required>
-                        <input type="text" id="studentCourse" placeholder="Course">
-                        <input type="number" id="studentSeason" placeholder="Season">
-                        <input type="tel" id="studentPhone" placeholder="Phone Number">
-                        <input type="text" id="studentLocation" placeholder="Place of Living">
-                        <button type="submit" class="button primary-button" id="saveStudentBtn">Save Student</button>
-                        <button type="button" class="button cancel-button" id="cancelStudentBtn" style="display: none;">Cancel</button>
+                    <label for="studentName">Student Name</label>
+                    <input type="text" id="studentName" name="studentName" placeholder="Student Name" required>
+                    
+                    <label for="studentID">National ID</label>
+                    <input type="text" id="studentID" name="studentID" placeholder="National ID" required>
+                    
+                    <label for="studentCourse">Course</label>
+                    <input type="text" id="studentCourse" name="studentCourse" placeholder="Course">
+                    
+                    <label for="studentSeason">Season</label>
+                    <input type="number" id="studentSeason" name="studentSeason" placeholder="Season">
+                    
+                    <label for="studentPhone">Phone Number</label>
+                    <input type="tel" id="studentPhone" name="studentPhone" placeholder="Phone Number">
+                    
+                    <label for="studentLocation">Place of Living</label>
+                    <input type="text" id="studentLocation" name="studentLocation" placeholder="Place of Living">
+                    
+                    <button type="submit" class="button primary-button" id="saveStudentBtn">Save Student</button>
+                    <button type="button" class="button cancel-button" id="cancelStudentBtn" style="display: none;">Cancel</button>
                     </form>
                     <div class="bulk-upload-section">
                         <h3>Bulk Upload Students</h3>
                         <form id="bulkUploadForm">
-                            <input type="file" id="bulkUploadFile" accept=".csv, .json" required>
+                            <label for="bulkUploadFile">Bulk Upload File (.csv or .json)</label>
+                            <input type="file" id="bulkUploadFile" name="bulkUploadFile" accept=".csv, .json" required>
                             <button type="submit" class="button secondary-button">Upload File</button>
                         </form>
                         <div id="uploadStatus"></div>
@@ -110,9 +123,15 @@
                 <div class="card form-container">
                     <h3 id="teacher-form-heading">Add New Teacher</h3>
                     <form id="addTeacherForm">
-                        <input type="text" id="teacherName" placeholder="Teacher Name" required>
-                        <input type="email" id="teacherEmail" placeholder="Email" required>
-                        <input type="tel" id="teacherPhone" placeholder="Phone Number">
+                        <label for="teacherName">Teacher Name</label>
+                        <input type="text" id="teacherName" name="teacherName" placeholder="Teacher Name" required>
+                        
+                        <label for="teacherEmail">Email</label>
+                        <input type="email" id="teacherEmail" name="teacherEmail" placeholder="Email" required>
+                        
+                        <label for="teacherPhone">Phone Number</label>
+                        <input type="tel" id="teacherPhone" name="teacherPhone" placeholder="Phone Number">
+                        
                         <button type="submit" class="button primary-button" id="saveTeacherBtn">Save Teacher</button>
                         <button type="button" class="button cancel-button" id="cancelTeacherBtn" style="display: none;">Cancel</button>
                     </form>
@@ -139,9 +158,14 @@
                 <div class="card form-container">
                     <h3 id="course-form-heading">Add New Course</h3>
                     <form id="addCourseForm">
-                        <input type="text" id="courseName" placeholder="Course Name" required>
-                        <textarea id="courseDescription" placeholder="Course Description" required></textarea>
-                        <select id="assignedTeacher" required>
+                        <label for="courseName">Course Name</label>
+                        <input type="text" id="courseName" name="courseName" placeholder="Course Name" required>
+                        
+                        <label for="courseDescription">Course Description</label>
+                        <textarea id="courseDescription" name="courseDescription" placeholder="Course Description" required></textarea>
+                        
+                        <label for="assignedTeacher">Assigned Teacher</label>
+                        <select id="assignedTeacher" name="assignedTeacher" required>
                             <option value="">-- Select Teacher --</option>
                         </select>
                         <button type="submit" class="button primary-button" id="saveCourseBtn">Save Course</button>
@@ -170,11 +194,16 @@
                 <div class="card form-container">
                     <h3>Record Attendance</h3>
                     <form id="addAttendanceForm">
-                        <select id="attendanceStudent" required>
+                        <label for="attendanceStudent">Student</label>
+                        <select id="attendanceStudent" name="attendanceStudent" required>
                             <option value="">-- Select a Student --</option>
                         </select>
-                        <input type="date" id="attendanceDate" required>
-                        <select id="attendanceStatus" required>
+                        
+                        <label for="attendanceDate">Date</label>
+                        <input type="date" id="attendanceDate" name="attendanceDate" required>
+                        
+                        <label for="attendanceStatus">Status</label>
+                        <select id="attendanceStatus" name="attendanceStatus" required>
                             <option value="Present">Present</option>
                             <option value="Absent">Absent</option>
                         </select>
@@ -204,13 +233,22 @@
                 <div class="card form-container">
                     <h3>Add Grade</h3>
                     <form id="addGradeForm">
-                        <select id="addGradeStudent" required>
+                        <label for="addGradeStudent">Student</label>
+                        <select id="addGradeStudent" name="addGradeStudent" required>
                             <option value="">-- Select a Student --</option>
                         </select>
-                        <input type="text" id="assignmentName" placeholder="Assignment Name" required>
-                        <input type="number" id="assignmentScore" placeholder="Score" required>
-                        <input type="number" id="assignmentTotalScore" placeholder="Total Score" required>
-                        <input type="date" id="assignmentDate" required>
+                        
+                        <label for="assignmentName">Assignment Name</label>
+                        <input type="text" id="assignmentName" name="assignmentName" placeholder="Assignment Name" required>
+                        
+                        <label for="assignmentScore">Score</label>
+                        <input type="number" id="assignmentScore" name="assignmentScore" placeholder="Score" required>
+                        
+                        <label for="assignmentTotalScore">Total Score</label>
+                        <input type="number" id="assignmentTotalScore" name="assignmentTotalScore" placeholder="Total Score" required>
+                        
+                        <label for="assignmentDate">Date</label>
+                        <input type="date" id="assignmentDate" name="assignmentDate" required>
                         <button type="submit" class="button primary-button">Save Grade</button>
                     </form>
                 </div>
@@ -282,7 +320,7 @@
         </main>
     </div>
 
-    <div id="appMessage" class="app-message"></div>
+    <div id="appMessage" class="app-message" role="status" aria-live="polite" aria-atomic="true"></div>
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
     <script type="text/javascript" src="https://unpkg.com/parse/dist/parse.min.js"></script>

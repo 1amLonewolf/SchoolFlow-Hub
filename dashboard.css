@@ -1487,6 +1487,13 @@ body.dark-mode .switch label {
     color: #2F1857;
     user-select: none;
     display: none; /* shown on mobile */
+    background: none;
+    border: none;
+    line-height: 1;
+}
+.burger:focus-visible {
+    outline: 3px solid #2575fc;
+    outline-offset: 2px;
 }
 
 /* Overview grid and chart containers so the Overview tab lays out correctly */
@@ -1525,6 +1532,16 @@ body.dark-mode .switch label {
 /* Use :has to display overlay purely via CSS when sidebar is open (modern browsers) */
 body:has(.sidebar.open) #sidebar-overlay {
     display: block;
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 
 /* Global overflow handling: show scrollbars when content exceeds container */

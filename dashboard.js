@@ -72,24 +72,39 @@ function showMessage(message, type = "info", duration = 3000) {
 function showConfirmDialog(message, onConfirm) {
     const dialog = document.createElement('div');
     dialog.className = 'confirm-dialog';
-    dialog.innerHTML = `
-        <div class="confirm-dialog-content">
-            <p>${message}</p>
-            <div class="confirm-dialog-buttons">
-                <button id="confirmYes" class="button primary-button">Yes</button>
-                <button id="confirmNo" class="button cancel-button">No</button>
-            </div>
-        </div>
-    `;
+
+    const content = document.createElement('div');
+    content.className = 'confirm-dialog-content';
+
+    const p = document.createElement('p');
+    p.textContent = message || '';
+
+    const buttons = document.createElement('div');
+    buttons.className = 'confirm-dialog-buttons';
+
+    const yesBtn = document.createElement('button');
+    yesBtn.id = 'confirmYes';
+    yesBtn.className = 'button primary-button';
+    yesBtn.textContent = 'Yes';
+
+    const noBtn = document.createElement('button');
+    noBtn.id = 'confirmNo';
+    noBtn.className = 'button cancel-button';
+    noBtn.textContent = 'No';
+
+    buttons.appendChild(yesBtn);
+    buttons.appendChild(noBtn);
+
+    content.appendChild(p);
+    content.appendChild(buttons);
+
+    dialog.appendChild(content);
     document.body.appendChild(dialog);
 
-    document.getElementById('confirmYes').onclick = () => {
-        onConfirm();
-        dialog.remove();
-    };
-    document.getElementById('confirmNo').onclick = () => {
-        dialog.remove();
-    };
+    yesBtn.addEventListener('click', () => {
+        try { if (typeof onConfirm === 'function') onConfirm(); } finally { dialog.remove(); }
+    });
+    noBtn.addEventListener('click', () => dialog.remove());
 }
 
 // --- BACKEND COMMUNICATION FUNCTIONS ---
@@ -148,28 +163,50 @@ function renderStudentTable() {
     if (!studentTableBody) return;
     studentTableBody.innerHTML = '';
     if (students.length === 0) {
-        studentTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No students added yet.</td></tr>';
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 6;
+        td.style.textAlign = 'center';
+        td.textContent = 'No students added yet.';
+        tr.appendChild(td);
+        studentTableBody.appendChild(tr);
         return;
     }
     students.forEach(student => {
         const row = studentTableBody.insertRow();
-        row.innerHTML = `
-            <td data-label="Name">${student.get('name')}</td>
-            <td data-label="Course">${student.get('course')}</td>
-            <td data-label="ID">${student.get('nationalID')}</td>
-            <td data-label="Season">${student.get('season')}</td>
-            <td data-label="Phone">${student.get('phone')}</td>
-            <td data-label="Actions" class="actions">
-                <button class="edit-button" data-id="${student.id}">Edit</button>
-                <button class="delete-button" data-id="${student.id}">Delete</button>
-            </td>
-        `;
-    });
-    document.querySelectorAll('#studentTable .edit-button').forEach(button => {
-        button.onclick = (event) => editStudent(event.target.dataset.id);
-    });
-    document.querySelectorAll('#studentTable .delete-button').forEach(button => {
-        button.onclick = (event) => deleteStudent(event.target.dataset.id);
+
+        const makeCell = (label, value) => {
+            const td = document.createElement('td');
+            td.setAttribute('data-label', label);
+            td.textContent = value ?? '';
+            return td;
+        };
+
+        row.appendChild(makeCell('Name', student.get('name')));
+        row.appendChild(makeCell('Course', student.get('course')));
+        row.appendChild(makeCell('ID', student.get('nationalID')));
+        row.appendChild(makeCell('Season', student.get('season')));
+        row.appendChild(makeCell('Phone', student.get('phone')));
+
+        const actionsTd = document.createElement('td');
+        actionsTd.setAttribute('data-label', 'Actions');
+        actionsTd.className = 'actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-button';
+        editBtn.dataset.id = student.id;
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', (e) => editStudent(e.currentTarget.dataset.id));
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-button';
+        deleteBtn.dataset.id = student.id;
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', (e) => deleteStudent(e.currentTarget.dataset.id));
+
+        actionsTd.appendChild(editBtn);
+        actionsTd.appendChild(deleteBtn);
+        row.appendChild(actionsTd);
     });
 }
 
@@ -244,26 +281,48 @@ function renderTeacherTable() {
     if (!teacherTableBody) return;
     teacherTableBody.innerHTML = '';
     if (teachers.length === 0) {
-        teacherTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No teachers added yet.</td></tr>';
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 4;
+        td.style.textAlign = 'center';
+        td.textContent = 'No teachers added yet.';
+        tr.appendChild(td);
+        teacherTableBody.appendChild(tr);
         return;
     }
     teachers.forEach(teacher => {
         const row = teacherTableBody.insertRow();
-        row.innerHTML = `
-            <td data-label="Name">${teacher.get('name')}</td>
-            <td data-label="Email">${teacher.get('email')}</td>
-            <td data-label="Phone">${teacher.get('phone') || ''}</td>
-            <td data-label="Actions" class="actions">
-                <button class="edit-button" data-id="${teacher.id}">Edit</button>
-                <button class="delete-button" data-id="${teacher.id}">Delete</button>
-            </td>
-        `;
-    });
-    document.querySelectorAll('#teacherTable .edit-button').forEach(button => {
-        button.onclick = (event) => editTeacher(event.target.dataset.id);
-    });
-    document.querySelectorAll('#teacherTable .delete-button').forEach(button => {
-        button.onclick = (event) => deleteTeacher(event.target.dataset.id);
+
+        const makeCell = (label, value) => {
+            const td = document.createElement('td');
+            td.setAttribute('data-label', label);
+            td.textContent = value ?? '';
+            return td;
+        };
+
+        row.appendChild(makeCell('Name', teacher.get('name')));
+        row.appendChild(makeCell('Email', teacher.get('email')));
+        row.appendChild(makeCell('Phone', teacher.get('phone') || ''));
+
+        const actionsTd = document.createElement('td');
+        actionsTd.setAttribute('data-label', 'Actions');
+        actionsTd.className = 'actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-button';
+        editBtn.dataset.id = teacher.id;
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', (e) => editTeacher(e.currentTarget.dataset.id));
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-button';
+        deleteBtn.dataset.id = teacher.id;
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', (e) => deleteTeacher(e.currentTarget.dataset.id));
+
+        actionsTd.appendChild(editBtn);
+        actionsTd.appendChild(deleteBtn);
+        row.appendChild(actionsTd);
     });
 }
 
@@ -332,27 +391,49 @@ function renderCourseTable() {
     if (!courseTableBody) return;
     courseTableBody.innerHTML = '';
     if (courses.length === 0) {
-        courseTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No courses added yet.</td></tr>';
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 4;
+        td.style.textAlign = 'center';
+        td.textContent = 'No courses added yet.';
+        tr.appendChild(td);
+        courseTableBody.appendChild(tr);
         return;
     }
     courses.forEach(course => {
         const teacher = teachers.find(t => t.id === course.get('assignedTeacher'));
         const row = courseTableBody.insertRow();
-        row.innerHTML = `
-            <td data-label="Course Name">${course.get('name')}</td>
-            <td data-label="Description">${course.get('description')}</td>
-            <td data-label="Assigned Teacher">${teacher ? teacher.get('name') : 'N/A'}</td>
-            <td data-label="Actions" class="actions">
-                <button class="edit-button" data-id="${course.id}">Edit</button>
-                <button class="delete-button" data-id="${course.id}">Delete</button>
-            </td>
-        `;
-    });
-    document.querySelectorAll('#courseTable .edit-button').forEach(button => {
-        button.onclick = (event) => editCourse(event.target.dataset.id);
-    });
-    document.querySelectorAll('#courseTable .delete-button').forEach(button => {
-        button.onclick = (event) => deleteCourse(event.target.dataset.id);
+
+        const makeCell = (label, value) => {
+            const td = document.createElement('td');
+            td.setAttribute('data-label', label);
+            td.textContent = value ?? '';
+            return td;
+        };
+
+        row.appendChild(makeCell('Course Name', course.get('name')));
+        row.appendChild(makeCell('Description', course.get('description')));
+        row.appendChild(makeCell('Assigned Teacher', teacher ? teacher.get('name') : 'N/A'));
+
+        const actionsTd = document.createElement('td');
+        actionsTd.setAttribute('data-label', 'Actions');
+        actionsTd.className = 'actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-button';
+        editBtn.dataset.id = course.id;
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', (e) => editCourse(e.currentTarget.dataset.id));
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-button';
+        deleteBtn.dataset.id = course.id;
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', (e) => deleteCourse(e.currentTarget.dataset.id));
+
+        actionsTd.appendChild(editBtn);
+        actionsTd.appendChild(deleteBtn);
+        row.appendChild(actionsTd);
     });
 }
 
@@ -469,30 +550,42 @@ function renderAttendanceTable() {
         acc[record.get('studentId')].push(record);
         return acc;
     }, {});
-    
+
     for (const studentId in groupedAttendance) {
         const student = students.find(s => s.id === studentId);
         if (!student) continue;
-        
+
         groupedAttendance[studentId].forEach(record => {
             const row = tableBody.insertRow();
             const dateVal = record.get('date');
             const displayDate = dateVal ? new Date(dateVal).toLocaleDateString() : '';
-            row.innerHTML = `
-                <td data-label="Date">${displayDate}</td>
-                <td data-label="Student">${student.get('name')}</td>
-                <td data-label="Course">${student.get('course')}</td>
-                <td data-label="Status">${record.get('status')}</td>
-                <td data-label="Actions" class="actions">
-                    <button class="delete-button" data-id="${record.id}">Delete</button>
-                </td>
-            `;
+
+            const makeCell = (label, value) => {
+                const td = document.createElement('td');
+                td.setAttribute('data-label', label);
+                td.textContent = value ?? '';
+                return td;
+            };
+
+            row.appendChild(makeCell('Date', displayDate));
+            row.appendChild(makeCell('Student', student.get('name')));
+            row.appendChild(makeCell('Course', student.get('course')));
+            row.appendChild(makeCell('Status', record.get('status')));
+
+            const actionsTd = document.createElement('td');
+            actionsTd.setAttribute('data-label', 'Actions');
+            actionsTd.className = 'actions';
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-button';
+            deleteBtn.dataset.id = record.id;
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.addEventListener('click', (e) => deleteAttendanceRecord(e.currentTarget.dataset.id));
+
+            actionsTd.appendChild(deleteBtn);
+            row.appendChild(actionsTd);
         });
     }
-
-    document.querySelectorAll('#attendanceTable .delete-button').forEach(button => {
-        button.onclick = (event) => deleteAttendanceRecord(event.target.dataset.id);
-    });
 }
 
 // FIX: Added the missing renderOverallAttendanceChart function
@@ -568,35 +661,51 @@ function renderGradesTable() {
         console.error("Grades table body not found.");
         return;
     }
-    gradesTableBody.innerHTML = ''; // Clear existing data
+    gradesTableBody.innerHTML = '';
 
     grades.forEach(grade => {
-        // FIX: Check if 'grade' is a valid Parse object with a .get() function
         if (typeof grade.get !== 'function') {
             console.error("Invalid grade object found:", grade);
             return;
         }
 
         const student = students.find(s => s.id === grade.get('studentId'));
-        
-        // FIX: Check if the date object exists before trying to format it
         const gradeDate = grade.get('date');
-        let formattedDate = '';
-        if (gradeDate) {
-            formattedDate = gradeDate.toISOString().split('T')[0];
-        }
+        const formattedDate = gradeDate ? gradeDate.toISOString().split('T')[0] : '';
 
         const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${student ? student.get('name') : 'N/A'}</td>
-            <td>${grade.get('assignmentName')}</td>
-            <td>${grade.get('score')} / ${grade.get('totalScore')}</td>
-            <td>${formattedDate}</td>
-            <td>
-                <button class="button small-button" onclick="editGrade('${grade.id}')">Edit</button>
-                <button class="button small-button cancel-button" onclick="deleteGrade('${grade.id}')">Delete</button>
-            </td>
-        `;
+
+        const makeCell = (value) => {
+            const td = document.createElement('td');
+            td.textContent = value ?? '';
+            return td;
+        };
+
+        row.appendChild(makeCell(student ? student.get('name') : 'N/A'));
+        row.appendChild(makeCell(grade.get('assignmentName')));
+        row.appendChild(makeCell(`${grade.get('score')} / ${grade.get('totalScore')}`));
+        row.appendChild(makeCell(formattedDate));
+
+        const actionsTd = document.createElement('td');
+        const editBtn = document.createElement('button');
+        editBtn.className = 'button small-button';
+        editBtn.textContent = 'Edit';
+        if (typeof window.editGrade === 'function' || typeof editGrade === 'function') {
+            editBtn.addEventListener('click', () => editGrade(grade.id));
+        } else {
+            editBtn.disabled = true;
+            editBtn.title = 'Edit not implemented';
+        }
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'button small-button cancel-button';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', () => deleteGrade(grade.id));
+
+        actionsTd.appendChild(editBtn);
+        actionsTd.appendChild(deleteBtn);
+        row.appendChild(actionsTd);
+
         gradesTableBody.appendChild(row);
     });
 }
@@ -1020,8 +1129,9 @@ function attachEventListeners() {
 
     if (burger) {
         burger.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-            sidebarOverlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none';
+            const isOpen = sidebar.classList.toggle('open');
+            sidebarOverlay.style.display = isOpen ? 'block' : 'none';
+            burger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         });
     }
 
@@ -1029,6 +1139,7 @@ function attachEventListeners() {
         sidebarOverlay.addEventListener('click', () => {
             sidebar.classList.remove('open');
             sidebarOverlay.style.display = 'none';
+            if (burger) burger.setAttribute('aria-expanded', 'false');
         });
     }
 
