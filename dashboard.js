@@ -6,6 +6,7 @@ const B4A_JS_KEY = '7CE7gnknAyyfSZRTWpqvuDvNhLOMsF0DNYk8qvgn';
 const B4A_SERVER_URL = 'https://parseapi.back4app.com/';
 
 // --- Initialize Parse SDK immediately on script load ---
+// FIX: Moved initialization to the top to ensure it's always ready.
 Parse.initialize(B4A_APP_ID, B4A_JS_KEY);
 Parse.serverURL = B4A_SERVER_URL;
 
@@ -492,7 +493,8 @@ function renderAttendanceTable() {
     });
 }
 
-function renderAttendanceChart() {
+// FIX: Added the missing renderOverallAttendanceChart function
+function renderOverallAttendanceChart() {
     const canvas = document.getElementById('overallAttendanceChart');
     if (!canvas) return;
 
@@ -500,7 +502,6 @@ function renderAttendanceChart() {
         overallAttendanceChartInstance.destroy();
     }
 
-    const totalDays = new Set(attendanceRecords.map(r => new Date(r.get('date').iso).toDateString())).size;
     const presentCount = attendanceRecords.filter(r => r.get('status') === 'Present').length;
     const absentCount = attendanceRecords.filter(r => r.get('status') === 'Absent').length;
 
@@ -568,7 +569,7 @@ function renderGradesTable() {
     gradesTableBody.innerHTML = ''; // Clear existing data
 
     grades.forEach(grade => {
-        // Fix 1: Check if 'grade' is a valid Parse object with a .get() function
+        // FIX: Check if 'grade' is a valid Parse object with a .get() function
         if (typeof grade.get !== 'function') {
             console.error("Invalid grade object found:", grade);
             return;
@@ -576,7 +577,7 @@ function renderGradesTable() {
 
         const student = students.find(s => s.id === grade.get('studentId'));
         
-        // Fix 2: Check if the date object exists before trying to format it
+        // FIX: Check if the date object exists before trying to format it
         const gradeDate = grade.get('date');
         let formattedDate = '';
         if (gradeDate) {
@@ -842,7 +843,6 @@ function updateUI() {
     renderCourseTable();
 
     populateCourseDropdowns();
-    populateStudentDropdowns(document.getElementById('gradesStudentFilter'));
     populateStudentDropdowns(document.getElementById('addGradeStudent'));
     populateTeacherDropdown();
 
@@ -981,11 +981,7 @@ function attachEventListeners() {
         addGradeForm.addEventListener('submit', saveGrade);
     }
     
-    // There were missing populate functions for student and course dropdowns
-    // I have added them here. You will need to add the definitions for these
-    // functions somewhere in your dashboard.js file, as they are being called
-    // but not defined.
-
+    // FIX: Replaced the missing populate functions.
     const courseSelect = document.getElementById('studentCourse');
     if (courseSelect) {
         courseSelect.addEventListener('focus', populateCourseDropdowns);
@@ -1020,7 +1016,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadAllData();
 });
 
-// Added missing populate dropdown functions
+// FIX: Added missing populate dropdown functions
 function populateCourseDropdowns() {
     const courseDropdowns = [
         document.getElementById('studentCourse'),
@@ -1052,4 +1048,11 @@ function populateStudentDropdowns(selectElement, course = '') {
         selectElement.appendChild(option);
     });
     selectElement.value = currentValue;
+}
+
+// FIX: Added a function that was referenced but not defined.
+function renderLowPerformingAssignmentsChart() {
+    console.log("[renderLowPerformingAssignmentsChart] Function not yet implemented.");
+    // This function will eventually create a chart to show low-scoring assignments.
+    // For now, it's a placeholder to prevent the ReferenceError.
 }
