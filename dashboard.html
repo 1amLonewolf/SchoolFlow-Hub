@@ -51,6 +51,14 @@
                         <canvas id="topStudentsChart"></canvas>
                     </div>
                 </div>
+                <div class="quick-actions">
+                    <a href="#students" class="button primary-button">Add Student</a>
+                    <a href="#teachers" class="button primary-button">Add Teacher</a>
+                    <a href="#courses" class="button primary-button">Add Course</a>
+                    <a href="#attendance" class="button primary-button">Record Attendance</a>
+                    <a href="#grades" class="button primary-button">Add Grade</a>
+                    <button class="button secondary-button" onclick="refreshDashboard()">Refresh Dashboard</button>
+                </div>
             </div>
 
             <div id="students" class="dashboard-content-section">
@@ -224,6 +232,14 @@
 
         <div id="reports-analytics" class="dashboard-content-section">
                 <h2>Reports &amp; Analytics</h2>
+                <div class="quick-actions">
+                    <button class="button primary-button" onclick="refreshDashboard()">Refresh Data</button>
+                    <button class="button secondary-button" onclick="exportStudentsCSV()">Export Students CSV</button>
+                    <button class="button secondary-button" onclick="exportGradesCSV()">Export Grades CSV</button>
+                    <button class="button secondary-button" onclick="exportAttendanceCSV()">Export Attendance CSV</button>
+                    <button class="button secondary-button" onclick="downloadChart('lowPerformingAssignmentsChart','low-performing-assignments.png')">Download Chart</button>
+                    <button class="button secondary-button" onclick="exportSummaryJSON()">Export Summary JSON</button>
+                </div>
                 <div class="reports-grid">
                     <div class="report-card chart-card">
                         <h3>Low Performing Assignments</h3>
@@ -255,6 +271,7 @@
                                 <span class="slider"></span>
                             </label>
                             <p>Toggle dark theme for the dashboard interface.</p>
+                            <button class="button secondary-button" onclick="resetPreferences()">Reset Preferences</button>
                         </div>
                     </div>
                 </div>

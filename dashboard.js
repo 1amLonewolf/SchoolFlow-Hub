@@ -836,6 +836,116 @@ async function loadAllData() {
     console.log("[loadAllData] All data loaded and UI updated.");
 }
 
+// Quick actions helpers used by buttons
+async function refreshDashboard() {
+    await loadAllData();
+    showMessage('Dashboard refreshed.', 'success');
+}
+
+function downloadChart(canvasId, filename = 'chart.png') {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) {
+        showMessage('Chart not found.', 'error');
+        return;
+    }
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = filename;
+    link.click();
+}
+
+function toCSV(rows) {
+    const esc = (v) => (
+        v === null || v === undefined ? '' : String(v).replace(/"/g, '""')
+    );
+    return rows.map(r => r.map(v => `"${esc(v)}"`).join(',')).join('\n');
+}
+
+function exportStudentsCSV() {
+    const rows = [["Name","Course","National ID","Season","Phone","Location"]];
+    students.forEach(s => rows.push([
+        s.get('name') || '',
+        s.get('course') || '',
+        s.get('nationalID') || '',
+        s.get('season') || '',
+        s.get('phone') || '',
+        s.get('location') || ''
+    ]));
+    const csv = toCSV(rows);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'students.csv'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportGradesCSV() {
+    const rows = [["Student","Assignment","Score","Total","Date"]];
+    grades.forEach(g => {
+        const student = students.find(s => s.id === g.get('studentId'));
+        const d = g.get('date');
+        rows.push([
+            student ? student.get('name') : '',
+            g.get('assignmentName') || '',
+            g.get('score') || '',
+            g.get('totalScore') || '',
+            d ? new Date(d).toISOString().split('T')[0] : ''
+        ]);
+    });
+    const csv = toCSV(rows);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'grades.csv'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportAttendanceCSV() {
+    const rows = [["Date","Student","Course","Status"]];
+    attendanceRecords.forEach(r => {
+        const student = students.find(s => s.id === r.get('studentId'));
+        const d = r.get('date');
+        rows.push([
+            d ? new Date(d).toLocaleDateString() : '',
+            student ? student.get('name') : '',
+            student ? student.get('course') : '',
+            r.get('status') || ''
+        ]);
+    });
+    const csv = toCSV(rows);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'attendance.csv'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportSummaryJSON() {
+    const summary = {
+        totalStudents: students.length,
+        totalCourses: courses.length,
+        totalTeachers: teachers.length,
+    };
+    const blob = new Blob([JSON.stringify(summary, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'summary.json'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function resetPreferences() {
+    try {
+        localStorage.removeItem('darkMode');
+        document.body.classList.remove('dark-mode');
+        const toggle = document.getElementById('settingsDarkModeToggle');
+        if (toggle) toggle.checked = false;
+        showMessage('Preferences reset.', 'success');
+    } catch (e) {
+        console.error('Error resetting preferences:', e);
+        showMessage('Failed to reset preferences.', 'error');
+    }
+}
+
 function updateUI() {
     console.log("[updateUI] Starting UI update...");
 
