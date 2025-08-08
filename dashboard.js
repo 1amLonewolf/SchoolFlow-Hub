@@ -447,12 +447,12 @@ async function refreshSessionToken() {
             console.error("[refreshSessionToken] Session refresh failed:", error);
             await Parse.User.logOut();
             showMessage('Your session has expired. Please log in again.', 'warning', 5000);
-            setTimeout(() => window.location.href = 'login.html', 5000);
+            setTimeout(() => window.location.href = 'loginPage.html', 5000);
             return false;
         }
     } else {
         console.log("[refreshSessionToken] No current user found. Redirecting to login.");
-        setTimeout(() => window.location.href = 'login.html', 2000);
+        setTimeout(() => window.location.href = 'loginPage.html', 2000);
         return false;
     }
 }
@@ -476,8 +476,10 @@ function renderAttendanceTable() {
         
         groupedAttendance[studentId].forEach(record => {
             const row = tableBody.insertRow();
+            const dateVal = record.get('date');
+            const displayDate = dateVal ? new Date(dateVal).toLocaleDateString() : '';
             row.innerHTML = `
-                <td data-label="Date">${new Date(record.get('date').iso).toLocaleDateString()}</td>
+                <td data-label="Date">${displayDate}</td>
                 <td data-label="Student">${student.get('name')}</td>
                 <td data-label="Course">${student.get('course')}</td>
                 <td data-label="Status">${record.get('status')}</td>
@@ -807,6 +809,7 @@ async function processStudentRecords(records) {
         }
     }
 
+    await loadAllData();
     const message = `Upload complete! Added ${successCount} students, skipped ${skipCount} duplicates/invalid records.`;
     showMessage(message, 'success', 7000);
 
@@ -869,19 +872,39 @@ function attachEventListeners() {
     const bulkUploadForm = document.getElementById('bulkUploadForm');
 
     sidebarLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            sidebarLinks.forEach(l => l.classList.remove('active'));
-            e.target.classList.add('active');
-            sections.forEach(s => s.style.display = 'none');
-            const targetId = e.target.getAttribute('href').substring(1);
-            document.getElementById(targetId).style.display = 'block';
-            if (sidebar.classList.contains('open')) {
-                sidebar.classList.remove('open');
-                sidebarOverlay.style.display = 'none';
-            }
-        });
+        const href = link.getAttribute('href') || '';
+        if (href.startsWith('#')) {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                sidebarLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                sections.forEach(s => s.style.display = 'none');
+                const targetId = href.substring(1);
+                const targetEl = document.getElementById(targetId);
+                if (targetEl) {
+                    targetEl.style.display = 'block';
+                }
+                if (sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                    sidebarOverlay.style.display = 'none';
+                }
+            });
+        }
     });
+
+    // Dedicated logout handler: clears Parse session then redirects
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                await Parse.User.logOut();
+            } catch (err) {
+                console.error('Error logging out:', err);
+            }
+            window.location.href = 'loginPage.html';
+        });
+    }
 
     if (burger) {
         burger.addEventListener('click', () => {
@@ -910,6 +933,7 @@ function attachEventListeners() {
                 location: document.getElementById('studentLocation').value.trim(),
             };
             await addOrUpdateStudent(studentId, studentData);
+            await loadAllData();
             resetStudentForm();
         });
     }
@@ -989,12 +1013,12 @@ function attachEventListeners() {
 
     const attendanceStudentSelect = document.getElementById('attendanceStudent');
     if (attendanceStudentSelect) {
-        attendanceStudentSelect.addEventListener('focus', populateStudentDropdowns);
+        attendanceStudentSelect.addEventListener('focus', () => populateStudentDropdowns(attendanceStudentSelect));
     }
 
     const gradesStudentSelect = document.getElementById('addGradeStudent');
     if (gradesStudentSelect) {
-        gradesStudentSelect.addEventListener('focus', populateStudentDropdowns);
+        gradesStudentSelect.addEventListener('focus', () => populateStudentDropdowns(gradesStudentSelect));
     }
 
     const assignedTeacherSelect = document.getElementById('assignedTeacher');
