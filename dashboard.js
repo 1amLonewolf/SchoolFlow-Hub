@@ -5,6 +5,10 @@ const B4A_APP_ID = '1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0';
 const B4A_JS_KEY = '7CE7gnknAyyfSZRTWpqvuDvNhLOMsF0DNYk8qvgn';
 const B4A_SERVER_URL = 'https://parseapi.back4app.com/';
 
+// --- Initialize Parse SDK immediately on script load ---
+Parse.initialize(B4A_APP_ID, B4A_JS_KEY);
+Parse.serverURL = B4A_SERVER_URL;
+
 // Global data arrays
 let students = [];
 let attendanceRecords = [];
@@ -86,7 +90,6 @@ function showConfirmDialog(message, onConfirm) {
         dialog.remove();
     };
 }
-
 
 // --- BACKEND COMMUNICATION FUNCTIONS ---
 
@@ -958,15 +961,37 @@ function attachEventListeners() {
     if (addGradeForm) {
         addGradeForm.addEventListener('submit', saveGrade);
     }
+    
+    // There were missing populate functions for student and course dropdowns
+    // I have added them here. You will need to add the definitions for these
+    // functions somewhere in your dashboard.js file, as they are being called
+    // but not defined.
+
+    const courseSelect = document.getElementById('studentCourse');
+    if (courseSelect) {
+        courseSelect.addEventListener('focus', populateCourseDropdowns);
+    }
+
+    const attendanceStudentSelect = document.getElementById('attendanceStudent');
+    if (attendanceStudentSelect) {
+        attendanceStudentSelect.addEventListener('focus', populateStudentDropdowns);
+    }
+
+    const gradesStudentSelect = document.getElementById('addGradeStudent');
+    if (gradesStudentSelect) {
+        gradesStudentSelect.addEventListener('focus', populateStudentDropdowns);
+    }
+
+    const assignedTeacherSelect = document.getElementById('assignedTeacher');
+    if (assignedTeacherSelect) {
+        assignedTeacherSelect.addEventListener('focus', populateTeacherDropdown);
+    }
 
     console.log("[attachEventListeners] All event listeners attached.");
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // FIX: Parse SDK must be initialized before any Parse calls are made.
-    Parse.initialize(B4A_APP_ID, B4A_JS_KEY);
-    Parse.serverURL = B4A_SERVER_URL;
-    
+    // This is the correct logic: Check for a valid session AFTER the SDK is initialized.
     const isSessionValid = await refreshSessionToken();
     if (!isSessionValid) {
         return;
@@ -975,3 +1000,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     attachEventListeners();
     loadAllData();
 });
+
+// Added missing populate dropdown functions
+function populateCourseDropdowns() {
+    const courseDropdowns = [
+        document.getElementById('studentCourse'),
+        document.getElementById('gradesCourseFilter')
+    ];
+    courseDropdowns.forEach(selectElement => {
+        if (!selectElement) return;
+        const currentValue = selectElement.value;
+        selectElement.innerHTML = '<option value="">-- Select a Course --</option>';
+        courses.sort((a, b) => a.name.localeCompare(b.name)).forEach(course => {
+            const option = document.createElement('option');
+            option.value = course.name;
+            option.textContent = course.name;
+            selectElement.appendChild(option);
+        });
+        selectElement.value = currentValue;
+    });
+}
+
+function populateStudentDropdowns(selectElement, course = '') {
+    if (!selectElement) return;
+    const currentValue = selectElement.value;
+    selectElement.innerHTML = '<option value="">-- Select a Student --</option>';
+    const filteredStudents = course ? students.filter(s => s.course === course) : students;
+    filteredStudents.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.id;
+        option.textContent = student.name + (course ? '' : ` (${student.course})`);
+        selectElement.appendChild(option);
+    });
+    selectElement.value = currentValue;
+}
