@@ -97,7 +97,7 @@ async function loadParseData(className) {
     try {
         const query = new Parse.Query(className);
         const results = await query.find();
-        return results.map(obj => ({ id: obj.id, ...obj.attributes }));
+        return results;
     } catch (error) {
         console.error(`Error fetching ${className} data:`, error);
         showMessage(`Error fetching ${className} data.`, 'error');
@@ -153,11 +153,11 @@ function renderStudentTable() {
     students.forEach(student => {
         const row = studentTableBody.insertRow();
         row.innerHTML = `
-            <td data-label="Name">${student.name}</td>
-            <td data-label="Course">${student.course}</td>
-            <td data-label="ID">${student.nationalID}</td>
-            <td data-label="Season">${student.season}</td>
-            <td data-label="Phone">${student.phone}</td>
+            <td data-label="Name">${student.get('name')}</td>
+            <td data-label="Course">${student.get('course')}</td>
+            <td data-label="ID">${student.get('nationalID')}</td>
+            <td data-label="Season">${student.get('season')}</td>
+            <td data-label="Phone">${student.get('phone')}</td>
             <td data-label="Actions" class="actions">
                 <button class="edit-button" data-id="${student.id}">Edit</button>
                 <button class="delete-button" data-id="${student.id}">Delete</button>
@@ -208,14 +208,14 @@ async function addOrUpdateStudent(studentId, studentData) {
 function editStudent(id) {
     const studentToEdit = students.find(s => s.id === id);
     if (studentToEdit) {
-        document.getElementById('studentName').value = studentToEdit.name;
-        document.getElementById('studentID').value = studentToEdit.nationalID;
-        document.getElementById('studentCourse').value = studentToEdit.course;
-        document.getElementById('studentSeason').value = studentToEdit.season;
-        document.getElementById('studentPhone').value = studentToEdit.phone;
-        document.getElementById('studentLocation').value = studentToEdit.location;
+        document.getElementById('studentName').value = studentToEdit.get('name');
+        document.getElementById('studentID').value = studentToEdit.get('nationalID');
+        document.getElementById('studentCourse').value = studentToEdit.get('course');
+        document.getElementById('studentSeason').value = studentToEdit.get('season');
+        document.getElementById('studentPhone').value = studentToEdit.get('phone');
+        document.getElementById('studentLocation').value = studentToEdit.get('location');
         document.getElementById('addStudentForm').setAttribute('data-editing-id', studentToEdit.id);
-        document.getElementById('student-form-heading').textContent = `Edit Student: ${studentToEdit.name}`;
+        document.getElementById('student-form-heading').textContent = `Edit Student: ${studentToEdit.get('name')}`;
         document.getElementById('saveStudentBtn').textContent = 'Update Student';
         document.getElementById('cancelStudentBtn').style.display = 'inline-block';
     }
@@ -249,9 +249,9 @@ function renderTeacherTable() {
     teachers.forEach(teacher => {
         const row = teacherTableBody.insertRow();
         row.innerHTML = `
-            <td data-label="Name">${teacher.name}</td>
-            <td data-label="Email">${teacher.email}</td>
-            <td data-label="Phone">${teacher.phone || ''}</td>
+            <td data-label="Name">${teacher.get('name')}</td>
+            <td data-label="Email">${teacher.get('email')}</td>
+            <td data-label="Phone">${teacher.get('phone') || ''}</td>
             <td data-label="Actions" class="actions">
                 <button class="edit-button" data-id="${teacher.id}">Edit</button>
                 <button class="delete-button" data-id="${teacher.id}">Delete</button>
@@ -299,10 +299,10 @@ async function addOrUpdateTeacher(event) {
 function editTeacher(id) {
     const teacherToEdit = teachers.find(t => t.id === id);
     if (teacherToEdit) {
-        document.getElementById('teacherName').value = teacherToEdit.name;
-        document.getElementById('teacherEmail').value = teacherToEdit.email;
-        document.getElementById('teacherPhone').value = teacherToEdit.phone;
-        document.getElementById('teacher-form-heading').textContent = `Edit Teacher: ${teacherToEdit.name}`;
+        document.getElementById('teacherName').value = teacherToEdit.get('name');
+        document.getElementById('teacherEmail').value = teacherToEdit.get('email');
+        document.getElementById('teacherPhone').value = teacherToEdit.get('phone');
+        document.getElementById('teacher-form-heading').textContent = `Edit Teacher: ${teacherToEdit.get('name')}`;
         document.getElementById('saveTeacherBtn').textContent = 'Update Teacher';
         document.getElementById('cancelTeacherBtn').style.display = 'inline-block';
         window.editingTeacherId = id;
@@ -335,12 +335,12 @@ function renderCourseTable() {
         return;
     }
     courses.forEach(course => {
-        const teacher = teachers.find(t => t.id === course.assignedTeacher);
+        const teacher = teachers.find(t => t.id === course.get('assignedTeacher'));
         const row = courseTableBody.insertRow();
         row.innerHTML = `
-            <td data-label="Course Name">${course.name}</td>
-            <td data-label="Description">${course.description}</td>
-            <td data-label="Assigned Teacher">${teacher ? teacher.name : 'N/A'}</td>
+            <td data-label="Course Name">${course.get('name')}</td>
+            <td data-label="Description">${course.get('description')}</td>
+            <td data-label="Assigned Teacher">${teacher ? teacher.get('name') : 'N/A'}</td>
             <td data-label="Actions" class="actions">
                 <button class="edit-button" data-id="${course.id}">Edit</button>
                 <button class="delete-button" data-id="${course.id}">Delete</button>
@@ -363,7 +363,7 @@ function populateTeacherDropdown() {
     teachers.forEach(teacher => {
         const option = document.createElement('option');
         option.value = teacher.id;
-        option.textContent = teacher.name;
+        option.textContent = teacher.get('name');
         assignedTeacherSelect.appendChild(option);
     });
     assignedTeacherSelect.value = currentValue;
@@ -397,10 +397,10 @@ async function addOrUpdateCourse(event) {
 function editCourse(id) {
     const courseToEdit = courses.find(c => c.id === id);
     if (courseToEdit) {
-        document.getElementById('courseName').value = courseToEdit.name;
-        document.getElementById('courseDescription').value = courseToEdit.description;
-        document.getElementById('assignedTeacher').value = courseToEdit.assignedTeacher;
-        document.getElementById('course-form-heading').textContent = `Edit Course: ${courseToEdit.name}`;
+        document.getElementById('courseName').value = courseToEdit.get('name');
+        document.getElementById('courseDescription').value = courseToEdit.get('description');
+        document.getElementById('assignedTeacher').value = courseToEdit.get('assignedTeacher');
+        document.getElementById('course-form-heading').textContent = `Edit Course: ${courseToEdit.get('name')}`;
         document.getElementById('saveCourseBtn').textContent = 'Update Course';
         document.getElementById('cancelCourseBtn').style.display = 'inline-block';
         window.editingCourseId = id;
@@ -464,8 +464,8 @@ function renderAttendanceTable() {
     if (!tableBody) return;
     tableBody.innerHTML = '';
     const groupedAttendance = attendanceRecords.reduce((acc, record) => {
-        if (!acc[record.studentId]) acc[record.studentId] = [];
-        acc[record.studentId].push(record);
+        if (!acc[record.get('studentId')]) acc[record.get('studentId')] = [];
+        acc[record.get('studentId')].push(record);
         return acc;
     }, {});
     
@@ -476,10 +476,10 @@ function renderAttendanceTable() {
         groupedAttendance[studentId].forEach(record => {
             const row = tableBody.insertRow();
             row.innerHTML = `
-                <td data-label="Date">${new Date(record.date.iso).toLocaleDateString()}</td>
-                <td data-label="Student">${student.name}</td>
-                <td data-label="Course">${student.course}</td>
-                <td data-label="Status">${record.status}</td>
+                <td data-label="Date">${new Date(record.get('date').iso).toLocaleDateString()}</td>
+                <td data-label="Student">${student.get('name')}</td>
+                <td data-label="Course">${student.get('course')}</td>
+                <td data-label="Status">${record.get('status')}</td>
                 <td data-label="Actions" class="actions">
                     <button class="delete-button" data-id="${record.id}">Delete</button>
                 </td>
@@ -500,9 +500,9 @@ function renderAttendanceChart() {
         overallAttendanceChartInstance.destroy();
     }
 
-    const totalDays = new Set(attendanceRecords.map(r => new Date(r.date.iso).toDateString())).size;
-    const presentCount = attendanceRecords.filter(r => r.status === 'Present').length;
-    const absentCount = attendanceRecords.filter(r => r.status === 'Absent').length;
+    const totalDays = new Set(attendanceRecords.map(r => new Date(r.get('date').iso).toDateString())).size;
+    const presentCount = attendanceRecords.filter(r => r.get('status') === 'Present').length;
+    const absentCount = attendanceRecords.filter(r => r.get('status') === 'Absent').length;
 
     overallAttendanceChartInstance = new Chart(canvas, {
         type: 'doughnut',
@@ -559,32 +559,42 @@ async function deleteAttendanceRecord(id) {
 // --- GRADES MANAGEMENT FUNCTIONS ---
 
 function renderGradesTable() {
-    const tableBody = document.querySelector('#gradesTable tbody');
-    if (!tableBody) return;
-    tableBody.innerHTML = '';
+    console.log("[renderGradesTable] Rendering grades table with data:", grades);
+    const gradesTableBody = document.querySelector('#gradesTable tbody');
+    if (!gradesTableBody) {
+        console.error("Grades table body not found.");
+        return;
+    }
+    gradesTableBody.innerHTML = ''; // Clear existing data
+
     grades.forEach(grade => {
-        const student = students.find(s => s.id === grade.studentId);
- // Get the date object from the Parse grade object
+        // Fix 1: Check if 'grade' is a valid Parse object with a .get() function
+        if (typeof grade.get !== 'function') {
+            console.error("Invalid grade object found:", grade);
+            return;
+        }
+
+        const student = students.find(s => s.id === grade.get('studentId'));
+        
+        // Fix 2: Check if the date object exists before trying to format it
         const gradeDate = grade.get('date');
         let formattedDate = '';
-
-        // Check if the date object exists before trying to format it
         if (gradeDate) {
             formattedDate = gradeDate.toISOString().split('T')[0];
         }
-        const row = tableBody.insertRow();
+
+        const row = document.createElement('tr');
         row.innerHTML = `
-            <td data-label="Student">${student ? student.name : 'N/A'}</td>
-            <td data-label="Assignment">${grade.assignmentName}</td>
-            <td data-label="Score">${grade.score} / ${grade.totalScore}</td>
-            <td data-label="Date">${new Date(grade.date.iso).toLocaleDateString()}</td>
-            <td data-label="Actions" class="actions">
-                <button class="delete-button" data-id="${grade.id}">Delete</button>
+            <td>${student ? student.get('name') : 'N/A'}</td>
+            <td>${grade.get('assignmentName')}</td>
+            <td>${grade.get('score')} / ${grade.get('totalScore')}</td>
+            <td>${formattedDate}</td>
+            <td>
+                <button class="button small-button" onclick="editGrade('${grade.id}')">Edit</button>
+                <button class="button small-button cancel-button" onclick="deleteGrade('${grade.id}')">Delete</button>
             </td>
         `;
-    });
-    document.querySelectorAll('#gradesTable .delete-button').forEach(button => {
-        button.onclick = (event) => deleteGrade(event.target.dataset.id);
+        gradesTableBody.appendChild(row);
     });
 }
 
@@ -627,7 +637,8 @@ function renderCoursePopularityChart() {
         coursePopularityChartInstance.destroy();
     }
     const courseCounts = students.reduce((acc, student) => {
-        acc[student.course] = (acc[student.course] || 0) + 1;
+        const courseName = student.get('course');
+        acc[courseName] = (acc[courseName] || 0) + 1;
         return acc;
     }, {});
     const labels = Object.keys(courseCounts);
@@ -669,14 +680,14 @@ function renderTopStudentsChart() {
     }
 
     const studentScores = students.reduce((acc, student) => {
-        acc[student.id] = { name: student.name, totalScore: 0, totalAssignments: 0 };
+        acc[student.id] = { name: student.get('name'), totalScore: 0, totalAssignments: 0 };
         return acc;
     }, {});
 
     grades.forEach(grade => {
-        if (studentScores[grade.studentId]) {
-            studentScores[grade.studentId].totalScore += grade.score;
-            studentScores[grade.studentId].totalAssignments += 1;
+        if (studentScores[grade.get('studentId')]) {
+            studentScores[grade.get('studentId')].totalScore += grade.get('score');
+            studentScores[grade.get('studentId')].totalAssignments += 1;
         }
     });
 
@@ -1019,10 +1030,10 @@ function populateCourseDropdowns() {
         if (!selectElement) return;
         const currentValue = selectElement.value;
         selectElement.innerHTML = '<option value="">-- Select a Course --</option>';
-        courses.sort((a, b) => a.name.localeCompare(b.name)).forEach(course => {
+        courses.sort((a, b) => a.get('name').localeCompare(b.get('name'))).forEach(course => {
             const option = document.createElement('option');
-            option.value = course.name;
-            option.textContent = course.name;
+            option.value = course.get('name');
+            option.textContent = course.get('name');
             selectElement.appendChild(option);
         });
         selectElement.value = currentValue;
@@ -1033,11 +1044,11 @@ function populateStudentDropdowns(selectElement, course = '') {
     if (!selectElement) return;
     const currentValue = selectElement.value;
     selectElement.innerHTML = '<option value="">-- Select a Student --</option>';
-    const filteredStudents = course ? students.filter(s => s.course === course) : students;
-    filteredStudents.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
+    const filteredStudents = course ? students.filter(s => s.get('course') === course) : students;
+    filteredStudents.sort((a, b) => a.get('name').localeCompare(b.get('name'))).forEach(student => {
         const option = document.createElement('option');
         option.value = student.id;
-        option.textContent = student.name + (course ? '' : ` (${student.course})`);
+        option.textContent = student.get('name') + (course ? '' : ` (${student.get('course')})`);
         selectElement.appendChild(option);
     });
     selectElement.value = currentValue;
