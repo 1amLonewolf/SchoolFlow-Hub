@@ -169,7 +169,7 @@ body, html {
     margin-bottom: 10px;
 }
 
-.sidebar nav ul li a {
+.sidebar a {
     color: #fff; /* White text on gradient */
     text-decoration: none;
     padding: 12px 15px;
@@ -181,12 +181,12 @@ body, html {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-.sidebar nav ul li a:hover {
+.sidebar a:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
-.sidebar nav ul li a.active {
+.sidebar a.active {
     outline: 2px solid rgba(255, 255, 255, 0.4);
 }
 
@@ -1024,14 +1024,14 @@ input:checked + .slider:before {
         margin-bottom: 8px; /* Vertical spacing */
     }
 
-    .sidebar nav ul li a {
+    .sidebar a {
         padding: 12px 20px; /* Adequate padding for clickable area */
         font-size: 1rem;
         border-left: 5px solid transparent; /* Retain accent border for active state */
         border-bottom: none; /* Remove bottom border for active state */
     }
 
-    .sidebar nav ul li a.active {
+    .sidebar a.active {
         background-color: rgba(255, 255, 255, 0.2); /* Active background */
         border-left-color: #2575fc; /* Primary blue accent */
     }
@@ -1373,12 +1373,12 @@ body.dark-mode .sidebar {
     border-right-color: #404040; /* Dark border */
 }
 
-body.dark-mode .sidebar ul li a {
+body.dark-mode .sidebar a {
     color: #fff;
     background: linear-gradient(135deg, #1d4ed8 0%, #5b21b6 100%); /* Dark mode blue gradient */
 }
 
-body.dark-mode .sidebar ul li a:hover {
+body.dark-mode .sidebar a:hover {
     filter: brightness(0.95);
 }
 
