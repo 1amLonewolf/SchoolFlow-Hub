@@ -1498,9 +1498,9 @@ body.dark-mode .switch label {
     align-items: stretch;
     justify-content: stretch;
 }
-.chart-container canvas {
-    width: 100% !important;
-    height: 100% !important;
+.chart-container > canvas {
+    width: 100%;
+    height: 100%;
 }
 
 /* Sidebar overlay: ensure full-viewport coverage and correct stacking */
