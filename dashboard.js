@@ -852,6 +852,8 @@ function updateUI() {
     renderCoursePopularityChart();
     renderOverallAttendanceChart();
     renderTopStudentsChart();
+    renderLowPerformingAssignmentsChart();
+    updateSummaryMetrics();
 
     console.log("[updateUI] UI update complete.");
 }
@@ -1026,6 +1028,23 @@ function attachEventListeners() {
         assignedTeacherSelect.addEventListener('focus', populateTeacherDropdown);
     }
 
+    // Settings tab handlers
+    const settingsDarkModeToggle = document.getElementById('settingsDarkModeToggle');
+    if (settingsDarkModeToggle) {
+        // Initialize based on current state
+        settingsDarkModeToggle.checked = document.body.classList.contains('dark-mode');
+        settingsDarkModeToggle.addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            if (checked) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+            // Persist preference alongside login page toggle
+            localStorage.setItem('darkMode', checked);
+        });
+    }
+
     console.log("[attachEventListeners] All event listeners attached.");
 }
 
@@ -1076,7 +1095,63 @@ function populateStudentDropdowns(selectElement, course = '') {
 
 // FIX: Added a function that was referenced but not defined.
 function renderLowPerformingAssignmentsChart() {
-    console.log("[renderLowPerformingAssignmentsChart] Function not yet implemented.");
-    // This function will eventually create a chart to show low-scoring assignments.
-    // For now, it's a placeholder to prevent the ReferenceError.
+    const canvas = document.getElementById('lowPerformingAssignmentsChart');
+    if (!canvas) return;
+
+    if (lowPerformingAssignmentsChartInstance) {
+        lowPerformingAssignmentsChartInstance.destroy();
+    }
+
+    // Aggregate minimum scores per assignment name
+    const assignmentScores = {};
+    grades.forEach(g => {
+        const name = g.get('assignmentName');
+        const score = g.get('score');
+        const total = g.get('totalScore') || 100;
+        if (!name || typeof score !== 'number') return;
+        const percent = (score / total) * 100;
+        if (!(name in assignmentScores)) {
+            assignmentScores[name] = { min: percent, count: 1 };
+        } else {
+            assignmentScores[name].min = Math.min(assignmentScores[name].min, percent);
+            assignmentScores[name].count += 1;
+        }
+    });
+
+    const entries = Object.entries(assignmentScores)
+        .map(([name, { min, count }]) => ({ name, min, count }))
+        .sort((a, b) => a.min - b.min)
+        .slice(0, 10); // show worst 10
+
+    const labels = entries.map(e => e.name);
+    const data = entries.map(e => Math.round(e.min));
+
+    lowPerformingAssignmentsChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Lowest % score',
+                data,
+                backgroundColor: 'rgba(244, 67, 54, 0.6)',
+                borderColor: 'rgba(244, 67, 54, 1)',
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
+            plugins: { title: { display: true, text: 'Low Performing Assignments (min %)' } }
+        }
+    });
+}
+
+function updateSummaryMetrics() {
+    const elStudents = document.getElementById('summaryTotalStudents');
+    const elCourses = document.getElementById('summaryTotalCourses');
+    const elTeachers = document.getElementById('summaryTotalTeachers');
+    if (elStudents) elStudents.textContent = students.length;
+    if (elCourses) elCourses.textContent = courses.length;
+    if (elTeachers) elTeachers.textContent = teachers.length;
 }

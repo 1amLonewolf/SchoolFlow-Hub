@@ -25,6 +25,8 @@
             <a href="#courses">Courses</a>
             <a href="#attendance">Attendance</a>
             <a href="#grades">Grades</a>
+            <a href="#reports-analytics">Reports &amp; Analytics</a>
+            <a href="#settings">Settings</a>
             <a href="loginPage.html" id="logoutBtn">Logout</a>
         </aside>
 
@@ -217,6 +219,44 @@
                         <tbody>
                             </tbody>
                     </table>
+                </div>
+            </div>
+
+        <div id="reports-analytics" class="dashboard-content-section">
+                <h2>Reports &amp; Analytics</h2>
+                <div class="reports-grid">
+                    <div class="report-card chart-card">
+                        <h3>Low Performing Assignments</h3>
+                        <canvas id="lowPerformingAssignmentsChart"></canvas>
+                    </div>
+                    <div class="report-card">
+                        <h3>Summary</h3>
+                        <div class="report-content">
+                            <p>Key metrics based on current data:</p>
+                            <ul>
+                                <li>Total students: <span id="summaryTotalStudents"></span></li>
+                                <li>Total courses: <span id="summaryTotalCourses"></span></li>
+                                <li>Total teachers: <span id="summaryTotalTeachers"></span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings" class="dashboard-content-section">
+                <h2>Settings</h2>
+                <div class="settings-grid">
+                    <div class="setting-card">
+                        <h3>Appearance</h3>
+                        <div class="setting-content">
+                            <label class="switch">
+                                Dark Mode
+                                <input type="checkbox" id="settingsDarkModeToggle">
+                                <span class="slider"></span>
+                            </label>
+                            <p>Toggle dark theme for the dashboard interface.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
