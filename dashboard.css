@@ -170,24 +170,24 @@ body, html {
 }
 
 .sidebar nav ul li a {
-    color: #e0e0e0; /* Off-white for general links */
+    color: #fff; /* White text on gradient */
     text-decoration: none;
     padding: 12px 15px;
     display: block; /* Make the whole area clickable */
-    border-radius: 5px;
-    transition: background-color 0.3s ease, color 0.3s ease;
-    font-weight: 500;
+    border-radius: 8px;
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    font-weight: 600;
+    background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar nav ul li a:hover {
-    background-color: rgba(255, 255, 255, 0.1); /* Subtle white overlay on hover */
-    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
 .sidebar nav ul li a.active {
-    background-color: rgba(255, 255, 255, 0.2); /* More prominent white overlay for active */
-    color: #ffffff;
-    box-shadow: inset 3px 0 0 0 #2575fc; /* Vibrant blue accent on left */
+    outline: 2px solid rgba(255, 255, 255, 0.4);
 }
 
 .sidebar-footer {
@@ -199,19 +199,17 @@ body, html {
 }
 
 .sidebar-footer .logout-btn {
-    background-color: #dc3545; /* Red */
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
+    border-radius: 8px;
     text-decoration: none;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
     display: inline-block;
-    font-weight: 500;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-footer .logout-btn:hover {
-    background-color: #c82333; /* Darker red on hover */
     transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* Main Content Area */
@@ -385,6 +383,7 @@ body, html {
     text-decoration: none; /* Ensure no underline on anchor-buttons */
     text-align: center;
     box-sizing: border-box; /* Crucial for consistent sizing */
+    color: #fff;
 }
 
 .button:last-child,
@@ -400,9 +399,9 @@ body, html {
 }
 
 /* Primary Action Buttons (Quick Actions, Save, Load, etc.) */
-.action-button, .submit-button, .primary-button {
+.action-button, .submit-button, .primary-button, .button {
     background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%); /* Blue-to-purple gradient */
-    color: white;
+    color: #fff;
     border: none; /* Ensure no border interferes with gradient */
 }
 
@@ -412,8 +411,8 @@ body, html {
 
 /* Secondary Action Buttons (e.g., Cancel, Clear Form, Change Password) */
 .cancel-button, .secondary-button {
-    background-color: #6c757d; /* Standard grey */
-    color: white;
+    background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%); /* Match primary gradient */
+    color: #fff;
 }
 
 .cancel-button:hover, .secondary-button:hover {
@@ -422,24 +421,24 @@ body, html {
 
 /* Specific button colors for student table actions */
 .edit-button {
-    background-color: #ffc107; /* Warning yellow */
-    color: #333; /* Dark text for contrast */
+    background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%);
+    color: #fff;
     padding: 10px 18px; /* Slightly smaller padding for table buttons */
     font-size: 0.95rem;
     margin-right: 8px; /* Smaller margin */
 }
 .edit-button:hover {
-    background-color: #e0a800; /* Darker yellow on hover */
+    filter: brightness(0.95);
 }
 
-.delete-button {
-    background-color: #dc3545; /* Danger red */
-    color: white;
+.delete-button, .logout-btn {
+    background: linear-gradient(135deg, #ff4d4d 0%, #c82333 100%); /* Red gradient */
+    color: #fff;
     padding: 10px 18px;
     font-size: 0.95rem;
 }
-.delete-button:hover {
-    background-color: #c82333; /* Darker red on hover */
+.delete-button:hover, .logout-btn:hover {
+    filter: brightness(0.95);
 }
 
 
@@ -1375,11 +1374,16 @@ body.dark-mode .sidebar {
 }
 
 body.dark-mode .sidebar ul li a {
-    color: #e0e0e0; /* Light link text in sidebar */
+    color: #fff;
+    background: linear-gradient(135deg, #1d4ed8 0%, #5b21b6 100%); /* Dark mode blue gradient */
 }
 
 body.dark-mode .sidebar ul li a:hover {
-    background-color: #404040; /* Darker hover background */
+    filter: brightness(0.95);
+}
+
+body.dark-mode .logout-btn, body.dark-mode .delete-button {
+    background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
 }
 
 /* Dark mode styles for the main content area */
@@ -1521,6 +1525,28 @@ body.dark-mode .switch label {
 /* Use :has to display overlay purely via CSS when sidebar is open (modern browsers) */
 body:has(.sidebar.open) #sidebar-overlay {
     display: block;
+}
+
+/* Global overflow handling: show scrollbars when content exceeds container */
+.main-content,
+.dashboard-content-section,
+.card,
+.table-container,
+.overview-grid,
+.reports-grid,
+.settings-grid {
+    overflow: auto; /* Adds vertical/horizontal scrollbar only when needed */
+}
+
+/* Explicit horizontal scroll for wide tables/forms */
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Utility class to force overflow behavior on any element */
+.scroll-auto {
+    overflow: auto !important;
 }
 
 /* Mobile adjustments */
