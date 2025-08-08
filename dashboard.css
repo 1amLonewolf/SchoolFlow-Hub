@@ -1451,3 +1451,93 @@ body.dark-mode input:checked + .slider {
 body.dark-mode .switch label {
     color: #e0e0e0; /* Light label text */
 }
+
+/* ==== FIX: Dashboard tabs layout and sidebar overlay coverage ==== */
+
+/* Match current HTML structure */
+.dashboard {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Header styles matching current HTML (header > .header-content + .burger) */
+.header-content {
+    background-color: #ffffff;
+    padding: 20px 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.header-content h1 {
+    margin: 0;
+    color: #333;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+.burger {
+    cursor: pointer;
+    font-size: 1.8rem;
+    color: #2F1857;
+    user-select: none;
+    display: none; /* shown on mobile */
+}
+
+/* Overview grid and chart containers so the Overview tab lays out correctly */
+.overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+}
+.chart-container {
+    min-height: 320px;
+    height: 360px;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+}
+.chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Sidebar overlay: ensure full-viewport coverage and correct stacking */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1500; /* Below sidebar (2000), above content */
+    display: none; /* Will be shown when sidebar is open */
+    opacity: 1; /* Visible when displayed */
+}
+
+/* Use :has to display overlay purely via CSS when sidebar is open (modern browsers) */
+body:has(.sidebar.open) #sidebar-overlay {
+    display: block;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .burger { display: block; }
+
+    /* Fix header as top bar on mobile to prevent layout shift */
+    header { position: sticky; top: 0; z-index: 1200; }
+    .header-content { border-radius: 0; }
+
+    /* Ensure main content has top spacing under sticky header */
+    .main-content { margin-top: 80px; }
+
+    /* Sidebar is overlay; ensure it starts exactly at the left edge */
+    .sidebar {
+        left: 0;
+        box-sizing: border-box;
+        will-change: transform;
+    }
+}
