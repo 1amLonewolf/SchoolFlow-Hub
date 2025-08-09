@@ -56,9 +56,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
-    const loginButton = document.querySelector('.login-button');
+    const loginButton = document.getElementById('loginButton');
     const loginBox = document.querySelector('.login-box');
     const darkModeToggle = document.getElementById('darkModeToggle');
+
+    // Debug element existence
+    console.log('Elements found:', {
+        form: !!loginForm,
+        username: !!usernameInput,
+        password: !!passwordInput,
+        button: !!loginButton,
+        box: !!loginBox
+    });
 
     // Verify elements are found
     if (!loginForm || !usernameInput || !passwordInput || !loginButton) {

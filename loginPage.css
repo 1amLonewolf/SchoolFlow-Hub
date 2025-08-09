@@ -198,6 +198,63 @@ input[type="password"] {
     width: calc(100% - 24px); /* Account for padding */
     padding: 14px 12px; /* Slightly more padding for a bigger feel */
     border: 1px solid #ddd;
+}
+
+/* Login Button Styles */
+.login-button {
+    width: 100%;
+    padding: 15px;
+    background-color: #2575fc;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+    margin-bottom: 15px;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.login-button:hover {
+    background-color: #1c5cc9;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(37, 117, 252, 0.3);
+}
+
+.login-button:active {
+    transform: translateY(0);
+}
+
+.login-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.login-button:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        120deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    transition: 0.5s;
+    z-index: -1;
+}
+
+.login-button:hover:before {
+    left: 100%;
     border-radius: 8px;
     font-size: 17px; /* Slightly larger font */
     transition: border-color 0.3s ease; /* Smooth transition for focus */
