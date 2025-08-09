@@ -13,13 +13,13 @@ body, html {
     margin: 0;
     padding: 0;
     font-family: 'Roboto', sans-serif;
-    background-color: #f4f7f6; /* Light grey background for content areas */
+    background-color: #f4f7f6;
     color: #333;
     line-height: 1.6;
-    height: 100vh; /* Ensures 100% viewport height */
-    overflow: hidden; /* Prevent body scroll, sidebar handles its own */
-    transition: opacity 0.5s ease-in-out; /* Smooth transition for dashboard load */
-    opacity: 1; /* Initial state for transition, controlled by JS */
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
 }
 
 /* --- Login Page Styles (Included for reference, actual loginPage.css should handle these) --- */
@@ -222,9 +222,10 @@ body, html {
 /* Main Content Area */
 .dashboard {
     display: flex;
-    min-height: 100vh;
+    height: 100vh;
     width: 100%;
     position: relative;
+    overflow: hidden;
 }
 
 .main-content {
@@ -233,8 +234,11 @@ body, html {
     background-color: #f8f9fa;
     overflow-y: auto;
     margin-left: 250px;
+    height: 100vh;
     box-sizing: border-box;
     transition: all 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
 }
 
 .main-header {
@@ -280,11 +284,14 @@ body, html {
 /* Dashboard Content Sections (shared styles) */
 .dashboard-content-section {
     background-color: #ffffff;
-    padding: 30px; /* Increased padding */
-    border-radius: 10px; /* Consistent rounded corners */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Consistent shadow */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
     margin-bottom: 30px;
-    display: none; /* Hidden by default, shown by JS */
+    display: none;
+    overflow: visible;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
 }
 
 .dashboard-content-section.active {
@@ -627,9 +634,20 @@ body.dark-mode .dashboard-content-section .form-container input[type="file"] {
 .bulk-upload-section #uploadStatus { margin-top: 10px; color: #555; }
 
 /* Tables (general styling) */
+.table-container {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+    margin-top: 25px;
+    overflow: auto;
+    max-height: calc(100vh - 500px);
+}
+
 .table-responsive {
-    overflow-x: auto; /* Enables horizontal scrolling for tables if content overflows */
-    margin-top: 25px; /* Increased margin */
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 25px;
 }
 
 table {
