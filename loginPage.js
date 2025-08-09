@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.error("Parse SDK not loaded. Please ensure https://unpkg.com/parse/dist/parse.min.js is included correctly.");
         showMessage("Application error: Backend SDK not loaded. Cannot login.", "error", 5000);
-        return; // Prevent further execution if Parse is not available
+        // Continue to allow UI interactions; submit handler will handle missing SDK
     }
 
     // Add event listener for form submission
@@ -166,6 +166,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 
+        
+        // If Parse SDK isn't available, surface error but keep UI responsive
+        if (typeof Parse === 'undefined') {
+            showMessage('Application error: Backend SDK not loaded. Cannot login.', 'error', 5000);
+            loginButton.disabled = false;
+            loginButton.textContent = 'Login';
+            return;
+        }
         
         // --- Use Parse.User.logIn() for authentication ---
         try {
