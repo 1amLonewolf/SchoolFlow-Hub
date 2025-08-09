@@ -56,14 +56,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
-    const loginButton = loginForm.querySelector('button[type="submit"]');
+    const loginButton = document.querySelector('.login-button');
     const loginBox = document.querySelector('.login-box');
     const darkModeToggle = document.getElementById('darkModeToggle');
+
+    // Verify elements are found
+    if (!loginForm || !usernameInput || !passwordInput || !loginButton) {
+        console.error('Required login elements not found!', {
+            form: !!loginForm,
+            username: !!usernameInput,
+            password: !!passwordInput,
+            button: !!loginButton
+        });
+        showMessage('Error initializing login form', 'error');
+        return;
+    }
 
     // Create message div dynamically
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message';
     loginForm.appendChild(messageDiv);
+
+    // Add click handler to login button in addition to form submit
+    loginButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        loginForm.dispatchEvent(new Event('submit'));
+    });
 
     // --- Dark Mode Toggle Event Listeners ---
     if (darkModeToggle) {
@@ -117,13 +135,25 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         event.stopPropagation();
 
-        const username = usernameInput.value;
-        const password = passwordInput.value;
+        // Disable the button immediately to prevent double-clicks
+        loginButton.disabled = true;
+        loginButton.textContent = 'Logging in...';
+
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
 
         // --- Reset message state before showing a new one ---
         messageDiv.style.opacity = '0';
         messageDiv.textContent = '';
         messageDiv.className = 'message';
+
+        // Early validation
+        if (!username || !password) {
+            showMessage('Please enter both username and password', 'error');
+            loginButton.disabled = false;
+            loginButton.textContent = 'Login';
+            return;
+        }
 
 
         if (!username || !password) {
