@@ -644,6 +644,7 @@ table td.actions {
     padding-top: 8px;
     background: transparent;
     z-index: 5;
+    pointer-events: none; /* do not block clicks to content below */
 }
 .h-scroll-slider input[type="range"] {
     width: 100%;
@@ -653,6 +654,7 @@ table td.actions {
     background: #e5e7eb; /* neutral track */
     border-radius: 9999px;
     outline: none;
+    pointer-events: auto; /* keep slider interactive */
 }
 /* WebKit thumb */
 .h-scroll-slider input[type="range"]::-webkit-slider-thumb {
