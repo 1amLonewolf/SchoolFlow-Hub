@@ -66,6 +66,17 @@
             </div>
         </aside>
 
+        <!-- Add horizontal scroll slider here -->
+        <div class="h-scroll-slider" style="width:100%;padding:4px 0;">
+            <input type="range" min="0" max="100" value="0" id="horizontalScrollRange" aria-label="Scroll horizontally">
+        </div>
+
+        <!-- Add vertical scroll slider here -->
+        <div class="v-scroll-slider" style="position:absolute;top:0;right:0;height:100vh;display:flex;align-items:center;z-index:10;">
+            <input type="range" min="0" max="100" value="0" id="verticalScrollRange" orient="vertical" aria-label="Scroll vertically"
+                style="writing-mode: bt-lr; -webkit-appearance: slider-vertical; appearance: slider-vertical; width: 24px; height: 80vh;">
+        </div>
+
         <main class="main-content">
             <header>
                 <div class="header-content">
@@ -358,6 +369,44 @@
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
     <script type="text/javascript" src="https://unpkg.com/parse/dist/parse.min.js"></script>
+    <script>
+        // Sync slider with horizontal scroll of main-content
+        const mainContent = document.querySelector('.main-content');
+        const scrollRange = document.getElementById('horizontalScrollRange');
+        if (mainContent && scrollRange) {
+            function updateSlider() {
+                const maxScroll = mainContent.scrollWidth - mainContent.clientWidth;
+                scrollRange.max = maxScroll > 0 ? maxScroll : 0;
+                scrollRange.value = mainContent.scrollLeft;
+            }
 
+            scrollRange.addEventListener('input', function() {
+                mainContent.scrollLeft = this.value;
+            });
+
+            // Initialize slider max value
+            updateSlider();
+
+            // Optional: Update slider on main content scroll
+            mainContent.addEventListener('scroll', updateSlider);
+        }
+
+        // Sync vertical slider with vertical scroll of main-content
+        const vScrollRange = document.getElementById('verticalScrollRange');
+        if (mainContent && vScrollRange) {
+            function updateVSlider() {
+                const maxScroll = mainContent.scrollHeight - mainContent.clientHeight;
+                vScrollRange.max = maxScroll > 0 ? maxScroll : 0;
+                vScrollRange.value = mainContent.scrollTop;
+            }
+            vScrollRange.addEventListener('input', function() {
+                mainContent.scrollTop = this.value;
+            });
+            mainContent.addEventListener('scroll', updateVSlider);
+            window.addEventListener('resize', updateVSlider);
+            document.addEventListener('DOMContentLoaded', updateVSlider);
+            updateVSlider();
+        }
+    </script>
 </body>
 </html>
