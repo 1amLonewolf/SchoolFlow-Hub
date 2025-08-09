@@ -9,7 +9,15 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://parseapi.back4app.com" crossorigin>
 
-    <link rel="stylesheet" href="dashboard.css">
+    <script>
+        (function(){
+            var p = new URLSearchParams(location.search);
+            var h = location.hostname;
+            var isDev = p.has('dev') || h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.endsWith('.local');
+            var v = isDev ? Date.now() : '1';
+            document.write('<link rel="stylesheet" href="dashboard.css?v=' + v + '">');
+        })();
+    </script>
 
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -324,7 +332,15 @@
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
     <script type="text/javascript" src="https://unpkg.com/parse/dist/parse.min.js"></script>
-    <script src="dashboard.js"></script>
+    <script>
+        (function(){
+            var p = new URLSearchParams(location.search);
+            var h = location.hostname;
+            var isDev = p.has('dev') || h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.endsWith('.local');
+            var v = isDev ? Date.now() : '1';
+            document.write('<script src="dashboard.js?v=' + v + '"><\\/script>');
+        })();
+    </script>
 
 </body>
 </html>

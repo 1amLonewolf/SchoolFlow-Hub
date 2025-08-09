@@ -4,13 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting to SchoolFlow Hub Login</title>
-    <meta http-equiv="refresh" content="0; url=loginPage.html">
+    <script>
+        (function(){
+            var p = new URLSearchParams(location.search);
+            var h = location.hostname;
+            var isDev = p.has('dev') || h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.endsWith('.local');
+            var v = isDev ? Date.now() : '1';
+            var sep = isDev ? (location.search ? '&' : '?') : (location.search ? '&' : '?');
+            document.write('<meta http-equiv="refresh" content="0; url=loginPage.html?v=' + v + (isDev ? '&dev=1' : '') + '">');
+        })();
+    </script>
     <script>
         // Fallback for browsers that don't support meta refresh or for faster redirect
-        window.location.replace("loginPage.html");
+        (function(){
+            var p = new URLSearchParams(location.search);
+            var h = location.hostname;
+            var isDev = p.has('dev') || h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.endsWith('.local');
+            var v = isDev ? Date.now() : '1';
+            var url = 'loginPage.html?v=' + v + (isDev ? '&dev=1' : '');
+            window.location.replace(url);
+        })();
     </script>
 </head>
 <body>
-    <p>If you are not redirected automatically, please <a href="loginPage.html">click here</a>.</p>
+    <p>If you are not redirected automatically, please <a href="loginPage.html?v=" id="redirLink">click here</a>.</p>
+    <script>
+        (function(){
+            var p = new URLSearchParams(location.search);
+            var h = location.hostname;
+            var isDev = p.has('dev') || h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.endsWith('.local');
+            var v = isDev ? Date.now() : '1';
+            document.getElementById('redirLink').href = 'loginPage.html?v=' + v + (isDev ? '&dev=1' : '');
+        })();
+    </script>
 </body>
 </html>
