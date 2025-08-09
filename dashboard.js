@@ -1060,7 +1060,9 @@ function addHorizontalSlider(container) {
     const contentEl = container.querySelector('form') || container.querySelector('table') || container.firstElementChild || container;
     const getOverflow = () => (Math.max(container.scrollWidth, contentEl ? contentEl.scrollWidth : 0) - container.clientWidth);
     const needsSlider = getOverflow() > 8;
-    if (!needsSlider) return;
+    // Force a slider in the Students form container to aid navigation on narrow screens
+    const forced = !!(container.closest('#students') && container.querySelector('form'));
+    if (!needsSlider && !forced) return;
     // Ensure the container can scroll horizontally and slider has space
     container.style.overflowX = 'auto';
     container.style.webkitOverflowScrolling = 'touch';
@@ -1078,7 +1080,16 @@ function addHorizontalSlider(container) {
     // Keep in sync both ways
     const syncFromScroll = () => {
         const maxScroll = getOverflow();
-        if (maxScroll <= 0) { wrap.remove(); return; }
+        if (maxScroll <= 0) {
+            if (forced) {
+                range.disabled = true;
+                range.value = 0;
+                return;
+            }
+            wrap.remove();
+            return;
+        }
+        range.disabled = false;
         const pos = container.scrollLeft / maxScroll;
         range.value = Math.round(pos * 1000);
     };
@@ -1094,9 +1105,16 @@ function addHorizontalSlider(container) {
     // Recompute on resize or content changes
     const ro = new ResizeObserver(() => {
         if (getOverflow() <= 4) {
-            if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+            if (forced) {
+                if (!wrap.parentNode) container.appendChild(wrap);
+                range.disabled = true;
+                range.value = 0;
+            } else {
+                if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+            }
         } else {
             if (!wrap.parentNode) container.appendChild(wrap);
+            range.disabled = false;
             syncFromScroll();
         }
     });
@@ -1162,6 +1180,12 @@ function attachEventListeners() {
                 const targetEl = document.getElementById(targetId);
                 if (targetEl) {
                     targetEl.style.display = 'block';
+                    // After making the section visible, attach sliders for any overflowing containers
+                    setTimeout(() => {
+                        targetEl.querySelectorAll('.table-container').forEach(addHorizontalSlider);
+                        const studentsFormContainer = targetEl.querySelector('.form-container');
+                        if (studentsFormContainer) addHorizontalSlider(studentsFormContainer);
+                    }, 0);
                 }
                 if (sidebar.classList.contains('open')) {
                     sidebar.classList.remove('open');
