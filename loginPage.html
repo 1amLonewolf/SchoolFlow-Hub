@@ -10,42 +10,24 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://parseapi.back4app.com" crossorigin> <!-- NEW: Preconnect to Back4App -->
 
-    <script>
-        (function(){
-            var p = new URLSearchParams(location.search);
-            var h = location.hostname;
-            var isDev = p.has('dev') || h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.endsWith('.local');
-            var v = isDev ? Date.now() : '1';
-            document.write('<link rel="stylesheet" href="loginPage.css?v=' + v + '">');
-        })();
-    </script>
+    <link rel="stylesheet" href="loginPage.css">
 </head>
 <body>
-    <button id="darkModeToggle" class="dark-mode-toggle">
-        <span class="sun-icon">☀️</span>
-        <span class="moon-icon">🌙</span>
-    </button>
     <div class="login-container">
         <div class="login-box">
             <h1>SchoolFlow Hub</h1>
             <p>Your streamlined school management portal.</p>
-            <form id="loginForm" action="javascript:void(0);" novalidate>
+            <form id="loginForm" action="">
                 <div class="input-group">
                     <label for="username">Staff ID / Username</label>
                     <input type="text" id="username" name="username" required>
                 </div>
-                                <div class="input-group">
+                <div class="input-group">
                     <label for="password">Password</label>
                     <input type="password" id="password" name="password" required>
                 </div>
-                <div class="button-container">
-                    <button type="submit" class="login-button" id="loginButton">
-                        <span class="button-text">Login</span>
-                    </button>
-                </div>
-                <div class="form-footer">
-                    <a href="#" class="forgot-password">Forgot Password?</a>
-                </div>
+                <button type="submit" class="login-button">Login</button>
+                <a href="#" class="forgot-password">Forgot Password?</a>
             </form>
             <!-- Message div will be inserted by JS -->
         </div>
@@ -54,14 +36,6 @@
     <!-- NEW: Include Parse SDK before your loginPage.js -->
     <script type="text/javascript" src="https://unpkg.com/parse/dist/parse.min.js"></script>
     <!-- Defer loading of loginPage.js until after HTML is parsed and Parse is available -->
-    <script>
-        (function(){
-            var p = new URLSearchParams(location.search);
-            var h = location.hostname;
-            var isDev = p.has('dev') || h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.endsWith('.local');
-            var v = isDev ? Date.now() : '1';
-            document.write('<script src="loginPage.js?v=' + v + '" defer><\\/script>');
-        })();
-    </script>
+    <script src="loginPage.js" defer></script>
 </body>
 </html>
