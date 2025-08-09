@@ -6,6 +6,8 @@ function showMessage(message, type = "info", duration = 3000) {
     if (!messageBox) {
         messageBox = document.createElement('div');
         messageBox.id = 'appMessage';
+        messageBox.setAttribute('role', 'status');
+        messageBox.setAttribute('aria-live', 'polite');
         messageBox.style.cssText = `
             position: fixed;
             top: 20px;
@@ -86,12 +88,11 @@ document.addEventListener('DOMContentLoaded', () => {
     messageDiv.className = 'message';
     loginForm.appendChild(messageDiv);
 
-    // Add click handler to login button in addition to form submit
-    loginButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        loginForm.dispatchEvent(new Event('submit'));
-    });
+    // Set helpful autocomplete attributes
+    usernameInput.setAttribute('autocomplete', 'username');
+    passwordInput.setAttribute('autocomplete', 'current-password');
 
+    
     // --- Dark Mode Toggle Event Listeners ---
     if (darkModeToggle) {
         // Load saved dark mode preference
@@ -121,13 +122,13 @@ document.addEventListener('DOMContentLoaded', () => {
             Parse.serverURL = B4A_SERVER_URL;
             console.log("Back4App Parse SDK Initialized successfully");
             
-            // Test the connection immediately
-            Parse.Cloud.run('ping').then(() => {
-                console.log('Successfully connected to Back4App');
+            // Light connectivity check using Parse.Config (available by default)
+            Parse.Config.get().then(() => {
+                console.log('Back4App reachable (Config fetched)');
                 showMessage('Connected to server successfully', 'success', 2000);
             }).catch(error => {
-                console.error('Failed to connect to Back4App:', error);
-                showMessage('Server connection failed. Please try again.', 'error', 5000);
+                console.warn('Could not verify server connectivity at init:', error);
+                // Do not alarm user unnecessarily; login flow will surface connectivity issues
             });
         } catch (error) {
             console.error('Parse initialization error:', error);
@@ -165,11 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 
-        if (!username || !password) {
-            showMessage('Please enter both username and password.', 'error');
-            return;
-        }
-
+        
         // --- Use Parse.User.logIn() for authentication ---
         try {
             loginButton.disabled = true; // Disable button during login attempt
