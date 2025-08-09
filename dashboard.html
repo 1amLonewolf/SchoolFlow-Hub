@@ -14,9 +14,22 @@
     <script>
         // Check for valid session
         (function checkSession(){
-            const sessionToken = localStorage.getItem('sessionToken');
-            if (!sessionToken) {
-                window.location.replace('loginPage.html');
+            const currentUser = localStorage.getItem('currentUser');
+            if (!currentUser) {
+                window.location.href = './loginPage.html';
+                return;
+            }
+            
+            try {
+                const userData = JSON.parse(currentUser);
+                if (!userData.sessionToken) {
+                    localStorage.removeItem('currentUser');
+                    window.location.href = './loginPage.html';
+                    return;
+                }
+            } catch (e) {
+                localStorage.removeItem('currentUser');
+                window.location.href = './loginPage.html';
                 return;
             }
         })();

@@ -202,28 +202,17 @@ document.addEventListener('DOMContentLoaded', () => {
             // Store session token
             localStorage.setItem('sessionToken', user.getSessionToken());
             
-            showMessage('Login Successful! Redirecting...', 'success');
+            showMessage('Login Successful!', 'success');
+            
+            // Store user info in localStorage
+            localStorage.setItem('currentUser', JSON.stringify({
+                username: user.get('username'),
+                sessionToken: user.getSessionToken(),
+                userId: user.id
+            }));
 
-            // First setTimeout: Keep the "Login Successful!" message visible for 1 second
-            setTimeout(() => {
-                loginBox.style.opacity = '0';
-                loginBox.style.transform = 'scale(0.8)';
-
-                setTimeout(() => {
-                    document.body.innerHTML = `
-                        <div class="loading-screen">
-                            Loading SchoolFlow Dashboard...
-                            <div class="spinner"></div>
-                        </div>
-                    `;
-                    document.body.classList.add('fade-out-page');
-                    setTimeout(() => {
-                        // Force a clean navigation to dashboard
-                        window.location.replace('dashboard.html');
-                    }, 500);
-                }, 800);
-
-            }, 1000);
+            // Immediate redirect to dashboard
+            window.location.href = './dashboard.html';
 
         } catch (error) {
             // Handle Parse login errors
