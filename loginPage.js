@@ -89,9 +89,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check if Parse is loaded before initializing
     if (typeof Parse !== 'undefined') {
-        Parse.initialize(B4A_APP_ID, B4A_JS_KEY);
-        Parse.serverURL = B4A_SERVER_URL;
-        console.log("Back4App Parse SDK Initialized.");
+        try {
+            Parse.initialize(B4A_APP_ID, B4A_JS_KEY);
+            Parse.serverURL = B4A_SERVER_URL;
+            console.log("Back4App Parse SDK Initialized successfully");
+            
+            // Test the connection immediately
+            Parse.Cloud.run('ping').then(() => {
+                console.log('Successfully connected to Back4App');
+                showMessage('Connected to server successfully', 'success', 2000);
+            }).catch(error => {
+                console.error('Failed to connect to Back4App:', error);
+                showMessage('Server connection failed. Please try again.', 'error', 5000);
+            });
+        } catch (error) {
+            console.error('Parse initialization error:', error);
+            showMessage('Failed to initialize the application', 'error', 5000);
+        }
     } else {
         console.error("Parse SDK not loaded. Please ensure https://unpkg.com/parse/dist/parse.min.js is included correctly.");
         showMessage("Application error: Backend SDK not loaded. Cannot login.", "error", 5000);
@@ -121,9 +135,34 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             loginButton.disabled = true; // Disable button during login attempt
             loginButton.textContent = 'Logging in...'; // Provide feedback
+            
+            console.log('Attempting login with username:', username);
+            
+            // Verify Parse connection before attempting login
+            if (!Parse.applicationId) {
+                throw new Error('Parse is not properly initialized');
+            }
 
             const user = await Parse.User.logIn(username, password);
-            console.log('Login successful:', user);
+            if (!user) {
+                throw new Error('No user returned from login');
+            }
+            
+            console.log('Login successful. User data:', {
+                id: user.id,
+                username: user.get('username'),
+                email: user.get('email'),
+                sessionToken: user.getSessionToken()
+            });
+            
+            // Verify session token
+            if (!user.getSessionToken()) {
+                throw new Error('No session token received');
+            }
+
+            // Store session token
+            localStorage.setItem('sessionToken', user.getSessionToken());
+            
             showMessage('Login Successful! Redirecting...', 'success');
 
             // First setTimeout: Keep the "Login Successful!" message visible for 1 second
@@ -150,7 +189,27 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             // Handle Parse login errors
             console.error('Error during login:', error);
-            showMessage(`Login failed: ${error.message}`, 'error');
+            
+            let errorMessage = 'Login failed: ';
+            
+            // Provide more specific error messages
+            if (error.code === Parse.Error.CONNECTION_FAILED) {
+                errorMessage += 'Connection to server failed. Please check your internet connection.';
+            } else if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
+                errorMessage += 'Invalid username or password.';
+            } else if (error.code === Parse.Error.INVALID_SESSION_TOKEN) {
+                errorMessage += 'Your session has expired. Please try again.';
+            } else if (!Parse.applicationId) {
+                errorMessage += 'Application not properly initialized. Please refresh the page.';
+            } else {
+                errorMessage += error.message || 'An unexpected error occurred.';
+            }
+            
+            showMessage(errorMessage, 'error', 5000);
+            
+            // Clear password field for security
+            passwordInput.value = '';
+            
             loginButton.disabled = false; // Re-enable button
             loginButton.textContent = 'Login';
         }

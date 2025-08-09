@@ -12,6 +12,15 @@
 
     <link id="css-dashboard" rel="stylesheet" href="dashboard.css">
     <script>
+        // Check for valid session
+        (function checkSession(){
+            const sessionToken = localStorage.getItem('sessionToken');
+            if (!sessionToken) {
+                window.location.replace('loginPage.html');
+                return;
+            }
+        })();
+        
         (function(){
             var p = new URLSearchParams(location.search);
             var h = location.hostname;
