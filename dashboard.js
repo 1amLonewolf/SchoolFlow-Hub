@@ -1057,7 +1057,7 @@ function resetPreferences() {
 
 function addHorizontalSlider(container) {
     if (!container || container.querySelector(':scope > .h-scroll-slider')) return;
-    const needsSlider = container.scrollWidth > container.clientWidth + 4;
+    const needsSlider = (container.scrollWidth - container.clientWidth) > 16;
     if (!needsSlider) return;
     const wrap = document.createElement('div');
     wrap.className = 'h-scroll-slider';
@@ -1121,7 +1121,7 @@ function updateUI() {
     console.log("[updateUI] UI update complete.");
 
     // Attach sliders for horizontally overflowed containers
-    document.querySelectorAll('.dashboard-content-section').forEach(addHorizontalSlider);
+    // Only attach sliders to table containers to avoid overlaying form buttons
     document.querySelectorAll('.table-container').forEach(addHorizontalSlider);
 }
 
