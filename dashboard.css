@@ -136,18 +136,20 @@ body, html {
 /* Sidebar */
 .sidebar {
     width: 250px;
-    background: linear-gradient(180deg, #2F1857 0%, #1A237E 100%); /* Deep indigo/purple gradient */
+    min-width: 250px;
+    background: linear-gradient(180deg, #2F1857 0%, #1A237E 100%);
     color: white;
     padding: 20px;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2); /* More pronounced shadow */
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    position: fixed; /* Keep sidebar fixed on screen */
-    height: 100%; /* Take full height */
-    overflow-y: auto; /* Enable scrolling for long content in sidebar */
-    z-index: 1000; /* Ensure sidebar is above other content */
-    /* Transition for sliding effect when opened/closed on mobile */
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 1000;
     transition: transform 0.3s ease-in-out;
 }
 
@@ -219,13 +221,20 @@ body, html {
 }
 
 /* Main Content Area */
+.dashboard {
+    display: flex;
+    min-height: 100vh;
+}
+
 .main-content {
-    margin-left: 250px; /* Offset for the fixed sidebar */
-    flex-grow: 1;
-    padding: 30px; /* Increased padding */
-    background-color: #f8f9fa; /* Very light off-white background */
+    flex: 1;
+    padding: 30px;
+    background-color: #f8f9fa;
     overflow-y: auto;
-    min-height: 100vh; /* Ensures it can expand vertically if content exceeds one screen height */
+    margin-left: 250px; /* Matches sidebar width */
+    box-sizing: border-box;
+    width: calc(100% - 250px); /* Ensure content takes remaining space */
+    transition: margin-left 0.3s ease-in-out;
 }
 
 .main-header {
@@ -482,6 +491,26 @@ body, html {
     border-color: #2575fc; /* Primary blue focus */
     outline: none;
     box-shadow: 0 0 0 4px rgba(37, 117, 252, 0.25); /* Larger, softer focus glow */
+}
+
+/* Mobile Responsive Layout */
+@media screen and (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .burger {
+        display: block;
+    }
 }
 
 /* Custom date input styling for calendar icon */
