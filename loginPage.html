@@ -17,25 +17,27 @@
         <div class="login-box">
             <h1>SchoolFlow Hub</h1>
             <p>Your streamlined school management portal.</p>
-            <form id="loginForm" action="">
+            <form id="loginForm" action="javascript:void(0);" autocomplete="on" novalidate>
                 <div class="input-group">
                     <label for="username">Staff ID / Username</label>
-                    <input type="text" id="username" name="username" required>
+                    <input type="text" id="username" name="username" required autocomplete="username">
                 </div>
                 <div class="input-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
                 </div>
-                <button type="submit" class="login-button">Login</button>
-                <a href="#" class="forgot-password">Forgot Password?</a>
+                <div class="form-actions">
+                    <button type="submit" class="login-button">Login</button>
+                    <a href="#" class="forgot-password">Forgot Password?</a>
+                </div>
             </form>
             <!-- Message div will be inserted by JS -->
         </div>
     </div>
 
-    <!-- NEW: Include Parse SDK before your loginPage.js -->
-    <script type="text/javascript" src="https://unpkg.com/parse/dist/parse.min.js"></script>
-    <!-- Defer loading of loginPage.js until after HTML is parsed and Parse is available -->
-    <script src="loginPage.js" defer></script>
+    <!-- Include Parse SDK first -->
+    <script src="https://unpkg.com/parse/dist/parse.min.js"></script>
+    <!-- Include login page script -->
+    <script src="login.js"></script>
 </body>
 </html>

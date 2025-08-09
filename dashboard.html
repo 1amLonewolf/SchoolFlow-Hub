@@ -22,11 +22,29 @@
             
             try {
                 const userData = JSON.parse(currentUser);
-                if (!userData.sessionToken) {
+                
+                // Check for required session data
+                if (!userData.sessionToken || !userData.expiresAt) {
                     localStorage.removeItem('currentUser');
                     window.location.href = './loginPage.html';
                     return;
                 }
+
+                // Check session expiration
+                if (Date.now() > userData.expiresAt) {
+                    localStorage.removeItem('currentUser');
+                    window.location.href = './loginPage.html?expired=true';
+                    return;
+                }
+
+                // Initialize Parse with the session
+                Parse.initialize('1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0', '7CE7gnknAyyfSZRTWpqvuDvNhLOMsF0DNYk8qvgn');
+                Parse.serverURL = 'https://parseapi.back4app.com/';
+                Parse.User.become(userData.sessionToken).catch(() => {
+                    localStorage.removeItem('currentUser');
+                    window.location.href = './loginPage.html';
+                });
+
             } catch (e) {
                 localStorage.removeItem('currentUser');
                 window.location.href = './loginPage.html';
@@ -84,7 +102,15 @@
             <a href="#reports-analytics">Reports &amp; Analytics</a>
             <a href="#settings">Settings</a>
             <div class="sidebar-footer">
-                <a href="loginPage.html" id="logoutBtn" class="logout-btn">Logout</a>
+                <button onclick="handleLogout()" id="logoutBtn" class="logout-btn">Logout</button>
+                <script>
+                    function handleLogout() {
+                        localStorage.removeItem('currentUser');
+                        Parse.User.logOut().finally(() => {
+                            window.location.href = './loginPage.html';
+                        });
+                    }
+                </script>
             </div>
         </aside>
 
