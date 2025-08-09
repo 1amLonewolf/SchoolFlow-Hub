@@ -24,7 +24,7 @@
                 const userData = JSON.parse(currentUser);
                 
                 // Check for required session data
-                if (!userData.sessionToken || !userData.expiresAt) {
+                if (!userData.sessionToken) {
                     localStorage.removeItem('currentUser');
                     window.location.href = './loginPage.html';
                     return;
@@ -37,13 +37,26 @@
                     return;
                 }
 
-                // Initialize Parse with the session
-                Parse.initialize('1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0', '7CE7gnknAyyfSZRTWpqvuDvNhLOMsF0DNYk8qvgn');
-                Parse.serverURL = 'https://parseapi.back4app.com/';
-                Parse.User.become(userData.sessionToken).catch(() => {
-                    localStorage.removeItem('currentUser');
-                    window.location.href = './loginPage.html';
-                });
+                // Initialize Parse with the session (after SDK is available)
+                function initParseSession() {
+                    try {
+                        Parse.initialize('1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0', '7CE7gnknAyyfSZRTWpqvuDvNhLOMsF0DNYk8qvgn');
+                        Parse.serverURL = 'https://parseapi.back4app.com/';
+                        Parse.User.become(userData.sessionToken).catch(() => {
+                            localStorage.removeItem('currentUser');
+                            window.location.href = './loginPage.html';
+                        });
+                    } catch (e) {
+                        console.error('Parse initialization on dashboard failed:', e);
+                    }
+                }
+                if (window.Parse) {
+                    initParseSession();
+                } else {
+                    window.addEventListener('load', function() {
+                        if (window.Parse) initParseSession();
+                    }, { once: true });
+                }
 
             } catch (e) {
                 localStorage.removeItem('currentUser');
