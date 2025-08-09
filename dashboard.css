@@ -1294,11 +1294,11 @@ input:checked + .slider:before {
         border-bottom: 1px solid #eee;
         position: relative;
         padding: 12px 15px; /* Adjusted padding for better fit */
-        text-align: right; /* Content aligns right by default */
+        text-align: left; /* Align content left for readability */
         min-height: 45px; /* Ensure a minimum height for cells to prevent squishing */
         display: flex; /* Use flexbox for label and content alignment */
         align-items: center; /* Vertically align items */
-        justify-content: flex-end; /* Align content to the right */
+        justify-content: flex-start; /* Align content to the left */
         box-sizing: border-box; /* Crucial for padding calculation */
     }
 
