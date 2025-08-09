@@ -1057,7 +1057,9 @@ function resetPreferences() {
 
 function addHorizontalSlider(container) {
     if (!container || container.querySelector(':scope > .h-scroll-slider')) return;
-    const needsSlider = (container.scrollWidth - container.clientWidth) > 16;
+    const contentEl = container.querySelector('table') || container.firstElementChild || container;
+    const getOverflow = () => (contentEl.scrollWidth - container.clientWidth);
+    const needsSlider = getOverflow() > 8;
     if (!needsSlider) return;
     const wrap = document.createElement('div');
     wrap.className = 'h-scroll-slider';
@@ -1070,13 +1072,13 @@ function addHorizontalSlider(container) {
 
     // Keep in sync both ways
     const syncFromScroll = () => {
-        const maxScroll = container.scrollWidth - container.clientWidth;
+        const maxScroll = getOverflow();
         if (maxScroll <= 0) { wrap.remove(); return; }
         const pos = container.scrollLeft / maxScroll;
         range.value = Math.round(pos * 1000);
     };
     const syncFromRange = () => {
-        const maxScroll = container.scrollWidth - container.clientWidth;
+        const maxScroll = getOverflow();
         const pos = parseInt(range.value, 10) / 1000;
         container.scrollLeft = Math.round(maxScroll * pos);
     };
@@ -1086,7 +1088,7 @@ function addHorizontalSlider(container) {
 
     // Recompute on resize or content changes
     const ro = new ResizeObserver(() => {
-        if (container.scrollWidth <= container.clientWidth + 4) {
+        if (getOverflow() <= 4) {
             if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
         } else {
             if (!wrap.parentNode) container.appendChild(wrap);
