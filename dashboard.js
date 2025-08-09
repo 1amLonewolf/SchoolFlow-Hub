@@ -1055,6 +1055,50 @@ function resetPreferences() {
     }
 }
 
+function addHorizontalSlider(container) {
+    if (!container || container.querySelector(':scope > .h-scroll-slider')) return;
+    const needsSlider = container.scrollWidth > container.clientWidth + 4;
+    if (!needsSlider) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'h-scroll-slider';
+    const range = document.createElement('input');
+    range.type = 'range';
+    range.min = 0;
+    range.max = 1000; // fine-grained control
+    range.value = 0;
+    wrap.appendChild(range);
+
+    // Keep in sync both ways
+    const syncFromScroll = () => {
+        const maxScroll = container.scrollWidth - container.clientWidth;
+        if (maxScroll <= 0) { wrap.remove(); return; }
+        const pos = container.scrollLeft / maxScroll;
+        range.value = Math.round(pos * 1000);
+    };
+    const syncFromRange = () => {
+        const maxScroll = container.scrollWidth - container.clientWidth;
+        const pos = parseInt(range.value, 10) / 1000;
+        container.scrollLeft = Math.round(maxScroll * pos);
+    };
+
+    container.addEventListener('scroll', syncFromScroll);
+    range.addEventListener('input', syncFromRange);
+
+    // Recompute on resize or content changes
+    const ro = new ResizeObserver(() => {
+        if (container.scrollWidth <= container.clientWidth + 4) {
+            if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+        } else {
+            if (!wrap.parentNode) container.appendChild(wrap);
+            syncFromScroll();
+        }
+    });
+    ro.observe(container);
+
+    container.appendChild(wrap);
+    syncFromScroll();
+}
+
 function updateUI() {
     console.log("[updateUI] Starting UI update...");
 
@@ -1075,6 +1119,10 @@ function updateUI() {
     updateSummaryMetrics();
 
     console.log("[updateUI] UI update complete.");
+
+    // Attach sliders for horizontally overflowed containers
+    document.querySelectorAll('.dashboard-content-section').forEach(addHorizontalSlider);
+    document.querySelectorAll('.table-container').forEach(addHorizontalSlider);
 }
 
 
