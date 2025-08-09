@@ -1269,16 +1269,18 @@ function attachEventListeners() {
     console.log("[attachEventListeners] All event listeners attached.");
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // This is the correct logic: Check for a valid session AFTER the SDK is initialized.
+async function initDashboard() {
     const isSessionValid = await refreshSessionToken();
-    if (!isSessionValid) {
-        return;
-    }
-    
+    if (!isSessionValid) return;
     attachEventListeners();
     loadAllData();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDashboard);
+} else {
+    initDashboard();
+}
 
 // FIX: Added missing populate dropdown functions
 function populateCourseDropdowns() {
