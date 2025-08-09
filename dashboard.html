@@ -104,32 +104,32 @@
                     <form id="addStudentForm">
                         <div class="form-field">
                             <label for="studentName">Student Name</label>
-                            <input type="text" id="studentName" name="studentName" placeholder="Student Name" required>
+                            <input type="text" id="studentName" name="studentName" placeholder="Student Name" required autocomplete="name">
                         </div>
                         
                         <div class="form-field">
                             <label for="studentID">National ID</label>
-                            <input type="text" id="studentID" name="studentID" placeholder="National ID" required>
+                            <input type="text" id="studentID" name="studentID" placeholder="National ID" required autocomplete="off">
                         </div>
                         
                         <div class="form-field">
                             <label for="studentCourse">Course</label>
-                            <input type="text" id="studentCourse" name="studentCourse" placeholder="Course">
+                            <input type="text" id="studentCourse" name="studentCourse" placeholder="Course" autocomplete="off">
                         </div>
                         
                         <div class="form-field">
                             <label for="studentSeason">Season</label>
-                            <input type="number" id="studentSeason" name="studentSeason" placeholder="Season">
+                            <input type="number" id="studentSeason" name="studentSeason" placeholder="Season" autocomplete="off">
                         </div>
                         
                         <div class="form-field">
                             <label for="studentPhone">Phone Number</label>
-                            <input type="tel" id="studentPhone" name="studentPhone" placeholder="Phone Number">
+                            <input type="tel" id="studentPhone" name="studentPhone" placeholder="Phone Number" autocomplete="tel">
                         </div>
                         
                         <div class="form-field">
                             <label for="studentLocation">Place of Living</label>
-                            <input type="text" id="studentLocation" name="studentLocation" placeholder="Place of Living">
+                            <input type="text" id="studentLocation" name="studentLocation" placeholder="Place of Living" autocomplete="street-address">
                         </div>
                         
                         <div class="form-actions">
@@ -172,13 +172,13 @@
                     <h3 id="teacher-form-heading">Add New Teacher</h3>
                     <form id="addTeacherForm">
                         <label for="teacherName">Teacher Name</label>
-                        <input type="text" id="teacherName" name="teacherName" placeholder="Teacher Name" required>
+                        <input type="text" id="teacherName" name="teacherName" placeholder="Teacher Name" required autocomplete="name">
                         
                         <label for="teacherEmail">Email</label>
-                        <input type="email" id="teacherEmail" name="teacherEmail" placeholder="Email" required>
+                        <input type="email" id="teacherEmail" name="teacherEmail" placeholder="Email" required autocomplete="email">
                         
                         <label for="teacherPhone">Phone Number</label>
-                        <input type="tel" id="teacherPhone" name="teacherPhone" placeholder="Phone Number">
+                        <input type="tel" id="teacherPhone" name="teacherPhone" placeholder="Phone Number" autocomplete="tel">
                         
                         <button type="submit" class="button primary-button" id="saveTeacherBtn">Save Teacher</button>
                         <button type="button" class="button cancel-button" id="cancelTeacherBtn" style="display: none;">Cancel</button>
@@ -207,13 +207,13 @@
                     <h3 id="course-form-heading">Add New Course</h3>
                     <form id="addCourseForm">
                         <label for="courseName">Course Name</label>
-                        <input type="text" id="courseName" name="courseName" placeholder="Course Name" required>
+                        <input type="text" id="courseName" name="courseName" placeholder="Course Name" required autocomplete="off">
                         
                         <label for="courseDescription">Course Description</label>
-                        <textarea id="courseDescription" name="courseDescription" placeholder="Course Description" required></textarea>
+                        <textarea id="courseDescription" name="courseDescription" placeholder="Course Description" required autocomplete="off"></textarea>
                         
                         <label for="assignedTeacher">Assigned Teacher</label>
-                        <select id="assignedTeacher" name="assignedTeacher" required>
+                        <select id="assignedTeacher" name="assignedTeacher" required autocomplete="off">
                             <option value="">-- Select Teacher --</option>
                         </select>
                         <button type="submit" class="button primary-button" id="saveCourseBtn">Save Course</button>
@@ -248,10 +248,10 @@
                         </select>
                         
                         <label for="attendanceDate">Date</label>
-                        <input type="date" id="attendanceDate" name="attendanceDate" required>
+                        <input type="date" id="attendanceDate" name="attendanceDate" required autocomplete="off">
                         
                         <label for="attendanceStatus">Status</label>
-                        <select id="attendanceStatus" name="attendanceStatus" required>
+                        <select id="attendanceStatus" name="attendanceStatus" required autocomplete="off">
                             <option value="Present">Present</option>
                             <option value="Absent">Absent</option>
                         </select>
@@ -287,16 +287,16 @@
                         </select>
                         
                         <label for="assignmentName">Assignment Name</label>
-                        <input type="text" id="assignmentName" name="assignmentName" placeholder="Assignment Name" required>
+                        <input type="text" id="assignmentName" name="assignmentName" placeholder="Assignment Name" required autocomplete="off">
                         
                         <label for="assignmentScore">Score</label>
-                        <input type="number" id="assignmentScore" name="assignmentScore" placeholder="Score" required>
+                        <input type="number" id="assignmentScore" name="assignmentScore" placeholder="Score" required autocomplete="off">
                         
                         <label for="assignmentTotalScore">Total Score</label>
-                        <input type="number" id="assignmentTotalScore" name="assignmentTotalScore" placeholder="Total Score" required>
+                        <input type="number" id="assignmentTotalScore" name="assignmentTotalScore" placeholder="Total Score" required autocomplete="off">
                         
                         <label for="assignmentDate">Date</label>
-                        <input type="date" id="assignmentDate" name="assignmentDate" required>
+                        <input type="date" id="assignmentDate" name="assignmentDate" required autocomplete="off">
                         <button type="submit" class="button primary-button">Save Grade</button>
                     </form>
                 </div>
@@ -373,27 +373,7 @@
 
     <script type="text/javascript" src="https://unpkg.com/parse/dist/parse.min.js"></script>
     <script>
-        // Sync slider with horizontal scroll of main-content
-        const mainContent = document.querySelector('.main-content');
-        const scrollRange = document.getElementById('horizontalScrollRange');
-        if (mainContent && scrollRange) {
-            function updateSlider() {
-                const maxScroll = mainContent.scrollWidth - mainContent.clientWidth;
-                scrollRange.max = maxScroll > 0 ? maxScroll : 0;
-                scrollRange.value = mainContent.scrollLeft;
-            }
-
-            scrollRange.addEventListener('input', function() {
-                mainContent.scrollLeft = this.value;
-            });
-
-            // Initialize slider max value
-            updateSlider();
-
-            // Optional: Update slider on main content scroll
-            mainContent.addEventListener('scroll', updateSlider);
-        }
-
-            </script>
+// Main content scroll handling will be implemented based on requirements
+    </script>
 </body>
 </html>

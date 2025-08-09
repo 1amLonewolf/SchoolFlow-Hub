@@ -101,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add event listener for form submission
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
+        event.stopPropagation();
 
         const username = usernameInput.value;
         const password = passwordInput.value;
@@ -139,7 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                     document.body.classList.add('fade-out-page');
                     setTimeout(() => {
-                        window.location.href = 'dashboard.html';
+                        // Force a clean navigation to dashboard
+                        window.location.replace('dashboard.html');
                     }, 500);
                 }, 800);
 
