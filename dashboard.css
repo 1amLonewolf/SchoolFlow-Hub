@@ -493,6 +493,80 @@ body, html {
 }
 
 
+/* Unified Form Controls: apply when markup lacks .form-group wrappers */
+.dashboard-content-section .form-container form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.dashboard-content-section .form-container label {
+    display: block;
+    font-weight: 500;
+    color: #444;
+    margin-top: 6px;
+}
+
+.dashboard-content-section .form-container input[type="text"],
+.dashboard-content-section .form-container input[type="number"],
+.dashboard-content-section .form-container input[type="tel"],
+.dashboard-content-section .form-container input[type="email"],
+.dashboard-content-section .form-container input[type="date"],
+.dashboard-content-section .form-container input[type="file"],
+.dashboard-content-section .form-container select,
+.dashboard-content-section .form-container textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    background-color: #fcfcfc;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.2s ease;
+}
+
+.dashboard-content-section .form-container textarea {
+    min-height: 110px;
+    resize: vertical;
+}
+
+/* Space between each label and its control */
+.dashboard-content-section .form-container label + input,
+.dashboard-content-section .form-container label + select,
+.dashboard-content-section .form-container label + textarea {
+    margin-top: 6px;
+}
+
+/* Focus styles */
+.dashboard-content-section .form-container input:focus,
+.dashboard-content-section .form-container select:focus,
+.dashboard-content-section .form-container textarea:focus {
+    border-color: #2575fc;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(37, 117, 252, 0.25);
+}
+
+/* Placeholder color */
+.dashboard-content-section .form-container input::placeholder,
+.dashboard-content-section .form-container textarea::placeholder {
+    color: #999;
+}
+
+/* File input adjustments */
+.dashboard-content-section .form-container input[type="file"] {
+    padding: 10px;
+    background-color: #fff;
+}
+
+/* Dark mode overrides for file input */
+body.dark-mode .dashboard-content-section .form-container input[type="file"] {
+    background-color: #404040;
+}
+
+/* Bulk upload section tweaks */
+.bulk-upload-section h3 { margin-top: 25px; }
+.bulk-upload-section #uploadStatus { margin-top: 10px; color: #555; }
+
 /* Tables (general styling) */
 .table-responsive {
     overflow-x: auto; /* Enables horizontal scrolling for tables if content overflows */
