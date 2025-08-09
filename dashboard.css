@@ -502,8 +502,28 @@ body, html {
 /* Unified Form Controls: apply when markup lacks .form-group wrappers */
 .dashboard-content-section .form-container form {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
+/* Ensure buttons span full width */
+.dashboard-content-section .form-container .form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.dashboard-content-section .form-container .form-actions button {
+    margin: 0;
+}
+
+/* Create form field groups */
+.dashboard-content-section .form-container .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .dashboard-content-section .form-container label {

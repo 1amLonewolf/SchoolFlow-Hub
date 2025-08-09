@@ -1,0 +1,21 @@
+# Normalize line endings for a cross-platform web project
+# Store LF in the repository and use LF in working tree for text files,
+# but keep CRLF for Windows batch scripts.
+
+# Default: treat all files as text and enforce LF line endings
+* text=auto eol=lf
+
+# Windows scripts keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Shell/posix scripts (if any)
+*.sh text eol=lf
+*.ps1 text eol=lf
+
+# Images and other binaries stay untouched
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary

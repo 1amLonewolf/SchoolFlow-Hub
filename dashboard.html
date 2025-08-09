@@ -71,12 +71,7 @@
             <input type="range" min="0" max="100" value="0" id="horizontalScrollRange" aria-label="Scroll horizontally">
         </div>
 
-        <!-- Add vertical scroll slider here -->
-        <div class="v-scroll-slider" style="position:absolute;top:0;right:0;height:100vh;display:flex;align-items:center;z-index:10;">
-            <input type="range" min="0" max="100" value="0" id="verticalScrollRange" orient="vertical" aria-label="Scroll vertically"
-                style="writing-mode: bt-lr; -webkit-appearance: slider-vertical; appearance: slider-vertical; width: 24px; height: 80vh;">
-        </div>
-
+        
         <main class="main-content">
             <header>
                 <div class="header-content">
@@ -113,26 +108,40 @@
                 <div class="card form-container">
                     <h3 id="student-form-heading">Add New Student</h3>
                     <form id="addStudentForm">
-                    <label for="studentName">Student Name</label>
-                    <input type="text" id="studentName" name="studentName" placeholder="Student Name" required>
-                    
-                    <label for="studentID">National ID</label>
-                    <input type="text" id="studentID" name="studentID" placeholder="National ID" required>
-                    
-                    <label for="studentCourse">Course</label>
-                    <input type="text" id="studentCourse" name="studentCourse" placeholder="Course">
-                    
-                    <label for="studentSeason">Season</label>
-                    <input type="number" id="studentSeason" name="studentSeason" placeholder="Season">
-                    
-                    <label for="studentPhone">Phone Number</label>
-                    <input type="tel" id="studentPhone" name="studentPhone" placeholder="Phone Number">
-                    
-                    <label for="studentLocation">Place of Living</label>
-                    <input type="text" id="studentLocation" name="studentLocation" placeholder="Place of Living">
-                    
-                    <button type="submit" class="button primary-button" id="saveStudentBtn">Save Student</button>
-                    <button type="button" class="button cancel-button" id="cancelStudentBtn" style="display: none;">Cancel</button>
+                        <div class="form-field">
+                            <label for="studentName">Student Name</label>
+                            <input type="text" id="studentName" name="studentName" placeholder="Student Name" required>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="studentID">National ID</label>
+                            <input type="text" id="studentID" name="studentID" placeholder="National ID" required>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="studentCourse">Course</label>
+                            <input type="text" id="studentCourse" name="studentCourse" placeholder="Course">
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="studentSeason">Season</label>
+                            <input type="number" id="studentSeason" name="studentSeason" placeholder="Season">
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="studentPhone">Phone Number</label>
+                            <input type="tel" id="studentPhone" name="studentPhone" placeholder="Phone Number">
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="studentLocation">Place of Living</label>
+                            <input type="text" id="studentLocation" name="studentLocation" placeholder="Place of Living">
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="button primary-button" id="saveStudentBtn">Save Student</button>
+                            <button type="button" class="button cancel-button" id="cancelStudentBtn" style="display: none;">Cancel</button>
+                        </div>
                     </form>
                     <div class="bulk-upload-section">
                         <h3>Bulk Upload Students</h3>
@@ -391,22 +400,6 @@
             mainContent.addEventListener('scroll', updateSlider);
         }
 
-        // Sync vertical slider with vertical scroll of main-content
-        const vScrollRange = document.getElementById('verticalScrollRange');
-        if (mainContent && vScrollRange) {
-            function updateVSlider() {
-                const maxScroll = mainContent.scrollHeight - mainContent.clientHeight;
-                vScrollRange.max = maxScroll > 0 ? maxScroll : 0;
-                vScrollRange.value = mainContent.scrollTop;
-            }
-            vScrollRange.addEventListener('input', function() {
-                mainContent.scrollTop = this.value;
-            });
-            mainContent.addEventListener('scroll', updateVSlider);
-            window.addEventListener('resize', updateVSlider);
-            document.addEventListener('DOMContentLoaded', updateVSlider);
-            updateVSlider();
-        }
-    </script>
+            </script>
 </body>
 </html>
