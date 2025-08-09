@@ -1057,10 +1057,15 @@ function resetPreferences() {
 
 function addHorizontalSlider(container) {
     if (!container || container.querySelector(':scope > .h-scroll-slider')) return;
-    const contentEl = container.querySelector('table') || container.firstElementChild || container;
-    const getOverflow = () => (contentEl.scrollWidth - container.clientWidth);
+    const contentEl = container.querySelector('form') || container.querySelector('table') || container.firstElementChild || container;
+    const getOverflow = () => (Math.max(container.scrollWidth, contentEl ? contentEl.scrollWidth : 0) - container.clientWidth);
     const needsSlider = getOverflow() > 8;
     if (!needsSlider) return;
+    // Ensure the container can scroll horizontally and slider has space
+    container.style.overflowX = 'auto';
+    container.style.webkitOverflowScrolling = 'touch';
+    var pb = parseInt(window.getComputedStyle(container).paddingBottom, 10) || 0;
+    if (pb < 16) container.style.paddingBottom = '16px';
     const wrap = document.createElement('div');
     wrap.className = 'h-scroll-slider';
     const range = document.createElement('input');
@@ -1125,6 +1130,9 @@ function updateUI() {
     // Attach sliders for horizontally overflowed containers
     // Only attach sliders to table containers to avoid overlaying form buttons
     document.querySelectorAll('.table-container').forEach(addHorizontalSlider);
+    // Additionally, enable a horizontal slider on the Students form when it overflows
+    var studentsFormContainer = document.querySelector('#students .form-container');
+    if (studentsFormContainer) addHorizontalSlider(studentsFormContainer);
 }
 
 
