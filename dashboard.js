@@ -1156,6 +1156,42 @@ function updateUI() {
 
 // --- EVENT LISTENERS AND INITIALIZATION ---
 
+// Bootstrap session from localStorage and establish Parse user
+async function bootstrapSessionFromLocalStorage() {
+    const raw = localStorage.getItem('currentUser');
+    if (!raw) {
+        setTimeout(() => window.location.href = 'loginPage.html', 0);
+        return false;
+    }
+    try {
+        const userData = JSON.parse(raw);
+        if (!userData.sessionToken) {
+            localStorage.removeItem('currentUser');
+            setTimeout(() => window.location.href = 'loginPage.html', 0);
+            return false;
+        }
+        if (typeof userData.expiresAt === 'number' && Date.now() > userData.expiresAt) {
+            localStorage.removeItem('currentUser');
+            setTimeout(() => window.location.href = 'loginPage.html?expired=true', 0);
+            return false;
+        }
+        try {
+            await Parse.User.become(userData.sessionToken);
+        } catch (e) {
+            console.error('[bootstrapSessionFromLocalStorage] become failed:', e);
+            localStorage.removeItem('currentUser');
+            setTimeout(() => window.location.href = 'loginPage.html', 0);
+            return false;
+        }
+        return true;
+    } catch (e) {
+        console.error('[bootstrapSessionFromLocalStorage] invalid localStorage currentUser:', e);
+        localStorage.removeItem('currentUser');
+        setTimeout(() => window.location.href = 'loginPage.html', 0);
+        return false;
+    }
+}
+
 function attachEventListeners() {
     console.log("[attachEventListeners] Attaching all event listeners...");
 
@@ -1352,8 +1388,8 @@ function attachEventListeners() {
 }
 
 async function initDashboard() {
-    const isSessionValid = await refreshSessionToken();
-    if (!isSessionValid) return;
+    const ok = await bootstrapSessionFromLocalStorage();
+    if (!ok) return;
     attachEventListeners();
     loadAllData();
 }

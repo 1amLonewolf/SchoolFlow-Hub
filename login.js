@@ -26,8 +26,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
 
-        // Enable button and show loading
-        button.disabled = false;
+        // Disable button and show loading
+        button.disabled = true;
         button.textContent = 'Logging in...';
         
         try {
@@ -36,7 +36,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('currentUser', JSON.stringify({
                     userId: user.id,
                     username: user.get('username'),
-                    sessionToken: user.getSessionToken()
+                    sessionToken: user.getSessionToken(),
+                    expiresAt: Date.now() + (30 * 60 * 1000) // 30 minutes
                 }));
                 window.location.href = './dashboard.html';
             } else {

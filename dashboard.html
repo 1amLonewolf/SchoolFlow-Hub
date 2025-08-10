@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SchoolFlow Hub - Dashboard</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; connect-src 'self' https://parseapi.back4app.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self' https://cdnjs.cloudflare.com data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232575fc'/%3E%3Cpath d='M14 22h36v4H14zm0 10h36v4H14zm0 10h24v4H14z' fill='white'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -12,59 +14,6 @@
 
     <link id="css-dashboard" rel="stylesheet" href="dashboard.css">
     <script>
-        // Check for valid session
-        (function checkSession(){
-            const currentUser = localStorage.getItem('currentUser');
-            if (!currentUser) {
-                window.location.href = './loginPage.html';
-                return;
-            }
-            
-            try {
-                const userData = JSON.parse(currentUser);
-                
-                // Check for required session data
-                if (!userData.sessionToken) {
-                    localStorage.removeItem('currentUser');
-                    window.location.href = './loginPage.html';
-                    return;
-                }
-
-                // Check session expiration
-                if (Date.now() > userData.expiresAt) {
-                    localStorage.removeItem('currentUser');
-                    window.location.href = './loginPage.html?expired=true';
-                    return;
-                }
-
-                // Initialize Parse with the session (after SDK is available)
-                function initParseSession() {
-                    try {
-                        Parse.initialize('1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0', '7CE7gnknAyyfSZRTWpqvuDvNhLOMsF0DNYk8qvgn');
-                        Parse.serverURL = 'https://parseapi.back4app.com/';
-                        Parse.User.become(userData.sessionToken).catch(() => {
-                            localStorage.removeItem('currentUser');
-                            window.location.href = './loginPage.html';
-                        });
-                    } catch (e) {
-                        console.error('Parse initialization on dashboard failed:', e);
-                    }
-                }
-                if (window.Parse) {
-                    initParseSession();
-                } else {
-                    window.addEventListener('load', function() {
-                        if (window.Parse) initParseSession();
-                    }, { once: true });
-                }
-
-            } catch (e) {
-                localStorage.removeItem('currentUser');
-                window.location.href = './loginPage.html';
-                return;
-            }
-        })();
-        
         (function(){
             var p = new URLSearchParams(location.search);
             var h = location.hostname;
@@ -115,16 +64,8 @@
             <a href="#reports-analytics">Reports &amp; Analytics</a>
             <a href="#settings">Settings</a>
             <div class="sidebar-footer">
-                <button onclick="handleLogout()" id="logoutBtn" class="logout-btn">Logout</button>
-                <script>
-                    function handleLogout() {
-                        localStorage.removeItem('currentUser');
-                        Parse.User.logOut().finally(() => {
-                            window.location.href = './loginPage.html';
-                        });
-                    }
-                </script>
-            </div>
+                <button id="logoutBtn" class="logout-btn">Logout</button>
+                            </div>
         </aside>
 
         <main class="main-content">
