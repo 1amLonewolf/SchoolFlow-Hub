@@ -32,40 +32,22 @@ window.editingCourseId = null;
 // --- UTILITY FUNCTIONS ---
 
 function showMessage(message, type = "info", duration = 3000) {
-    let messageBox = document.getElementById('appMessage');
-    if (!messageBox) {
-        messageBox = document.createElement('div');
-        messageBox.id = 'appMessage';
-        messageBox.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            border-radius: 5px;
-            color: white;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-            transform: translateY(-20px);
-            font-size: 14px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        `;
-        document.body.appendChild(messageBox);
+    let box = document.getElementById('appMessage');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'appMessage';
+        box.className = 'app-message';
+        document.body.appendChild(box);
     }
-    
-    messageBox.textContent = message;
-    let backgroundColor = '#333';
-    if (type === 'success') { backgroundColor = '#4CAF50'; }
-    if (type === 'error') { backgroundColor = '#f44336'; }
-    if (type === 'warning') { backgroundColor = '#ff9800'; }
-    
-    messageBox.style.backgroundColor = backgroundColor;
-    messageBox.style.opacity = 1;
-    messageBox.style.transform = 'translateY(0)';
-    
-    setTimeout(() => {
-        messageBox.style.opacity = 0;
-        messageBox.style.transform = 'translateY(-20px)';
+    box.classList.remove('app-message--success', 'app-message--error', 'app-message--warning');
+    if (type === 'success') box.classList.add('app-message--success');
+    if (type === 'error') box.classList.add('app-message--error');
+    if (type === 'warning') box.classList.add('app-message--warning');
+    box.textContent = message;
+    box.classList.add('visible');
+    window.clearTimeout(box._hideT);
+    box._hideT = window.setTimeout(() => {
+        box.classList.remove('visible');
     }, duration);
 }
 
@@ -972,10 +954,17 @@ function downloadChart(canvasId, filename = 'chart.png') {
 }
 
 function toCSV(rows) {
-    const esc = (v) => (
-        v === null || v === undefined ? '' : String(v).replace(/"/g, '""')
-    );
-    return rows.map(r => r.map(v => `"${esc(v)}"`).join(',')).join('\n');
+    // Sanitize to mitigate CSV/Excel formula injection
+    const sanitize = (v) => {
+        if (v === null || v === undefined) return '';
+        let s = String(v);
+        // Neutralize leading formula characters or control characters
+        if (/^[=+\-@]/.test(s) || /^[\t\r\n]/.test(s)) {
+            s = "'" + s;
+        }
+        return s.replace(/"/g, '""');
+    };
+    return rows.map(r => r.map(v => `"${sanitize(v)}"`).join(',')).join('\n');
 }
 
 function exportStudentsCSV() {
@@ -1072,10 +1061,7 @@ function addHorizontalSlider(container) {
     const forced = !!(container.closest('#students') && container.querySelector('form'));
     if (!needsSlider && !forced) return;
     // Ensure the container can scroll horizontally and slider has space
-    container.style.overflowX = 'auto';
-    container.style.webkitOverflowScrolling = 'touch';
-    var pb = parseInt(window.getComputedStyle(container).paddingBottom, 10) || 0;
-    if (pb < 16) container.style.paddingBottom = '16px';
+    container.classList.add('has-hscroll');
     const wrap = document.createElement('div');
     wrap.className = 'h-scroll-slider';
     const range = document.createElement('input');
