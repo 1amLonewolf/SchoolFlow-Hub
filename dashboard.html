@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SchoolFlow Hub - Dashboard</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; connect-src 'self' https://parseapi.back4app.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self' https://cdnjs.cloudflare.com data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; connect-src 'self' https://parseapi.back4app.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self' https://cdnjs.cloudflare.com data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232575fc'/%3E%3Cpath d='M14 22h36v4H14zm0 10h36v4H14zm0 10h24v4H14z' fill='white'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,43 +13,10 @@
     <link rel="preconnect" href="https://parseapi.back4app.com" crossorigin>
 
     <link id="css-dashboard" rel="stylesheet" href="dashboard.css">
-    <script>
-        (function(){
-            var p = new URLSearchParams(location.search);
-            var h = location.hostname;
-            var isDev = p.has('dev') || h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.endsWith('.local');
-            var v = isDev ? Date.now() : '1';
-            var link = document.getElementById('css-dashboard');
-            if (link) {
-                var base = (link.getAttribute('href') || 'dashboard.css').split('?')[0];
-                link.setAttribute('href', base + '?v=' + v);
-            }
-            function loadDashboardScript(){
-                if (document.getElementById('js-dashboard')) return;
-                var s = document.createElement('script');
-                s.id = 'js-dashboard';
-                s.src = 'dashboard.js?v=' + v;
-                s.defer = true;
-                document.head.appendChild(s);
-            }
-            if (window.Parse) {
-                loadDashboardScript();
-            } else {
-                var start = Date.now();
-                var int = setInterval(function(){
-                    if (window.Parse || Date.now() - start > 7000) {
-                        clearInterval(int);
-                        loadDashboardScript();
-                    }
-                }, 50);
-                window.addEventListener('load', loadDashboardScript, { once: true });
-            }
-        })();
-    </script>
-
+    
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -95,7 +62,7 @@
                     <a href="#courses" class="button primary-button">Add Course</a>
                     <a href="#attendance" class="button primary-button">Record Attendance</a>
                     <a href="#grades" class="button primary-button">Add Grade</a>
-                    <button class="button secondary-button" onclick="refreshDashboard()">Refresh Dashboard</button>
+                    <button class="button secondary-button" id="refreshDashboardBtn">Refresh Dashboard</button>
                 </div>
             </div>
 
@@ -323,12 +290,12 @@
         <div id="reports-analytics" class="dashboard-content-section">
                 <h2>Reports &amp; Analytics</h2>
                 <div class="quick-actions">
-                    <button class="button primary-button" onclick="refreshDashboard()">Refresh Data</button>
-                    <button class="button secondary-button" onclick="exportStudentsCSV()">Export Students CSV</button>
-                    <button class="button secondary-button" onclick="exportGradesCSV()">Export Grades CSV</button>
-                    <button class="button secondary-button" onclick="exportAttendanceCSV()">Export Attendance CSV</button>
-                    <button class="button secondary-button" onclick="downloadChart('lowPerformingAssignmentsChart','low-performing-assignments.png')">Download Chart</button>
-                    <button class="button secondary-button" onclick="exportSummaryJSON()">Export Summary JSON</button>
+                    <button class="button primary-button" id="refreshDashboardReportsBtn">Refresh Data</button>
+                    <button class="button secondary-button" id="exportStudentsCsvBtn">Export Students CSV</button>
+                    <button class="button secondary-button" id="exportGradesCsvBtn">Export Grades CSV</button>
+                    <button class="button secondary-button" id="exportAttendanceCsvBtn">Export Attendance CSV</button>
+                    <button class="button secondary-button" id="downloadLowAssignmentsBtn">Download Chart</button>
+                    <button class="button secondary-button" id="exportSummaryJsonBtn">Export Summary JSON</button>
                 </div>
                 <div class="reports-grid">
                     <div class="report-card chart-card">
@@ -361,7 +328,7 @@
                                 <span class="slider"></span>
                             </label>
                             <p>Toggle dark theme for the dashboard interface.</p>
-                            <button class="button secondary-button" onclick="resetPreferences()">Reset Preferences</button>
+                            <button class="button secondary-button" id="resetPreferencesBtn">Reset Preferences</button>
                         </div>
                     </div>
                 </div>
@@ -373,9 +340,7 @@
     <div id="appMessage" class="app-message" role="status" aria-live="polite" aria-atomic="true"></div>
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
-    <script type="text/javascript" src="https://unpkg.com/parse/dist/parse.min.js"></script>
-    <script>
-// Main content scroll handling will be implemented based on requirements
-    </script>
+    <script type="text/javascript" src="https://unpkg.com/parse@3.4.4/dist/parse.min.js"></script>
+    <script src="dashboard.js?v=1" defer></script>
 </body>
 </html>

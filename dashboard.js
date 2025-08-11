@@ -971,11 +971,11 @@ function toCSV(rows) {
 }
 
 function exportStudentsCSV() {
-    const rows = [["Name","Course","National ID","Season","Phone","Location"]];
+    // PII-reduced export: omit National ID by default
+    const rows = [["Name","Course","Season","Phone","Location"]];
     students.forEach(s => rows.push([
         s.get('name') || '',
         s.get('course') || '',
-        s.get('nationalID') || '',
         s.get('season') || '',
         s.get('phone') || '',
         s.get('location') || ''
@@ -1158,38 +1158,53 @@ function updateUI() {
 
 // Bootstrap session from localStorage and establish Parse user
 async function bootstrapSessionFromLocalStorage() {
+    // Check optional expiry in our own local record
     const raw = localStorage.getItem('currentUser');
-    if (!raw) {
-        setTimeout(() => window.location.href = 'loginPage.html', 0);
-        return false;
-    }
-    try {
-        const userData = JSON.parse(raw);
-        if (!userData.sessionToken) {
-            localStorage.removeItem('currentUser');
-            setTimeout(() => window.location.href = 'loginPage.html', 0);
-            return false;
-        }
-        if (typeof userData.expiresAt === 'number' && Date.now() > userData.expiresAt) {
-            localStorage.removeItem('currentUser');
-            setTimeout(() => window.location.href = 'loginPage.html?expired=true', 0);
-            return false;
-        }
+    if (raw) {
         try {
-            await Parse.User.become(userData.sessionToken);
+            const userData = JSON.parse(raw);
+            if (typeof userData.expiresAt === 'number' && Date.now() > userData.expiresAt) {
+                try { await Parse.User.logOut(); } catch (_) {}
+                localStorage.removeItem('currentUser');
+                setTimeout(() => window.location.href = 'loginPage.html?expired=true', 0);
+                return false;
+            }
         } catch (e) {
-            console.error('[bootstrapSessionFromLocalStorage] become failed:', e);
+            console.error('[bootstrapSessionFromLocalStorage] invalid localStorage currentUser:', e);
             localStorage.removeItem('currentUser');
-            setTimeout(() => window.location.href = 'loginPage.html', 0);
-            return false;
         }
-        return true;
-    } catch (e) {
-        console.error('[bootstrapSessionFromLocalStorage] invalid localStorage currentUser:', e);
-        localStorage.removeItem('currentUser');
-        setTimeout(() => window.location.href = 'loginPage.html', 0);
-        return false;
     }
+
+    // Prefer SDK-managed current session
+    try {
+        const current = await Parse.User.currentAsync();
+        if (current) {
+            return true;
+        }
+    } catch (e) {
+        console.warn('[bootstrapSessionFromLocalStorage] currentAsync failed:', e);
+    }
+
+    // Fallback for legacy localStorage sessions that stored a sessionToken
+    if (raw) {
+        try {
+            const userData = JSON.parse(raw);
+            if (userData.sessionToken) {
+                try {
+                    await Parse.User.become(userData.sessionToken);
+                    return true;
+                } catch (e) {
+                    console.error('[bootstrapSessionFromLocalStorage] legacy become failed:', e);
+                    localStorage.removeItem('currentUser');
+                }
+            }
+        } catch (e) {
+            // already handled above
+        }
+    }
+
+    setTimeout(() => window.location.href = 'loginPage.html', 0);
+    return false;
 }
 
 function attachEventListeners() {
@@ -1383,6 +1398,21 @@ function attachEventListeners() {
             localStorage.setItem('darkMode', checked);
         });
     }
+
+    // Wire buttons (migrating away from inline onclick)
+    const bindClick = (id, handler) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('click', (e) => { e.preventDefault(); handler(); });
+    };
+    bindClick('refreshDashboardBtn', refreshDashboard);
+    bindClick('refreshDashboardReportsBtn', refreshDashboard);
+    bindClick('exportStudentsCsvBtn', exportStudentsCSV);
+    bindClick('exportGradesCsvBtn', exportGradesCSV);
+    bindClick('exportAttendanceCsvBtn', exportAttendanceCSV);
+    bindClick('exportSummaryJsonBtn', exportSummaryJSON);
+    const dla = document.getElementById('downloadLowAssignmentsBtn');
+    if (dla) dla.addEventListener('click', (e) => { e.preventDefault(); downloadChart('lowPerformingAssignmentsChart','low-performing-assignments.png'); });
+    bindClick('resetPreferencesBtn', resetPreferences);
 
     console.log("[attachEventListeners] All event listeners attached.");
 }
