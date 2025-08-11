@@ -1164,53 +1164,18 @@ function updateUI() {
 
 // --- EVENT LISTENERS AND INITIALIZATION ---
 
-// Bootstrap session from localStorage and establish Parse user
+// Bootstrap session: rely solely on Parse SDK session; clear any legacy localStorage token
 async function bootstrapSessionFromLocalStorage() {
-    // Check optional expiry in our own local record
-    const raw = localStorage.getItem('currentUser');
-    if (raw) {
-        try {
-            const userData = JSON.parse(raw);
-            if (typeof userData.expiresAt === 'number' && Date.now() > userData.expiresAt) {
-                try { await Parse.User.logOut(); } catch (_) {}
-                localStorage.removeItem('currentUser');
-                setTimeout(() => window.location.href = 'loginPage.html?expired=true', 0);
-                return false;
-            }
-        } catch (e) {
-            console.error('[bootstrapSessionFromLocalStorage] invalid localStorage currentUser:', e);
+    try {
+        // Remove any leftover legacy entry to reduce exposure
+        if (localStorage.getItem('currentUser')) {
             localStorage.removeItem('currentUser');
         }
-    }
-
-    // Prefer SDK-managed current session
-    try {
         const current = await Parse.User.currentAsync();
-        if (current) {
-            return true;
-        }
+        if (current) return true;
     } catch (e) {
-        console.warn('[bootstrapSessionFromLocalStorage] currentAsync failed:', e);
+        console.warn('[bootstrapSession] currentAsync error:', e);
     }
-
-    // Fallback for legacy localStorage sessions that stored a sessionToken
-    if (raw) {
-        try {
-            const userData = JSON.parse(raw);
-            if (userData.sessionToken) {
-                try {
-                    await Parse.User.become(userData.sessionToken);
-                    return true;
-                } catch (e) {
-                    console.error('[bootstrapSessionFromLocalStorage] legacy become failed:', e);
-                    localStorage.removeItem('currentUser');
-                }
-            }
-        } catch (e) {
-            // already handled above
-        }
-    }
-
     setTimeout(() => window.location.href = 'loginPage.html', 0);
     return false;
 }
@@ -1264,6 +1229,8 @@ function attachEventListeners() {
             } catch (err) {
                 console.error('Error logging out:', err);
             }
+            // Clear any legacy local storage entry
+            try { localStorage.removeItem('currentUser'); } catch (_) {}
             window.location.href = 'loginPage.html';
         });
     }
