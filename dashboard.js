@@ -932,13 +932,21 @@ async function processStudentRecords(records) {
 // --- MAIN APPLICATION LOGIC ---
 
 async function loadAllData() {
-    console.log("[loadAllData] Starting to load all dashboard data...");
-    students = await loadParseData('Student');
-    attendanceRecords = await loadParseData('Attendance');
-    grades = await loadParseData('Grade');
-    announcements = await loadParseData('Announcement');
-    teachers = await loadParseData('Teacher');
-    courses = await loadParseData('Course');
+    console.log("[loadAllData] Starting to load all dashboard data in parallel...");
+    const [studentsR, attendanceR, gradesR, announcementsR, teachersR, coursesR] = await Promise.all([
+        loadParseData('Student'),
+        loadParseData('Attendance'),
+        loadParseData('Grade'),
+        loadParseData('Announcement'),
+        loadParseData('Teacher'),
+        loadParseData('Course'),
+    ]);
+    students = studentsR;
+    attendanceRecords = attendanceR;
+    grades = gradesR;
+    announcements = announcementsR;
+    teachers = teachersR;
+    courses = coursesR;
 
     console.log(`[loadAllData] Data loaded. Students: ${students.length}, Teachers: ${teachers.length}, Courses: ${courses.length}`);
     updateUI();
