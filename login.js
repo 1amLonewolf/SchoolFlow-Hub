@@ -33,12 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const user = await Parse.User.logIn(username, password);
             if (user) {
-                localStorage.setItem('currentUser', JSON.stringify({
-                    userId: user.id,
-                    username: user.get('username'),
-                    sessionToken: user.getSessionToken(),
-                    expiresAt: Date.now() + (30 * 60 * 1000) // 30 minutes
-                }));
                 window.location.href = './dashboard.html';
             } else {
                 throw new Error('Login failed');
