@@ -17,6 +17,7 @@ let grades = [];
 let announcements = [];
 let teachers = [];
 let courses = [];
+let exams = []; // New array for exam records
 
 // Chart instances
 let coursePopularityChartInstance = null;
@@ -843,6 +844,245 @@ async function deleteGrade(id) {
 }
 
 
+// --- EXAM MANAGEMENT FUNCTIONS ---
+
+function renderExamTable() {
+    console.log("[renderExamTable] Rendering exam table with data:", exams);
+    const examTableBody = document.querySelector('#examTable tbody');
+    if (!examTableBody) {
+        console.error("Exam table body not found.");
+        return;
+    }
+    examTableBody.innerHTML = '';
+
+    if (exams.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 7;
+        td.style.textAlign = 'center';
+        td.textContent = 'No exam records added yet.';
+        tr.appendChild(td);
+        examTableBody.appendChild(tr);
+        return;
+    }
+
+    exams.forEach(exam => {
+        if (typeof exam.get !== 'function') {
+            console.error("Invalid exam object found:", exam);
+            return;
+        }
+
+        const student = students.find(s => s.id === exam.get('studentId'));
+        const examDate = exam.get('date');
+        const formattedDate = examDate ? examDate.toISOString().split('T')[0] : '';
+
+        const row = document.createElement('tr');
+
+        const makeCell = (label, value) => {
+            const td = document.createElement('td');
+            td.setAttribute('data-label', label);
+            td.textContent = value ?? '';
+            return td;
+        };
+
+        row.appendChild(makeCell('Student', student ? student.get('name') : 'N/A'));
+        row.appendChild(makeCell('Exam Type', exam.get('examType')));
+        row.appendChild(makeCell('Category', exam.get('examCategory')));
+        row.appendChild(makeCell('Course', exam.get('course')));
+        row.appendChild(makeCell('Score', `${exam.get('score')} / ${exam.get('totalScore')}`));
+        row.appendChild(makeCell('Date', formattedDate));
+
+        const actionsTd = document.createElement('td');
+        actionsTd.setAttribute('data-label', 'Actions');
+        actionsTd.className = 'actions';
+        actionsTd.style.position = 'relative';
+        actionsTd.style.zIndex = '1';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-button';
+        editBtn.textContent = 'Edit';
+        editBtn.style.position = 'relative';
+        editBtn.style.zIndex = '2';
+        editBtn.dataset.id = exam.id;
+        editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            editExam(e.currentTarget.dataset.id);
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-button';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.style.position = 'relative';
+        deleteBtn.style.zIndex = '2';
+        deleteBtn.dataset.id = exam.id;
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteExam(e.currentTarget.dataset.id);
+        });
+
+        actionsTd.appendChild(editBtn);
+        actionsTd.appendChild(deleteBtn);
+        row.appendChild(actionsTd);
+
+        examTableBody.appendChild(row);
+    });
+}
+
+async function addOrUpdateExam(event) {
+    event.preventDefault();
+    
+    const examStudent = document.getElementById('examStudent').value;
+    const examType = document.getElementById('examType').value;
+    const examCategory = document.getElementById('examCategory').value;
+    const examCourse = document.getElementById('examCourse').value;
+    const examScore = parseInt(document.getElementById('examScore').value);
+    const examTotalScore = parseInt(document.getElementById('examTotalScore').value);
+    const examDate = new Date(document.getElementById('examDate').value);
+    
+    // Validation
+    if (!examStudent || !examType || !examCategory || !examCourse || isNaN(examScore) || isNaN(examTotalScore) || !examDate) {
+        showMessage('Please fill all exam fields correctly.', 'error');
+        return;
+    }
+    
+    if (examScore < 0) {
+        showMessage('Score cannot be negative.', 'error');
+        return;
+    }
+    
+    if (examTotalScore <= 0) {
+        showMessage('Total score must be greater than zero.', 'error');
+        return;
+    }
+    
+    if (examScore > examTotalScore) {
+        showMessage('Score cannot be greater than total score.', 'error');
+        return;
+    }
+    
+    const data = {
+        studentId: examStudent,
+        examType: examType,
+        examCategory: examCategory,
+        course: examCourse,
+        score: examScore,
+        totalScore: examTotalScore,
+        date: examDate,
+    };
+    
+    // Check if we're editing an existing exam
+    const editingId = document.getElementById('addExamForm').getAttribute('data-editing-id');
+    
+    try {
+        if (editingId) {
+            await saveParseData('Exam', data, editingId);
+        } else {
+            await saveParseData('Exam', data);
+        }
+        resetExamForm();
+        document.getElementById('addExamForm').reset();
+    } catch (error) {
+        console.error('Error saving exam:', error);
+        showMessage(`Error saving exam: ${error.message || 'Unknown error'}`, 'error');
+    }
+}
+
+function editExam(id) {
+    const examToEdit = exams.find(e => e.id === id);
+    if (examToEdit) {
+        document.getElementById('examStudent').value = examToEdit.get('studentId');
+        document.getElementById('examType').value = examToEdit.get('examType');
+        document.getElementById('examCategory').value = examToEdit.get('examCategory');
+        document.getElementById('examCourse').value = examToEdit.get('course');
+        document.getElementById('examScore').value = examToEdit.get('score');
+        document.getElementById('examTotalScore').value = examToEdit.get('totalScore');
+        
+        const examDate = examToEdit.get('date');
+        if (examDate) {
+            document.getElementById('examDate').value = examDate.toISOString().split('T')[0];
+        }
+        
+        document.getElementById('addExamForm').setAttribute('data-editing-id', examToEdit.id);
+        document.getElementById('exam-form-heading').textContent = `Edit Exam Record`;
+        document.getElementById('saveExamBtn').textContent = 'Update Exam Record';
+        document.getElementById('cancelExamBtn').style.display = 'inline-block';
+        
+        // Scroll to the form
+        document.getElementById('exams').scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+async function deleteExam(id) {
+    showConfirmDialog('Are you sure you want to delete this exam record?', async () => {
+        await deleteParseData('Exam', id);
+    });
+}
+
+function resetExamForm() {
+    document.getElementById('addExamForm').reset();
+    document.getElementById('addExamForm').removeAttribute('data-editing-id');
+    document.getElementById('exam-form-heading').textContent = 'Add New Exam Record';
+    document.getElementById('saveExamBtn').textContent = 'Save Exam Record';
+    document.getElementById('cancelExamBtn').style.display = 'none';
+}
+
+function populateExamStudentDropdown() {
+    const examStudentSelect = document.getElementById('examStudent');
+    if (!examStudentSelect) return;
+    
+    const currentValue = examStudentSelect.value;
+    examStudentSelect.innerHTML = '<option value="">-- Select a Student --</option>';
+    
+    const sortedStudents = [...students].sort((a, b) => 
+        (a.get('name') || '').localeCompare(b.get('name') || ''));
+    
+    sortedStudents.forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.id;
+        option.textContent = `${student.get('name') || 'Unnamed'} (${student.get('course') || 'No Course'})`;
+        examStudentSelect.appendChild(option);
+    });
+    
+    if (currentValue && sortedStudents.some(s => s.id === currentValue)) {
+        examStudentSelect.value = currentValue;
+    }
+}
+
+function populateExamCourseDropdown() {
+    const examCourseSelect = document.getElementById('examCourse');
+    if (!examCourseSelect) return;
+    
+    const currentValue = examCourseSelect.value;
+    examCourseSelect.innerHTML = '<option value="">-- Select a Course --</option>';
+    
+    const sortedCourses = [...courses].sort((a, b) => 
+        (a.get('name') || '').localeCompare(b.get('name') || ''));
+    
+    sortedCourses.forEach(course => {
+        const option = document.createElement('option');
+        option.value = course.get('name');
+        option.textContent = course.get('name');
+        examCourseSelect.appendChild(option);
+    });
+    
+    if (currentValue && sortedCourses.some(c => c.get('name') === currentValue)) {
+        examCourseSelect.value = currentValue;
+    }
+}
+
+function showExamsTab() {
+    populateExamStudentDropdown();
+    populateExamCourseDropdown();
+    
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('examDate');
+    if (dateInput && !dateInput.value) {
+        dateInput.value = today;
+    }
+}
+
+
 // --- DASHBOARD OVERVIEW FUNCTIONS ---
 
 function renderCoursePopularityChart() {
@@ -1047,13 +1287,14 @@ async function loadAllData() {
     }
     
     try {
-        const [studentsR, attendanceR, gradesR, announcementsR, teachersR, coursesR] = await Promise.all([
+        const [studentsR, attendanceR, gradesR, announcementsR, teachersR, coursesR, examsR] = await Promise.all([
             loadParseData('Student'),
             loadParseData('Attendance'),
             loadParseData('Grade'),
             loadParseData('Announcement'),
             loadParseData('Teacher'),
             loadParseData('Course'),
+            loadParseData('Exam'), // Add Exam data loading
         ]);
         
         students = studentsR;
@@ -1062,8 +1303,9 @@ async function loadAllData() {
         announcements = announcementsR;
         teachers = teachersR;
         courses = coursesR;
+        exams = examsR; // Store exam data
 
-        console.log(`[loadAllData] Data loaded. Students: ${students.length}, Teachers: ${teachers.length}, Courses: ${courses.length}, Attendance: ${attendanceRecords.length}, Grades: ${grades.length}`);
+        console.log(`[loadAllData] Data loaded. Students: ${students.length}, Teachers: ${teachers.length}, Courses: ${courses.length}, Attendance: ${attendanceRecords.length}, Grades: ${grades.length}, Exams: ${exams.length}`);
         updateUI();
         console.log("[loadAllData] All data loaded and UI updated.");
     } catch (error) {
@@ -1271,11 +1513,14 @@ function updateUI() {
     renderStudentTable();
     renderAttendanceTable();
     renderGradesTable();
+    renderExamTable(); // Add exam table rendering
     renderTeacherTable();
     renderCourseTable();
 
     populateCourseDropdowns();
     populateStudentDropdowns(document.getElementById('addGradeStudent'));
+    populateExamStudentDropdown(); // Populate exam student dropdown
+    populateExamCourseDropdown(); // Populate exam course dropdown
     populateTeacherDropdown();
 
     renderCoursePopularityChart();
@@ -1358,6 +1603,11 @@ function attachEventListeners() {
                         // Populate attendance dropdown when attendance tab is opened
                         if (targetId === 'attendance') {
                             showAttendanceTab();
+                        }
+                        
+                        // Populate exam dropdowns when exams tab is opened
+                        if (targetId === 'exams') {
+                            showExamsTab();
                         }
                     }, 0);
                 }
@@ -1481,29 +1731,29 @@ function attachEventListeners() {
         addAttendanceForm.addEventListener('submit', recordAttendance);
     }
 
-    const addGradeForm = document.getElementById('addGradeForm');
-    if (addGradeForm) {
-        addGradeForm.addEventListener('submit', saveGrade);
+    const addExamForm = document.getElementById('addExamForm');
+    if (addExamForm) {
+        addExamForm.addEventListener('submit', addOrUpdateExam);
     }
-    
-    // FIX: Replaced the missing populate functions.
-    const courseSelect = document.getElementById('studentCourse');
-    if (courseSelect) {
-        courseSelect.addEventListener('focus', populateCourseDropdowns);
+    const cancelExamBtn = document.getElementById('cancelExamBtn');
+    if (cancelExamBtn) {
+        cancelExamBtn.addEventListener('click', resetExamForm);
     }
 
-    const attendanceStudentSelect = document.getElementById('attendanceStudent');
-    if (attendanceStudentSelect) {
-        // Populate on focus and also immediately if students are already loaded
-        attendanceStudentSelect.addEventListener('focus', populateAttendanceStudentDropdown);
+    const examStudentSelect = document.getElementById('examStudent');
+    if (examStudentSelect) {
+        examStudentSelect.addEventListener('focus', populateExamStudentDropdown);
         if (students && students.length > 0) {
-            populateAttendanceStudentDropdown();
+            populateExamStudentDropdown();
         }
     }
 
-    const gradesStudentSelect = document.getElementById('addGradeStudent');
-    if (gradesStudentSelect) {
-        gradesStudentSelect.addEventListener('focus', () => populateStudentDropdowns(gradesStudentSelect));
+    const examCourseSelect = document.getElementById('examCourse');
+    if (examCourseSelect) {
+        examCourseSelect.addEventListener('focus', populateExamCourseDropdown);
+        if (courses && courses.length > 0) {
+            populateExamCourseDropdown();
+        }
     }
 
     const assignedTeacherSelect = document.getElementById('assignedTeacher');
@@ -1776,10 +2026,11 @@ function checkGraduationEligibility() {
         const presentDays = studentAttendanceRecords.filter(record => record.get('status') === 'Present').length;
         const attendancePercentage = totalAttendanceDays > 0 ? (presentDays / totalAttendanceDays) * 100 : 0;
         
-        // 2. Check for required exams
+        // 2. Check for required exams (now including both old grades and new exam records)
         let hasMidterm = false;
         let hasFinal = false;
         
+        // Check in grades
         grades.forEach(grade => {
             if (grade.get('studentId') === studentId) {
                 const assignmentName = (grade.get('assignmentName') || '').toLowerCase();
@@ -1795,6 +2046,25 @@ function checkGraduationEligibility() {
                 }
             }
         });
+        
+        // Check in new exam records
+        if (!hasMidterm || !hasFinal) {
+            exams.forEach(exam => {
+                if (exam.get('studentId') === studentId && exam.get('examType')) {
+                    const examType = exam.get('examType').toLowerCase();
+                    
+                    // Check if exam type matches midterm criteria
+                    if (!hasMidterm && (examType === 'midterm')) {
+                        hasMidterm = true;
+                    }
+                    
+                    // Check if exam type matches final exam criteria
+                    if (!hasFinal && (examType === 'endterm')) {
+                        hasFinal = true;
+                    }
+                }
+            });
+        }
         
         // 3. Determine eligibility
         const isEligible = attendancePercentage >= 50 && hasMidterm && hasFinal;

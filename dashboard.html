@@ -33,6 +33,7 @@
             <a href="#teachers">Teachers</a>
             <a href="#courses">Courses</a>
             <a href="#attendance">Attendance</a>
+            <a href="#exams">Exams</a>
             <a href="#grades">Grades</a>
             <a href="#reports-analytics">Reports &amp; Analytics</a>
             <a href="#graduation">Graduation</a>
@@ -323,6 +324,86 @@
                             </ul>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div id="exams" class="dashboard-content-section">
+                <h2>Exam Records</h2>
+                <div class="card form-container">
+                    <h3 id="exam-form-heading">Add New Exam Record</h3>
+                    <form id="addExamForm">
+                        <div class="form-field">
+                            <label for="examStudent">Student</label>
+                            <select id="examStudent" name="examStudent" required>
+                                <option value="">-- Select a Student --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="examType">Exam Type</label>
+                            <select id="examType" name="examType" required>
+                                <option value="">-- Select Exam Type --</option>
+                                <option value="Midterm">Midterm</option>
+                                <option value="Endterm">Endterm</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="examCategory">Exam Category</label>
+                            <select id="examCategory" name="examCategory" required>
+                                <option value="">-- Select Category --</option>
+                                <option value="Chapel">Chapel</option>
+                                <option value="Course">Course</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="examCourse">Course</label>
+                            <select id="examCourse" name="examCourse" required>
+                                <option value="">-- Select a Course --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="examScore">Score</label>
+                            <input type="number" id="examScore" name="examScore" placeholder="Score" min="0" required>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="examTotalScore">Total Score</label>
+                            <input type="number" id="examTotalScore" name="examTotalScore" placeholder="Total Score" min="1" required>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="examDate">Date</label>
+                            <input type="date" id="examDate" name="examDate" required>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="button primary-button" id="saveExamBtn">Save Exam Record</button>
+                            <button type="button" class="button cancel-button" id="cancelExamBtn" style="display: none;">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="card table-container">
+                    <h3>Exam Records</h3>
+                    <table id="examTable">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Exam Type</th>
+                                <th>Category</th>
+                                <th>Course</th>
+                                <th>Score</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Exam records will be populated here -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
