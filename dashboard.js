@@ -663,22 +663,58 @@ function renderOverallAttendanceChart() {
 
 async function recordAttendance(event) {
     event.preventDefault();
-    const studentId = document.getElementById('attendanceStudent').value;
-    const attendanceDate = new Date(document.getElementById('attendanceDate').value);
-    const attendanceStatus = document.getElementById('attendanceStatus').value;
-
-    if (!studentId || !attendanceDate || !attendanceStatus) {
-        showMessage('Please fill all attendance fields.', 'error');
+    
+    const studentSelect = document.getElementById('attendanceStudent');
+    const dateInput = document.getElementById('attendanceDate');
+    const statusSelect = document.getElementById('attendanceStatus');
+    
+    const studentId = studentSelect.value;
+    const attendanceDate = dateInput.value;
+    const attendanceStatus = statusSelect.value;
+    
+    // Validation
+    if (!studentId) {
+        showMessage('Please select a student.', 'error');
+        studentSelect.focus();
         return;
     }
-
+    
+    if (!attendanceDate) {
+        showMessage('Please select a date.', 'error');
+        dateInput.focus();
+        return;
+    }
+    
+    if (!attendanceStatus) {
+        showMessage('Please select an attendance status.', 'error');
+        statusSelect.focus();
+        return;
+    }
+    
+    // Convert date string to Date object
+    const dateObj = new Date(attendanceDate);
+    if (isNaN(dateObj.getTime())) {
+        showMessage('Please enter a valid date.', 'error');
+        dateInput.focus();
+        return;
+    }
+    
     const data = {
         studentId: studentId,
-        date: attendanceDate,
+        date: dateObj,
         status: attendanceStatus,
     };
-    await saveParseData('Attendance', data);
-    document.getElementById('addAttendanceForm').reset();
+    
+    try {
+        await saveParseData('Attendance', data);
+        // Reset form but keep the date
+        studentSelect.value = '';
+        statusSelect.value = 'Present';
+        showMessage('Attendance record saved successfully!', 'success');
+    } catch (error) {
+        console.error('Error recording attendance:', error);
+        showMessage(`Failed to save attendance record: ${error.message || 'Unknown error'}`, 'error');
+    }
 }
 
 async function deleteAttendanceRecord(id) {
@@ -1282,6 +1318,11 @@ function attachEventListeners() {
                         if (targetId === 'graduation') {
                             checkGraduationEligibility();
                         }
+                        
+                        // Populate attendance dropdown when attendance tab is opened
+                        if (targetId === 'attendance') {
+                            showAttendanceTab();
+                        }
                     }, 0);
                 }
                 if (sidebar.classList.contains('open')) {
@@ -1417,7 +1458,11 @@ function attachEventListeners() {
 
     const attendanceStudentSelect = document.getElementById('attendanceStudent');
     if (attendanceStudentSelect) {
-        attendanceStudentSelect.addEventListener('focus', () => populateStudentDropdowns(attendanceStudentSelect));
+        // Populate on focus and also immediately if students are already loaded
+        attendanceStudentSelect.addEventListener('focus', populateAttendanceStudentDropdown);
+        if (students && students.length > 0) {
+            populateAttendanceStudentDropdown();
+        }
     }
 
     const gradesStudentSelect = document.getElementById('addGradeStudent');
@@ -1526,6 +1571,34 @@ function populateCourseDropdowns() {
     });
 }
 
+function populateAttendanceStudentDropdown() {
+    const attendanceStudentSelect = document.getElementById('attendanceStudent');
+    if (!attendanceStudentSelect) return;
+    
+    // Save current value
+    const currentValue = attendanceStudentSelect.value;
+    
+    // Clear and repopulate
+    attendanceStudentSelect.innerHTML = '<option value="">-- Select a Student --</option>';
+    
+    // Sort students by name
+    const sortedStudents = [...students].sort((a, b) => 
+        (a.get('name') || '').localeCompare(b.get('name') || ''));
+    
+    sortedStudents.forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.id;
+        option.textContent = `${student.get('name') || 'Unnamed'} (${student.get('course') || 'No Course'})`;
+        attendanceStudentSelect.appendChild(option);
+    });
+    
+    // Restore previous selection if still valid
+    if (currentValue && sortedStudents.some(s => s.id === currentValue)) {
+        attendanceStudentSelect.value = currentValue;
+    }
+}
+
+// Original function used by other dropdowns
 function populateStudentDropdowns(selectElement, course = '') {
     if (!selectElement) return;
     const currentValue = selectElement.value;
@@ -1538,6 +1611,17 @@ function populateStudentDropdowns(selectElement, course = '') {
         selectElement.appendChild(option);
     });
     selectElement.value = currentValue;
+}
+
+// Call this when the attendance tab is shown
+function showAttendanceTab() {
+    populateAttendanceStudentDropdown();
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('attendanceDate');
+    if (dateInput && !dateInput.value) {
+        dateInput.value = today;
+    }
 }
 
 // FIX: Added a function that was referenced but not defined.
