@@ -133,7 +133,17 @@ async function deleteParseData(className, id) {
         await loadAllData();
     } catch (error) {
         console.error(`Error deleting ${className}:`, error);
-        showMessage(`Error deleting ${className}. Please try again.`, 'error');
+        // More detailed error message for the user
+        if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
+            showMessage(`Error: ${className} not found.`, 'error');
+        } else if (error.code === Parse.Error.SESSION_MISSING || error.code === Parse.Error.INVALID_SESSION_TOKEN) {
+            showMessage('Error: Your session has expired. Please log in again.', 'error');
+            setTimeout(() => window.location.href = 'loginPage.html', 3000);
+        } else if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
+            showMessage(`Error: ${className} not found or already deleted.`, 'error');
+        } else {
+            showMessage(`Error deleting ${className}. ${error.message || 'Please try again.'}`, 'error');
+        }
     }
 }
 
@@ -551,6 +561,7 @@ async function refreshSessionToken() {
         }
     } else {
         console.log("[refreshSessionToken] No current user found. Redirecting to login.");
+        showMessage('No valid session found. Please log in again.', 'error');
         setTimeout(() => window.location.href = 'loginPage.html', 2000);
         return false;
     }
@@ -1462,7 +1473,18 @@ function attachEventListeners() {
 
 async function initDashboard() {
     const ok = await bootstrapSessionFromLocalStorage();
-    if (!ok) return;
+    if (!ok) {
+        showMessage('Authentication required. Redirecting to login...', 'error');
+        return;
+    }
+    
+    // Double-check that we have a valid Parse session
+    const sessionValid = await refreshSessionToken();
+    if (!sessionValid) {
+        showMessage('Invalid session. Please log in again.', 'error');
+        return;
+    }
+    
     attachEventListeners();
     
     // Display welcome message
