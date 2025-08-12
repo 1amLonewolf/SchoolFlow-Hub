@@ -944,6 +944,9 @@ async function refreshDashboard() {
     if (graduationSection && window.getComputedStyle(graduationSection).display !== 'none') {
         checkGraduationEligibility();
     }
+    
+    // Update welcome message in case user info changed
+    updateWelcomeMessage();
 }
 
 function downloadChart(canvasId, filename = 'chart.png') {
@@ -1141,6 +1144,7 @@ function updateUI() {
     renderTopStudentsChart();
     renderLowPerformingAssignmentsChart();
     updateSummaryMetrics();
+    updateWelcomeMessage(); // Update welcome message
 
     console.log("[updateUI] UI update complete.");
 
@@ -1404,6 +1408,17 @@ async function initDashboard() {
     const ok = await bootstrapSessionFromLocalStorage();
     if (!ok) return;
     attachEventListeners();
+    
+    // Display welcome message
+    const currentUser = Parse.User.current();
+    if (currentUser) {
+        const username = currentUser.get('username');
+        const welcomeMessageElement = document.getElementById('welcomeMessage');
+        if (welcomeMessageElement) {
+            welcomeMessageElement.textContent = `Welcome, ${username}`;
+        }
+    }
+    
     loadAllData();
 }
 
@@ -1508,6 +1523,18 @@ function updateSummaryMetrics() {
     if (elStudents) elStudents.textContent = students.length;
     if (elCourses) elCourses.textContent = courses.length;
     if (elTeachers) elTeachers.textContent = teachers.length;
+}
+
+// Function to update the welcome message
+function updateWelcomeMessage() {
+    const currentUser = Parse.User.current();
+    if (currentUser) {
+        const username = currentUser.get('username');
+        const welcomeMessageElement = document.getElementById('welcomeMessage');
+        if (welcomeMessageElement) {
+            welcomeMessageElement.textContent = `Welcome, ${username}`;
+        }
+    }
 }
 
 // --- GRADUATION ELIGIBILITY FUNCTIONS ---

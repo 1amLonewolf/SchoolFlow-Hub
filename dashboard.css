@@ -292,6 +292,19 @@ body, html {
     text-align: center; /* Center the title by default */
 }
 
+/* Welcome Message */
+.admin-welcome {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-weight: 500;
+    color: #2F1857;
+    background-color: #f0f0f0;
+    padding: 8px 15px;
+    border-radius: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
 /* Hamburger Button Styling */
 .hamburger-btn {
     background: none;
