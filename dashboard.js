@@ -173,18 +173,30 @@ function renderStudentTable() {
         const actionsTd = document.createElement('td');
         actionsTd.setAttribute('data-label', 'Actions');
         actionsTd.className = 'actions';
+        actionsTd.style.position = 'relative';
+        actionsTd.style.zIndex = '1';
 
         const editBtn = document.createElement('button');
         editBtn.className = 'edit-button';
         editBtn.dataset.id = student.id;
         editBtn.textContent = 'Edit';
-        editBtn.addEventListener('click', (e) => editStudent(e.currentTarget.dataset.id));
+        editBtn.style.position = 'relative';
+        editBtn.style.zIndex = '2';
+        editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            editStudent(e.currentTarget.dataset.id);
+        });
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-button';
         deleteBtn.dataset.id = student.id;
         deleteBtn.textContent = 'Delete';
-        deleteBtn.addEventListener('click', (e) => deleteStudent(e.currentTarget.dataset.id));
+        deleteBtn.style.position = 'relative';
+        deleteBtn.style.zIndex = '2';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteStudent(e.currentTarget.dataset.id);
+        });
 
         actionsTd.appendChild(editBtn);
         actionsTd.appendChild(deleteBtn);
@@ -289,18 +301,30 @@ function renderTeacherTable() {
         const actionsTd = document.createElement('td');
         actionsTd.setAttribute('data-label', 'Actions');
         actionsTd.className = 'actions';
+        actionsTd.style.position = 'relative';
+        actionsTd.style.zIndex = '1';
 
         const editBtn = document.createElement('button');
         editBtn.className = 'edit-button';
         editBtn.dataset.id = teacher.id;
         editBtn.textContent = 'Edit';
-        editBtn.addEventListener('click', (e) => editTeacher(e.currentTarget.dataset.id));
+        editBtn.style.position = 'relative';
+        editBtn.style.zIndex = '2';
+        editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            editTeacher(e.currentTarget.dataset.id);
+        });
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-button';
         deleteBtn.dataset.id = teacher.id;
         deleteBtn.textContent = 'Delete';
-        deleteBtn.addEventListener('click', (e) => deleteTeacher(e.currentTarget.dataset.id));
+        deleteBtn.style.position = 'relative';
+        deleteBtn.style.zIndex = '2';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteTeacher(e.currentTarget.dataset.id);
+        });
 
         actionsTd.appendChild(editBtn);
         actionsTd.appendChild(deleteBtn);
@@ -400,18 +424,30 @@ function renderCourseTable() {
         const actionsTd = document.createElement('td');
         actionsTd.setAttribute('data-label', 'Actions');
         actionsTd.className = 'actions';
+        actionsTd.style.position = 'relative';
+        actionsTd.style.zIndex = '1';
 
         const editBtn = document.createElement('button');
         editBtn.className = 'edit-button';
         editBtn.dataset.id = course.id;
         editBtn.textContent = 'Edit';
-        editBtn.addEventListener('click', (e) => editCourse(e.currentTarget.dataset.id));
+        editBtn.style.position = 'relative';
+        editBtn.style.zIndex = '2';
+        editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            editCourse(e.currentTarget.dataset.id);
+        });
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-button';
         deleteBtn.dataset.id = course.id;
         deleteBtn.textContent = 'Delete';
-        deleteBtn.addEventListener('click', (e) => deleteCourse(e.currentTarget.dataset.id));
+        deleteBtn.style.position = 'relative';
+        deleteBtn.style.zIndex = '2';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteCourse(e.currentTarget.dataset.id);
+        });
 
         actionsTd.appendChild(editBtn);
         actionsTd.appendChild(deleteBtn);
@@ -557,12 +593,19 @@ function renderAttendanceTable() {
             const actionsTd = document.createElement('td');
             actionsTd.setAttribute('data-label', 'Actions');
             actionsTd.className = 'actions';
+            actionsTd.style.position = 'relative';
+            actionsTd.style.zIndex = '1';
 
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'delete-button';
             deleteBtn.dataset.id = record.id;
             deleteBtn.textContent = 'Delete';
-            deleteBtn.addEventListener('click', (e) => deleteAttendanceRecord(e.currentTarget.dataset.id));
+            deleteBtn.style.position = 'relative';
+            deleteBtn.style.zIndex = '2';
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteAttendanceRecord(e.currentTarget.dataset.id);
+            });
 
             actionsTd.appendChild(deleteBtn);
             row.appendChild(actionsTd);
@@ -669,11 +712,19 @@ function renderGradesTable() {
         row.appendChild(makeCell(formattedDate));
 
         const actionsTd = document.createElement('td');
+        actionsTd.style.position = 'relative';
+        actionsTd.style.zIndex = '1';
+        
         const editBtn = document.createElement('button');
         editBtn.className = 'button small-button';
         editBtn.textContent = 'Edit';
+        editBtn.style.position = 'relative';
+        editBtn.style.zIndex = '2';
         if (typeof window.editGrade === 'function' || typeof editGrade === 'function') {
-            editBtn.addEventListener('click', () => editGrade(grade.id));
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                editGrade(grade.id);
+            });
         } else {
             editBtn.disabled = true;
             editBtn.title = 'Edit not implemented';
@@ -682,7 +733,12 @@ function renderGradesTable() {
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'button small-button cancel-button';
         deleteBtn.textContent = 'Delete';
-        deleteBtn.addEventListener('click', () => deleteGrade(grade.id));
+        deleteBtn.style.position = 'relative';
+        deleteBtn.style.zIndex = '2';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteGrade(grade.id);
+        });
 
         actionsTd.appendChild(editBtn);
         actionsTd.appendChild(deleteBtn);
