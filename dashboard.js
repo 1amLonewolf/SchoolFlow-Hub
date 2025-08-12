@@ -939,6 +939,11 @@ async function loadAllData() {
 async function refreshDashboard() {
     await loadAllData();
     showMessage('Dashboard refreshed.', 'success');
+    // Also check graduation eligibility after refresh if the tab is active
+    const graduationSection = document.getElementById('graduation');
+    if (graduationSection && window.getComputedStyle(graduationSection).display !== 'none') {
+        checkGraduationEligibility();
+    }
 }
 
 function downloadChart(canvasId, filename = 'chart.png') {
@@ -1145,6 +1150,12 @@ function updateUI() {
     // Additionally, enable a horizontal slider on the Students form when it overflows
     var studentsFormContainer = document.querySelector('#students .form-container');
     if (studentsFormContainer) addHorizontalSlider(studentsFormContainer);
+    
+    // Check graduation eligibility if the tab is active
+    const graduationSection = document.getElementById('graduation');
+    if (graduationSection && window.getComputedStyle(graduationSection).display !== 'none') {
+        checkGraduationEligibility();
+    }
 }
 
 
@@ -1195,6 +1206,11 @@ function attachEventListeners() {
                         targetEl.querySelectorAll('.table-container').forEach(addHorizontalSlider);
                         const studentsFormContainer = targetEl.querySelector('.form-container');
                         if (studentsFormContainer) addHorizontalSlider(studentsFormContainer);
+                        
+                        // Check graduation eligibility when the graduation tab is opened
+                        if (targetId === 'graduation') {
+                            checkGraduationEligibility();
+                        }
                     }, 0);
                 }
                 if (sidebar.classList.contains('open')) {
@@ -1374,6 +1390,12 @@ function attachEventListeners() {
     const dla = document.getElementById('downloadLowAssignmentsBtn');
     if (dla) dla.addEventListener('click', (e) => { e.preventDefault(); downloadChart('lowPerformingAssignmentsChart','low-performing-assignments.png'); });
     bindClick('resetPreferencesBtn', resetPreferences);
+    
+    // Graduation tab button
+    const checkGraduationBtn = document.getElementById('checkGraduationBtn');
+    if (checkGraduationBtn) {
+        checkGraduationBtn.addEventListener('click', checkGraduationEligibility);
+    }
 
     console.log("[attachEventListeners] All event listeners attached.");
 }
@@ -1486,4 +1508,124 @@ function updateSummaryMetrics() {
     if (elStudents) elStudents.textContent = students.length;
     if (elCourses) elCourses.textContent = courses.length;
     if (elTeachers) elTeachers.textContent = teachers.length;
+}
+
+// --- GRADUATION ELIGIBILITY FUNCTIONS ---
+
+function checkGraduationEligibility() {
+    console.log("[checkGraduationEligibility] Starting graduation eligibility check...");
+    
+    // Reset results display
+    const resultsContainer = document.getElementById('graduationResults');
+    const statsContainer = document.getElementById('graduationStats');
+    const eligibleStudentsTableBody = document.querySelector('#eligibleStudentsTable tbody');
+    
+    if (!resultsContainer || !statsContainer || !eligibleStudentsTableBody) {
+        console.error("Graduation UI elements not found.");
+        return;
+    }
+    
+    // Clear previous results
+    statsContainer.innerHTML = '';
+    eligibleStudentsTableBody.innerHTML = '';
+    
+    // Initialize counters
+    let eligibleCount = 0;
+    let totalCount = students.length;
+    const eligibleStudents = [];
+    
+    // Define required exam names (case-insensitive partial match)
+    const midtermExamNames = ['mid-term', 'midterm', 'mid term'];
+    const finalExamNames = ['end-term', 'end term', 'final', 'final exam'];
+    
+    // Process each student
+    students.forEach(student => {
+        const studentId = student.id;
+        const studentName = student.get('name') || 'N/A';
+        const studentCourse = student.get('course') || 'N/A';
+        
+        // 1. Calculate attendance percentage
+        const studentAttendanceRecords = attendanceRecords.filter(record => record.get('studentId') === studentId);
+        const totalAttendanceDays = studentAttendanceRecords.length;
+        const presentDays = studentAttendanceRecords.filter(record => record.get('status') === 'Present').length;
+        const attendancePercentage = totalAttendanceDays > 0 ? (presentDays / totalAttendanceDays) * 100 : 0;
+        
+        // 2. Check for required exams
+        let hasMidterm = false;
+        let hasFinal = false;
+        
+        grades.forEach(grade => {
+            if (grade.get('studentId') === studentId) {
+                const assignmentName = (grade.get('assignmentName') || '').toLowerCase();
+                
+                // Check if assignment name matches midterm criteria
+                if (!hasMidterm && midtermExamNames.some(term => assignmentName.includes(term))) {
+                    hasMidterm = true;
+                }
+                
+                // Check if assignment name matches final exam criteria
+                if (!hasFinal && finalExamNames.some(term => assignmentName.includes(term))) {
+                    hasFinal = true;
+                }
+            }
+        });
+        
+        // 3. Determine eligibility
+        const isEligible = attendancePercentage >= 50 && hasMidterm && hasFinal;
+        
+        // 4. Update counters and lists
+        if (isEligible) {
+            eligibleCount++;
+            eligibleStudents.push({
+                id: studentId,
+                name: studentName,
+                course: studentCourse,
+                attendancePercentage: attendancePercentage.toFixed(2)
+            });
+        }
+    });
+    
+    // 5. Update UI with results
+    resultsContainer.style.display = 'block';
+    
+    // Display statistics
+    statsContainer.innerHTML = `
+        <p>Total Students: <strong>${totalCount}</strong></p>
+        <p>Eligible for Graduation: <strong>${eligibleCount}</strong></p>
+        <p>Not Eligible: <strong>${totalCount - eligibleCount}</strong></p>
+        <p>Eligibility Rate: <strong>${totalCount > 0 ? ((eligibleCount / totalCount) * 100).toFixed(2) : '0.00'}%</strong></p>
+    `;
+    
+    // Display eligible students in table
+    if (eligibleStudents.length > 0) {
+        eligibleStudents.forEach(student => {
+            const row = document.createElement('tr');
+            
+            const nameCell = document.createElement('td');
+            nameCell.textContent = student.name;
+            
+            const courseCell = document.createElement('td');
+            courseCell.textContent = student.course;
+            
+            const attendanceCell = document.createElement('td');
+            attendanceCell.textContent = `${student.attendancePercentage}%`;
+            
+            row.appendChild(nameCell);
+            row.appendChild(courseCell);
+            row.appendChild(attendanceCell);
+            
+            eligibleStudentsTableBody.appendChild(row);
+        });
+    } else {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 3;
+        cell.textContent = 'No students are currently eligible for graduation.';
+        cell.style.textAlign = 'center';
+        row.appendChild(cell);
+        eligibleStudentsTableBody.appendChild(row);
+    }
+    
+    console.log(`[checkGraduationEligibility] Check complete. ${eligibleCount}/${totalCount} students eligible.`);
+    showMessage(`Graduation eligibility check complete. ${eligibleCount} students are eligible.`, 'success');
 }
