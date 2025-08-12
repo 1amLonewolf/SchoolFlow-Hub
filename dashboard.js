@@ -13,7 +13,6 @@ Parse.serverURL = B4A_SERVER_URL;
 // Global data arrays
 let students = [];
 let attendanceRecords = [];
-let grades = [];
 let announcements = [];
 let teachers = [];
 let courses = [];
@@ -745,98 +744,6 @@ async function deleteAttendanceRecord(id) {
 
 // --- GRADES MANAGEMENT FUNCTIONS ---
 
-function renderGradesTable() {
-    console.log("[renderGradesTable] Rendering grades table with data:", grades);
-    const gradesTableBody = document.querySelector('#gradesTable tbody');
-    if (!gradesTableBody) {
-        console.error("Grades table body not found.");
-        return;
-    }
-    gradesTableBody.innerHTML = '';
-
-    grades.forEach(grade => {
-        if (typeof grade.get !== 'function') {
-            console.error("Invalid grade object found:", grade);
-            return;
-        }
-
-        const student = students.find(s => s.id === grade.get('studentId'));
-        const gradeDate = grade.get('date');
-        const formattedDate = gradeDate ? gradeDate.toISOString().split('T')[0] : '';
-
-        const row = document.createElement('tr');
-
-        const makeCell = (value) => {
-            const td = document.createElement('td');
-            td.textContent = value ?? '';
-            return td;
-        };
-
-        row.appendChild(makeCell(student ? student.get('name') : 'N/A'));
-        row.appendChild(makeCell(grade.get('assignmentName')));
-        row.appendChild(makeCell(`${grade.get('score')} / ${grade.get('totalScore')}`));
-        row.appendChild(makeCell(formattedDate));
-
-        const actionsTd = document.createElement('td');
-        actionsTd.style.position = 'relative';
-        actionsTd.style.zIndex = '1';
-        
-        const editBtn = document.createElement('button');
-        editBtn.className = 'button small-button';
-        editBtn.textContent = 'Edit';
-        editBtn.style.position = 'relative';
-        editBtn.style.zIndex = '2';
-        if (typeof window.editGrade === 'function' || typeof editGrade === 'function') {
-            editBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                editGrade(grade.id);
-            });
-        } else {
-            editBtn.disabled = true;
-            editBtn.title = 'Edit not implemented';
-        }
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'button small-button cancel-button';
-        deleteBtn.textContent = 'Delete';
-        deleteBtn.style.position = 'relative';
-        deleteBtn.style.zIndex = '2';
-        deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            deleteGrade(grade.id);
-        });
-
-        actionsTd.appendChild(editBtn);
-        actionsTd.appendChild(deleteBtn);
-        row.appendChild(actionsTd);
-
-        gradesTableBody.appendChild(row);
-    });
-}
-
-async function saveGrade(event) {
-    event.preventDefault();
-    const studentId = document.getElementById('addGradeStudent').value;
-    const assignmentName = document.getElementById('assignmentName').value;
-    const score = parseInt(document.getElementById('assignmentScore').value);
-    const totalScore = parseInt(document.getElementById('assignmentTotalScore').value);
-    const gradeDate = new Date(document.getElementById('assignmentDate').value);
-
-    if (!studentId || !assignmentName || isNaN(score) || isNaN(totalScore) || !gradeDate) {
-        showMessage('Please fill all grade fields correctly.', 'error');
-        return;
-    }
-    const data = {
-        studentId: studentId,
-        assignmentName: assignmentName,
-        score: score,
-        totalScore: totalScore,
-        date: gradeDate,
-    };
-    await saveParseData('Grade', data);
-    document.getElementById('addGradeForm').reset();
-}
-
 async function deleteGrade(id) {
     showConfirmDialog('Are you sure you want to delete this grade?', async () => {
         await deleteParseData('Grade', id);
@@ -1287,10 +1194,9 @@ async function loadAllData() {
     }
     
     try {
-        const [studentsR, attendanceR, gradesR, announcementsR, teachersR, coursesR, examsR] = await Promise.all([
+        const [studentsR, attendanceR, announcementsR, teachersR, coursesR, examsR] = await Promise.all([
             loadParseData('Student'),
             loadParseData('Attendance'),
-            loadParseData('Grade'),
             loadParseData('Announcement'),
             loadParseData('Teacher'),
             loadParseData('Course'),
@@ -1299,13 +1205,12 @@ async function loadAllData() {
         
         students = studentsR;
         attendanceRecords = attendanceR;
-        grades = gradesR;
         announcements = announcementsR;
         teachers = teachersR;
         courses = coursesR;
         exams = examsR; // Store exam data
 
-        console.log(`[loadAllData] Data loaded. Students: ${students.length}, Teachers: ${teachers.length}, Courses: ${courses.length}, Attendance: ${attendanceRecords.length}, Grades: ${grades.length}, Exams: ${exams.length}`);
+        console.log(`[loadAllData] Data loaded. Students: ${students.length}, Teachers: ${teachers.length}, Courses: ${courses.length}, Attendance: ${attendanceRecords.length}, Exams: ${exams.length}`);
         updateUI();
         console.log("[loadAllData] All data loaded and UI updated.");
     } catch (error) {
@@ -1371,27 +1276,6 @@ function exportStudentsCSV() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = 'students.csv'; a.click();
-    URL.revokeObjectURL(url);
-}
-
-function exportGradesCSV() {
-    const rows = [["Student","Assignment","Score","Total","Date"]];
-    grades.forEach(g => {
-        const student = students.find(s => s.id === g.get('studentId'));
-        const d = g.get('date');
-        rows.push([
-            student ? student.get('name') : '',
-            g.get('assignmentName') || '',
-            g.get('score') || '',
-            g.get('totalScore') || '',
-            d ? new Date(d).toISOString().split('T')[0] : ''
-        ]);
-    });
-    const csv = toCSV(rows);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'grades.csv'; a.click();
     URL.revokeObjectURL(url);
 }
 
@@ -1512,13 +1396,11 @@ function updateUI() {
 
     renderStudentTable();
     renderAttendanceTable();
-    renderGradesTable();
     renderExamTable(); // Add exam table rendering
     renderTeacherTable();
     renderCourseTable();
 
     populateCourseDropdowns();
-    populateStudentDropdowns(document.getElementById('addGradeStudent'));
     populateExamStudentDropdown(); // Populate exam student dropdown
     populateExamCourseDropdown(); // Populate exam course dropdown
     populateTeacherDropdown();
@@ -1786,7 +1668,6 @@ function attachEventListeners() {
     bindClick('refreshDashboardBtn', refreshDashboard);
     bindClick('refreshDashboardReportsBtn', refreshDashboard);
     bindClick('exportStudentsCsvBtn', exportStudentsCSV);
-    bindClick('exportGradesCsvBtn', exportGradesCSV);
     bindClick('exportAttendanceCsvBtn', exportAttendanceCSV);
     bindClick('exportSummaryJsonBtn', exportSummaryJSON);
     const dla = document.getElementById('downloadLowAssignmentsBtn');
@@ -1841,8 +1722,7 @@ if (document.readyState === 'loading') {
 // FIX: Added missing populate dropdown functions
 function populateCourseDropdowns() {
     const courseDropdowns = [
-        document.getElementById('studentCourse'),
-        document.getElementById('gradesCourseFilter')
+        document.getElementById('studentCourse')
     ];
     courseDropdowns.forEach(selectElement => {
         if (!selectElement) return;
@@ -1920,10 +1800,11 @@ function renderLowPerformingAssignmentsChart() {
         lowPerformingAssignmentsChartInstance.destroy();
     }
 
-    // Aggregate minimum scores per assignment name
+    // Aggregate minimum scores per assignment name from exams
     const assignmentScores = {};
-    grades.forEach(g => {
-        const name = g.get('assignmentName');
+    exams.forEach(g => {
+        // For exams, we'll use a combination of exam type, category, and course as the "assignment name"
+        const name = `${g.get('examType') || 'Exam'} - ${g.get('examCategory') || 'General'} (${g.get('course') || 'Unknown Course'})`;
         const score = g.get('score');
         const total = g.get('totalScore') || 100;
         if (!name || typeof score !== 'number') return;
@@ -1960,7 +1841,7 @@ function renderLowPerformingAssignmentsChart() {
             responsive: true,
             maintainAspectRatio: false,
             scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
-            plugins: { title: { display: true, text: 'Low Performing Assignments (min %)' } }
+            plugins: { title: { display: true, text: 'Low Performing Exams (min %)' } }
         }
     });
 }

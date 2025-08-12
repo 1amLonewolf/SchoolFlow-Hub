@@ -846,34 +846,6 @@ table td.actions {
 
 
 /* Grades Management Specifics */
-#gradesTableContainer {
-    display: none;
-}
-
-#gradesTable input[type="number"] {
-    width: 90px; /* Slightly larger input for scores */
-    padding: 8px;
-    border-radius: 4px;
-}
-
-.grade-status {
-    padding: 6px 12px; /* Adjusted padding */
-    border-radius: 6px; /* Slightly more rounded */
-    font-weight: 700; /* Bolder */
-    text-transform: capitalize;
-}
-
-.grade-status.graded {
-    background-color: #d4edda; /* Lighter green */
-    color: #28a745; /* Darker green */
-}
-
-.grade-status.pending {
-    background-color: #fff3cd; /* Lighter orange */
-    color: #ffc107; /* Darker orange */
-}
-
-
 /* Announcements Specifics */
 .add-announcement-form .form-group {
     margin-bottom: 20px;
