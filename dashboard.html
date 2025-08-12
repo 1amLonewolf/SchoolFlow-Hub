@@ -35,6 +35,7 @@
             <a href="#attendance">Attendance</a>
             <a href="#grades">Grades</a>
             <a href="#reports-analytics">Reports &amp; Analytics</a>
+            <a href="#graduation">Graduation</a>
             <a href="#settings">Settings</a>
             <div class="sidebar-footer">
                 <button id="logoutBtn" class="logout-btn">Logout</button>
@@ -45,6 +46,9 @@
             <header>
                 <div class="header-content">
                     <h1>SchoolFlow-Hub</h1>
+                    <div id="adminWelcome" class="admin-welcome">
+                        <span id="welcomeMessage">Welcome, Admin</span>
+                    </div>
                     <button class="burger" type="button" aria-label="Toggle sidebar" aria-controls="sidebar" aria-expanded="false">&#9776;</button>
                 </div>
             </header>
@@ -318,6 +322,36 @@
                                 <li>Total teachers: <span id="summaryTotalTeachers"></span></li>
                             </ul>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="graduation" class="dashboard-content-section">
+                <h2>Graduation Eligibility</h2>
+                <div class="card">
+                    <h3>Check Eligibility</h3>
+                    <p>Verify which students meet the requirements for graduation based on attendance and exam completion.</p>
+                    <button id="checkGraduationBtn" class="button primary-button">Check Eligibility Now</button>
+                </div>
+                
+                <div id="graduationResults" class="card" style="display: none;">
+                    <h3>Results</h3>
+                    <div id="graduationStats"></div>
+                    
+                    <h4>Eligible Students</h4>
+                    <div class="table-container" id="eligibleStudentsContainer">
+                        <table id="eligibleStudentsTable">
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Course</th>
+                                    <th>Attendance %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Eligible students will be populated here -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
