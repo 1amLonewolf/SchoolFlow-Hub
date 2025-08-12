@@ -95,10 +95,28 @@ async function loadParseData(className) {
     try {
         const query = new Parse.Query(className);
         const results = await query.find();
+        console.log(`[loadParseData] Successfully loaded ${results.length} ${className} records`);
         return results;
     } catch (error) {
-        console.error(`Error fetching ${className} data:`, error);
-        showMessage(`Error fetching ${className} data.`, 'error');
+        console.error(`[loadParseData] Error fetching ${className} data:`, error);
+        console.error(`[loadParseData] Error details - Code: ${error.code}, Message: ${error.message}`);
+        
+        // More detailed error messages for specific cases
+        let userMessage = `Error fetching ${className} data.`;
+        if (error.code === Parse.Error.INVALID_SESSION_TOKEN) {
+            userMessage = 'Your session has expired. Please log in again.';
+            setTimeout(() => window.location.href = 'loginPage.html', 3000);
+        } else if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
+            userMessage = `${className} data not found.`;
+        } else if (error.code === Parse.Error.CONNECTION_FAILED) {
+            userMessage = 'Network error. Please check your connection.';
+        } else if (error.code === Parse.Error.INTERNAL_SERVER_ERROR) {
+            userMessage = 'Server error. Please try again later.';
+        } else {
+            userMessage = `Error fetching ${className} data: ${error.message || 'Unknown error'}`;
+        }
+        
+        showMessage(userMessage, 'error');
         return [];
     }
 }
@@ -1018,24 +1036,42 @@ async function processStudentRecords(records) {
 
 async function loadAllData() {
     console.log("[loadAllData] Starting to load all dashboard data in parallel...");
-    const [studentsR, attendanceR, gradesR, announcementsR, teachersR, coursesR] = await Promise.all([
-        loadParseData('Student'),
-        loadParseData('Attendance'),
-        loadParseData('Grade'),
-        loadParseData('Announcement'),
-        loadParseData('Teacher'),
-        loadParseData('Course'),
-    ]);
-    students = studentsR;
-    attendanceRecords = attendanceR;
-    grades = gradesR;
-    announcements = announcementsR;
-    teachers = teachersR;
-    courses = coursesR;
+    
+    // Check if we have a valid session first
+    const currentUser = Parse.User.current();
+    if (!currentUser) {
+        console.log("[loadAllData] No current user, skipping data load");
+        showMessage('No valid session. Please log in again.', 'error');
+        setTimeout(() => window.location.href = 'loginPage.html', 3000);
+        return;
+    }
+    
+    try {
+        const [studentsR, attendanceR, gradesR, announcementsR, teachersR, coursesR] = await Promise.all([
+            loadParseData('Student'),
+            loadParseData('Attendance'),
+            loadParseData('Grade'),
+            loadParseData('Announcement'),
+            loadParseData('Teacher'),
+            loadParseData('Course'),
+        ]);
+        
+        students = studentsR;
+        attendanceRecords = attendanceR;
+        grades = gradesR;
+        announcements = announcementsR;
+        teachers = teachersR;
+        courses = coursesR;
 
-    console.log(`[loadAllData] Data loaded. Students: ${students.length}, Teachers: ${teachers.length}, Courses: ${courses.length}`);
-    updateUI();
-    console.log("[loadAllData] All data loaded and UI updated.");
+        console.log(`[loadAllData] Data loaded. Students: ${students.length}, Teachers: ${teachers.length}, Courses: ${courses.length}, Attendance: ${attendanceRecords.length}, Grades: ${grades.length}`);
+        updateUI();
+        console.log("[loadAllData] All data loaded and UI updated.");
+    } catch (error) {
+        console.error("[loadAllData] Critical error during data loading:", error);
+        showMessage('Critical error loading dashboard data. Some features may not work correctly.', 'error');
+        // Still try to update UI with whatever data we have
+        updateUI();
+    }
 }
 
 // Quick actions helpers used by buttons
@@ -1542,7 +1578,8 @@ async function initDashboard() {
         }
     }
     
-    loadAllData();
+    // Load data after confirming we have a valid session
+    await loadAllData();
 }
 
 if (document.readyState === 'loading') {
