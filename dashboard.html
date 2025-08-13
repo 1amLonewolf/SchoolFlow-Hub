@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SchoolFlow Hub - Dashboard</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; connect-src 'self' https://parseapi.back4app.com; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; connect-src 'self' https://parseapi.back4app.com; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; object-src 'none'; base-uri 'none';">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <link rel="icon" type="image/jpeg" href="SchoolFlow-Hub.png?v=2">
     <link rel="apple-touch-icon" href="SchoolFlow-Hub.png?v=2">
@@ -102,7 +102,7 @@
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="button primary-button" id="saveStudentBtn">Save Student</button>
-                            <button type="button" class="button cancel-button" id="cancelStudentBtn" style="display: none;">Cancel</button>
+                            <button type="button" class="button cancel-button" id="cancelStudentBtn">Cancel</button>
                         </div>
                     </form>
                     <div class="bulk-upload-section">
@@ -152,7 +152,7 @@
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="button primary-button" id="saveTeacherBtn">Save Teacher</button>
-                            <button type="button" class="button cancel-button" id="cancelTeacherBtn" style="display: none;">Cancel</button>
+                            <button type="button" class="button cancel-button" id="cancelTeacherBtn">Cancel</button>
                         </div>
                     </form>
                 </div>
@@ -193,7 +193,7 @@
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="button primary-button" id="saveCourseBtn">Save Course</button>
-                            <button type="button" class="button cancel-button" id="cancelCourseBtn" style="display: none;">Cancel</button>
+                            <button type="button" class="button cancel-button" id="cancelCourseBtn">Cancel</button>
                         </div>
                     </form>
                 </div>
@@ -332,7 +332,7 @@
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="button primary-button" id="saveExamBtn">Save Exam Record</button>
-                            <button type="button" class="button cancel-button" id="cancelExamBtn" style="display: none;">Cancel</button>
+                            <button type="button" class="button cancel-button" id="cancelExamBtn">Cancel</button>
                         </div>
                     </form>
                 </div>
@@ -362,7 +362,7 @@
                     <p>Verify which students meet the requirements for graduation based on attendance and exam completion.</p>
                     <button id="checkGraduationBtn" class="button primary-button">Check Eligibility Now</button>
                 </div>
-                <div id="graduationResults" class="card" style="display: none;">
+                <div id="graduationResults" class="card">
                     <h3>Results</h3>
                     <div id="graduationStats"></div>
                     <h4>Eligible Students</h4>

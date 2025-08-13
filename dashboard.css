@@ -75,6 +75,10 @@
     overflow: auto !important;
 }
 
+.hidden {
+    display: none !important;
+}
+
 /* Base Styles */
 body, html {
     margin: 0;
@@ -424,6 +428,11 @@ body, html {
     padding: 10px 18px;
     font-size: 0.95rem;
     margin-right: 8px;
+}
+
+/* Hide cancel buttons by default */
+.cancel-button {
+    display: none;
 }
 
 .edit-button:hover {
@@ -1299,6 +1308,9 @@ body.dark-mode .setting-card h3 {
 }
 
 /* Graduation Results */
+#graduationResults {
+    display: none;
+}
 #graduationResults {
     margin-top: 20px;
 }

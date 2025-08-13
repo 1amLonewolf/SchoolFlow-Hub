@@ -1685,7 +1685,7 @@ function attachEventListeners() {
                 e.preventDefault();
                 sidebarLinks.forEach(l => l.classList.remove('active'));
                 link.classList.add('active');
-                sections.forEach(s => s.style.display = 'none';
+                sections.forEach(s => s.style.display = 'none');
                 const targetId = href.substring(1);
                 const targetEl = document.getElementById(targetId);
                 if (targetEl) {
@@ -1889,6 +1889,48 @@ function attachEventListeners() {
     }
 
     console.log("[attachEventListeners] All event listeners attached.");
+}
+
+// ======================
+// MAIN APPLICATION LOGIC
+// ======================
+
+async function loadAllData() {
+    console.log("[loadAllData] Starting to load all dashboard data in parallel...");
+    
+    // Check if we have a valid session first
+    const currentUser = Parse.User.current();
+    if (!currentUser) {
+        console.log("[loadAllData] No current user, skipping data load");
+        showMessage('No valid session. Please log in again.', 'error');
+        setTimeout(() => window.location.href = 'loginPage.html', 3000);
+        return;
+    }
+    
+    try {
+        const [studentsR, attendanceR, teachersR, coursesR, examsR] = await Promise.all([
+            loadParseData('Student'),
+            loadParseData('Attendance'),
+            loadParseData('Teacher'),
+            loadParseData('Course'),
+            loadParseData('Exam'),
+        ]);
+        
+        students = studentsR;
+        attendanceRecords = attendanceR;
+        teachers = teachersR;
+        courses = coursesR;
+        exams = examsR;
+
+        console.log(`[loadAllData] Data loaded. Students: ${students.length}, Teachers: ${teachers.length}, Courses: ${courses.length}, Attendance: ${attendanceRecords.length}, Exams: ${exams.length}`);
+        updateUI();
+        console.log("[loadAllData] All data loaded and UI updated.");
+    } catch (error) {
+        console.error("[loadAllData] Critical error during data loading:", error);
+        showMessage('Critical error loading dashboard data. Some features may not work correctly.', 'error');
+        // Still try to update UI with whatever data we have
+        updateUI();
+    }
 }
 
 // ======================
