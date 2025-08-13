@@ -15,6 +15,7 @@ let attendanceRecords = [];
 let teachers = [];
 let courses = [];
 let exams = [];
+let currentSeason = 1; // Will be calculated dynamically
 
 // Chart instances
 let coursePopularityChartInstance = null;
@@ -26,6 +27,101 @@ let lowPerformingAssignmentsChartInstance = null;
 window.editingStudentId = null;
 window.editingTeacherId = null;
 window.editingCourseId = null;
+
+// ======================
+// SEASON MANAGEMENT
+// ======================
+
+function getCurrentSeason() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0-11 (January = 0)
+    
+    // Calculate season: (year - 2024) * 4 + quarter
+    // Assuming Season 1 started in January 2024
+    const baseYear = 2024;
+    const quarters = Math.floor(month / 3);
+    const seasonNumber = (year - baseYear) * 4 + quarters + 1;
+    
+    return seasonNumber;
+}
+
+function getSeasonDates(seasonId) {
+    // Assuming Season 1 started in January 2024
+    const baseYear = 2024;
+    const seasonOffset = seasonId - 1;
+    const yearOffset = Math.floor(seasonOffset / 4);
+    const quarter = seasonOffset % 4;
+    
+    const year = baseYear + yearOffset;
+    const startMonth = quarter * 3; // 0, 3, 6, 9 (Jan, Apr, Jul, Oct)
+    
+    const startDate = new Date(year, startMonth, 1);
+    const endDate = new Date(year, startMonth + 3, 0); // Last day of the quarter
+    
+    return { startDate, endDate };
+}
+
+function getActiveStudentsForCurrentSeason() {
+    const currentSeason = getCurrentSeason();
+    return students.filter(student => {
+        // Check if student has seasonId field and matches current season
+        const studentSeason = student.get('seasonId');
+        const isActive = student.get('isActive');
+        
+        // If student doesn't have seasonId, assume they're from current season for backward compatibility
+        if (studentSeason === undefined || studentSeason === null) {
+            return isActive !== false; // If isActive is not explicitly false, consider active
+        }
+        
+        return studentSeason === currentSeason && (isActive === true || isActive === undefined);
+    });
+}
+
+function getActiveCoursesForCurrentSeason() {
+    const currentSeason = getCurrentSeason();
+    return courses.filter(course => {
+        // Check if course has seasonId field and matches current season
+        const courseSeason = course.get('seasonId');
+        
+        // If course doesn't have seasonId, include it for backward compatibility
+        if (courseSeason === undefined || courseSeason === null) {
+            return true;
+        }
+        
+        return courseSeason === currentSeason;
+    });
+}
+
+// Function to archive previous seasons (mark students as inactive)
+async function archivePreviousSeasons() {
+    const currentSeason = getCurrentSeason();
+    const studentsToArchive = students.filter(student => {
+        const studentSeason = student.get('seasonId');
+        const isActive = student.get('isActive') !== false; // Default to true if not set
+        
+        // Archive students from previous seasons who are still marked as active
+        return studentSeason && studentSeason < currentSeason && isActive;
+    });
+    
+    console.log(`[archivePreviousSeasons] Found ${studentsToArchive.length} students to archive`);
+    
+    for (const student of studentsToArchive) {
+        try {
+            const studentObj = await new Parse.Query('Student').get(student.id);
+            studentObj.set('isActive', false);
+            await studentObj.save();
+            console.log(`[archivePreviousSeasons] Archived student: ${studentObj.get('name')}`);
+        } catch (error) {
+            console.error(`[archivePreviousSeasons] Error archiving student ${student.id}:`, error);
+        }
+    }
+    
+    // Reload data after archiving
+    if (studentsToArchive.length > 0) {
+        await loadAllData();
+    }
+}
 
 // ======================
 // UTILITY FUNCTIONS
@@ -256,6 +352,11 @@ async function addOrUpdateStudent(studentId, studentData) {
         student.set('nationalID', studentData.nationalID);
         student.set('phone', studentData.phone);
         student.set('location', studentData.location);
+        
+        // Add season information
+        student.set('seasonId', getCurrentSeason());
+        student.set('isActive', true);
+        student.set('enrollmentDate', new Date());
 
         const savedStudent = await student.save();
         console.log('Student saved successfully', savedStudent);
@@ -517,12 +618,33 @@ async function addOrUpdateCourse(event) {
         return;
     }
 
-    if (window.editingCourseId) {
-        await saveParseData('Course', courseData, window.editingCourseId);
-    } else {
-        await saveParseData('Course', courseData);
+    try {
+        let course;
+        const editingId = window.editingCourseId;
+        if (editingId) {
+            course = await new Parse.Query('Course').get(editingId);
+        } else {
+            course = new Parse.Object('Course');
+        }
+        
+        course.set('name', courseData.name);
+        course.set('description', courseData.description);
+        course.set('assignedTeacher', courseData.assignedTeacher);
+        
+        // Add season information
+        course.set('seasonId', getCurrentSeason());
+        course.set('startDate', new Date());
+        const seasonDates = getSeasonDates(getCurrentSeason());
+        course.set('endDate', seasonDates.endDate);
+
+        await course.save();
+        showMessage('Course saved successfully!', 'success');
+        await loadAllData();
+        resetCourseForm();
+    } catch (error) {
+        console.error('Error saving course:', error);
+        showMessage('Error saving course. Please try again.', 'error');
     }
-    resetCourseForm();
 }
 
 function editCourse(id) {
@@ -647,6 +769,7 @@ function renderAttendanceTable() {
     }
 }
 
+// FIX: Added the missing renderOverallAttendanceChart function
 function renderOverallAttendanceChart() {
     const canvas = document.getElementById('overallAttendanceChart');
     if (!canvas) return;
@@ -655,8 +778,16 @@ function renderOverallAttendanceChart() {
         overallAttendanceChartInstance.destroy();
     }
 
-    const presentCount = attendanceRecords.filter(r => r.get('status') === 'Present').length;
-    const absentCount = attendanceRecords.filter(r => r.get('status') === 'Absent').length;
+    // Use only attendance records for active students in current season
+    const activeStudents = getActiveStudentsForCurrentSeason();
+    const activeStudentIds = activeStudents.map(student => student.id);
+    
+    const filteredAttendanceRecords = attendanceRecords.filter(record => 
+        activeStudentIds.includes(record.get('studentId'))
+    );
+
+    const presentCount = filteredAttendanceRecords.filter(r => r.get('status') === 'Present').length;
+    const absentCount = filteredAttendanceRecords.filter(r => r.get('status') === 'Absent').length;
 
     overallAttendanceChartInstance = new Chart(canvas, {
         type: 'doughnut',
@@ -676,7 +807,7 @@ function renderOverallAttendanceChart() {
                 },
                 title: {
                     display: true,
-                    text: 'Overall Attendance Summary'
+                    text: 'Overall Attendance Summary (Current Season)'
                 }
             }
         }
@@ -995,11 +1126,17 @@ function renderCoursePopularityChart() {
     if (coursePopularityChartInstance) {
         coursePopularityChartInstance.destroy();
     }
-    const courseCounts = students.reduce((acc, student) => {
+    
+    // Use only active students from current season
+    const activeStudents = getActiveStudentsForCurrentSeason();
+    const courseCounts = activeStudents.reduce((acc, student) => {
         const courseName = student.get('course');
-        acc[courseName] = (acc[courseName] || 0) + 1;
+        if (courseName) {
+            acc[courseName] = (acc[courseName] || 0) + 1;
+        }
         return acc;
     }, {});
+    
     const labels = Object.keys(courseCounts);
     const data = Object.values(courseCounts);
     coursePopularityChartInstance = new Chart(canvas, {
@@ -1023,7 +1160,7 @@ function renderCoursePopularityChart() {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Student Enrollment by Course'
+                    text: 'Student Enrollment by Course (Current Season)'
                 }
             }
         }
@@ -1038,7 +1175,9 @@ function renderTopStudentsChart() {
         topStudentsChartInstance.destroy();
     }
 
-    const studentScores = students.reduce((acc, student) => {
+    // Use only active students from current season
+    const activeStudents = getActiveStudentsForCurrentSeason();
+    const studentScores = activeStudents.reduce((acc, student) => {
         acc[student.id] = { name: student.get('name'), totalScore: 0, totalExams: 0 };
         return acc;
     }, {});
@@ -1080,7 +1219,7 @@ function renderTopStudentsChart() {
             maintainAspectRatio: false,
             plugins: {
                 legend: { position: 'right' },
-                title: { display: true, text: 'Top 5 Students by Average Exam Score' }
+                title: { display: true, text: 'Top 5 Students by Average Exam Score (Current Season)' }
             }
         }
     });
@@ -1378,6 +1517,12 @@ function updateUI() {
     renderLowPerformingAssignmentsChart();
     updateSummaryMetrics();
     updateWelcomeMessage();
+    
+    // Update current season display
+    const currentSeasonDisplay = document.getElementById('currentSeasonDisplay');
+    if (currentSeasonDisplay) {
+        currentSeasonDisplay.textContent = getCurrentSeason();
+    }
 
     console.log("[updateUI] UI update complete.");
 
@@ -1471,8 +1616,16 @@ function renderLowPerformingAssignmentsChart() {
         lowPerformingAssignmentsChartInstance.destroy();
     }
 
+    // Filter exams to only include those from active students in current season
+    const activeStudents = getActiveStudentsForCurrentSeason();
+    const activeStudentIds = activeStudents.map(student => student.id);
+    
+    const filteredExams = exams.filter(exam => 
+        activeStudentIds.includes(exam.get('studentId'))
+    );
+
     const assignmentScores = {};
-    exams.forEach(g => {
+    filteredExams.forEach(g => {
         const name = `${g.get('examType') || 'Exam'} - ${g.get('examCategory') || 'General'} (${g.get('course') || 'Unknown Course'})`;
         const score = g.get('score');
         const total = g.get('totalScore') || 100;
@@ -1510,7 +1663,7 @@ function renderLowPerformingAssignmentsChart() {
             responsive: true,
             maintainAspectRatio: false,
             scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
-            plugins: { title: { display: true, text: 'Low Performing Exams (min %)' } }
+            plugins: { title: { display: true, text: 'Low Performing Exams (min %) - Current Season' } }
         }
     });
 }
@@ -1519,8 +1672,13 @@ function updateSummaryMetrics() {
     const elStudents = document.getElementById('summaryTotalStudents');
     const elCourses = document.getElementById('summaryTotalCourses');
     const elTeachers = document.getElementById('summaryTotalTeachers');
-    if (elStudents) elStudents.textContent = students.length;
-    if (elCourses) elCourses.textContent = courses.length;
+    
+    // Use only active students from current season
+    const activeStudents = getActiveStudentsForCurrentSeason();
+    const activeCourses = getActiveCoursesForCurrentSeason();
+    
+    if (elStudents) elStudents.textContent = activeStudents.length;
+    if (elCourses) elCourses.textContent = activeCourses.length;
     if (elTeachers) elTeachers.textContent = teachers.length;
 }
 
@@ -1897,6 +2055,10 @@ function attachEventListeners() {
 async function loadAllData() {
     console.log("[loadAllData] Starting to load all dashboard data in parallel...");
     
+    // Set current season
+    currentSeason = getCurrentSeason();
+    console.log(`[loadAllData] Current season: ${currentSeason}`);
+    
     // Check if we have a valid session first
     const currentUser = Parse.User.current();
     if (!currentUser) {
@@ -1943,6 +2105,7 @@ async function initDashboard() {
         return;
     }
     
+    // Double-check that we have a valid Parse session
     const sessionValid = await refreshSessionToken();
     if (!sessionValid) {
         showMessage('Invalid session. Please log in again.', 'error');
@@ -1951,6 +2114,7 @@ async function initDashboard() {
     
     attachEventListeners();
     
+    // Display welcome message with admin indicator
     const currentUser = Parse.User.current();
     if (currentUser) {
         const username = currentUser.get('username');
@@ -1961,7 +2125,15 @@ async function initDashboard() {
         }
     }
     
+    // Load data after confirming we have a valid session
     await loadAllData();
+    
+    // Automatically archive previous seasons
+    try {
+        await archivePreviousSeasons();
+    } catch (error) {
+        console.error('[initDashboard] Error archiving previous seasons:', error);
+    }
 }
 
 if (document.readyState === 'loading') {
