@@ -89,7 +89,7 @@ body, html {
     line-height: 1.6;
     height: 100%;
     width: 100%;
-    overflow: hidden;
+    overflow: auto;
     position: relative;
 }
 
@@ -97,6 +97,7 @@ body, html {
 .dashboard {
     display: flex;
     min-height: 100vh;
+    overflow: hidden;
 }
 
 .main-content {
@@ -245,7 +246,8 @@ body, html {
     box-shadow: 0 4px 15px var(--card-shadow-light);
     margin-bottom: 30px;
     display: none;
-    overflow: visible;
+    overflow: auto;
+    max-height: calc(100vh - 100px);
 }
 
 .dashboard-content-section.active {
@@ -819,6 +821,7 @@ body:has(.sidebar.open) #sidebar-overlay {
         margin-left: 0;
         padding: 10px;
         margin-top: 80px;
+        overflow-y: auto;
     }
 
     .header-content {
@@ -1290,7 +1293,7 @@ body.dark-mode .setting-card h3 {
 .overview-grid,
 .reports-grid,
 .settings-grid {
-    overflow: visible;
+    overflow: auto;
 }
 
 .table-container {
