@@ -921,7 +921,7 @@ function renderOverallAttendanceChart() {
     }
 
     // Use only attendance records for active students in current season
-    const activeStudents = getActiveStudentsForCurrentSeason();
+    const activeStudents = getStudentsBySeason(getCurrentSeason());
     const activeStudentIds = activeStudents.map(student => student.id);
     
     const filteredAttendanceRecords = attendanceRecords.filter(record => 
@@ -1270,7 +1270,7 @@ function renderCoursePopularityChart() {
     }
     
     // Use only active students from current season
-    const activeStudents = getActiveStudentsForCurrentSeason();
+    const activeStudents = getStudentsBySeason(getCurrentSeason());
     const courseCounts = activeStudents.reduce((acc, student) => {
         const courseName = student.get('course');
         if (courseName) {
@@ -1318,7 +1318,7 @@ function renderTopStudentsChart() {
     }
 
     // Use only active students from current season
-    const activeStudents = getActiveStudentsForCurrentSeason();
+    const activeStudents = getStudentsBySeason(getCurrentSeason());
     const studentScores = activeStudents.reduce((acc, student) => {
         acc[student.id] = { name: student.get('name'), totalScore: 0, totalExams: 0 };
         return acc;
@@ -1757,7 +1757,7 @@ function renderLowPerformingAssignmentsChart() {
     }
 
     // Filter exams to only include those from active students in current season
-    const activeStudents = getActiveStudentsForCurrentSeason();
+    const activeStudents = getStudentsBySeason(getCurrentSeason());
     const activeStudentIds = activeStudents.map(student => student.id);
     
     const filteredExams = exams.filter(exam => 
@@ -1814,8 +1814,8 @@ function updateSummaryMetrics() {
     const elTeachers = document.getElementById('summaryTotalTeachers');
     
     // Use only active students from current season
-    const activeStudents = getActiveStudentsForCurrentSeason();
-    const activeCourses = getActiveCoursesForCurrentSeason();
+    const activeStudents = getStudentsBySeason(getCurrentSeason());
+    const activeCourses = getCoursesBySeason(getCurrentSeason());
     
     if (elStudents) elStudents.textContent = activeStudents.length;
     if (elCourses) elCourses.textContent = activeCourses.length;
