@@ -31,6 +31,7 @@
             <a href="#attendance">Attendance</a>
             <a href="#exams">Exams</a>
             <a href="#reports-analytics">Reports & Analytics</a>
+            <a href="#seasons">Seasons</a>
             <a href="#graduation">Graduation</a>
             <a href="#settings">Settings</a>
             <div class="sidebar-footer">
@@ -395,6 +396,50 @@
                             <p>Toggle dark theme for the dashboard interface.</p>
                             <button class="button secondary-button" id="resetPreferencesBtn">Reset Preferences</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="seasons" class="dashboard-content-section">
+                <h2>Season Management</h2>
+                <div class="card">
+                    <h3>Current Season</h3>
+                    <div class="season-info">
+                        <p>Current Season: <strong>Season <span id="currentSeasonNumber">1</span></strong></p>
+                        <p>Total Students: <strong><span id="currentSeasonStudentCount">0</span></strong></p>
+                        <p>Total Courses: <strong><span id="currentSeasonCourseCount">0</span></strong></p>
+                    </div>
+                    <div class="season-actions">
+                        <button class="button primary-button" id="advanceSeasonBtn">Advance to Next Season</button>
+                        <button class="button secondary-button" id="archiveCurrentSeasonBtn">Archive Current Season</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>Season History</h3>
+                    <div class="table-container">
+                        <table id="seasonsTable">
+                            <thead>
+                                <tr>
+                                    <th>Season</th>
+                                    <th>Students</th>
+                                    <th>Courses</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Season data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>Season Reports</h3>
+                    <div class="season-reports">
+                        <button class="button secondary-button" id="exportCurrentSeasonBtn">Export Current Season Data</button>
+                        <button class="button secondary-button" id="exportAllSeasonsBtn">Export All Seasons Summary</button>
                     </div>
                 </div>
             </div>

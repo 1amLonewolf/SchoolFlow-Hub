@@ -15,7 +15,7 @@ let attendanceRecords = [];
 let teachers = [];
 let courses = [];
 let exams = [];
-let currentSeason = 1; // Will be calculated dynamically
+let currentSeason = 1;
 
 // Chart instances
 let coursePopularityChartInstance = null;
@@ -33,94 +33,237 @@ window.editingCourseId = null;
 // ======================
 
 function getCurrentSeason() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth(); // 0-11 (January = 0)
-    
-    // Calculate season: (year - 2024) * 4 + quarter
-    // Assuming Season 1 started in January 2024
-    const baseYear = 2024;
-    const quarters = Math.floor(month / 3);
-    const seasonNumber = (year - baseYear) * 4 + quarters + 1;
-    
-    return seasonNumber;
+    return currentSeason;
 }
 
-function getSeasonDates(seasonId) {
-    // Assuming Season 1 started in January 2024
-    const baseYear = 2024;
-    const seasonOffset = seasonId - 1;
-    const yearOffset = Math.floor(seasonOffset / 4);
-    const quarter = seasonOffset % 4;
+function setCurrentSeason(seasonNumber) {
+    currentSeason = seasonNumber;
+    console.log(`[Season Management] Current season set to: ${currentSeason}`);
     
-    const year = baseYear + yearOffset;
-    const startMonth = quarter * 3; // 0, 3, 6, 9 (Jan, Apr, Jul, Oct)
+    // Update UI to reflect new season
+    updateSeasonDisplay();
     
-    const startDate = new Date(year, startMonth, 1);
-    const endDate = new Date(year, startMonth + 3, 0); // Last day of the quarter
-    
-    return { startDate, endDate };
+    // Refresh dashboard data
+    loadAllData();
 }
 
-function getActiveStudentsForCurrentSeason() {
-    const currentSeason = getCurrentSeason();
+function updateSeasonDisplay() {
+    // Update current season display in overview
+    const currentSeasonDisplay = document.getElementById('currentSeasonDisplay');
+    if (currentSeasonDisplay) {
+        currentSeasonDisplay.textContent = getCurrentSeason();
+    }
+    
+    // Update season info in seasons tab
+    const currentSeasonNumber = document.getElementById('currentSeasonNumber');
+    if (currentSeasonNumber) {
+        currentSeasonNumber.textContent = getCurrentSeason();
+    }
+    
+    // Update student and course counts
+    const activeStudents = getStudentsBySeason(getCurrentSeason());
+    const activeCourses = getCoursesBySeason(getCurrentSeason());
+    
+    const currentSeasonStudentCount = document.getElementById('currentSeasonStudentCount');
+    if (currentSeasonStudentCount) {
+        currentSeasonStudentCount.textContent = activeStudents.length;
+    }
+    
+    const currentSeasonCourseCount = document.getElementById('currentSeasonCourseCount');
+    if (currentSeasonCourseCount) {
+        currentSeasonCourseCount.textContent = activeCourses.length;
+    }
+}
+
+function getStudentsBySeason(seasonId) {
     return students.filter(student => {
-        // Check if student has seasonId field and matches current season
         const studentSeason = student.get('seasonId');
         const isActive = student.get('isActive');
         
-        // If student doesn't have seasonId, assume they're from current season for backward compatibility
+        // If student doesn't have seasonId, check if they should be included
         if (studentSeason === undefined || studentSeason === null) {
-            return isActive !== false; // If isActive is not explicitly false, consider active
+            return isActive !== false;
         }
         
-        return studentSeason === currentSeason && (isActive === true || isActive === undefined);
+        return studentSeason === seasonId && (isActive === true || isActive === undefined);
     });
 }
 
-function getActiveCoursesForCurrentSeason() {
-    const currentSeason = getCurrentSeason();
+function getCoursesBySeason(seasonId) {
     return courses.filter(course => {
-        // Check if course has seasonId field and matches current season
         const courseSeason = course.get('seasonId');
         
-        // If course doesn't have seasonId, include it for backward compatibility
+        // If course doesn't have seasonId, include it
         if (courseSeason === undefined || courseSeason === null) {
             return true;
         }
         
-        return courseSeason === currentSeason;
+        return courseSeason === seasonId;
     });
 }
 
-// Function to archive previous seasons (mark students as inactive)
-async function archivePreviousSeasons() {
-    const currentSeason = getCurrentSeason();
-    const studentsToArchive = students.filter(student => {
-        const studentSeason = student.get('seasonId');
-        const isActive = student.get('isActive') !== false; // Default to true if not set
-        
-        // Archive students from previous seasons who are still marked as active
-        return studentSeason && studentSeason < currentSeason && isActive;
+function getAllSeasons() {
+    const seasons = new Set();
+    
+    // Collect all season IDs from students
+    students.forEach(student => {
+        const seasonId = student.get('seasonId');
+        if (seasonId) {
+            seasons.add(seasonId);
+        }
     });
     
-    console.log(`[archivePreviousSeasons] Found ${studentsToArchive.length} students to archive`);
-    
-    for (const student of studentsToArchive) {
-        try {
-            const studentObj = await new Parse.Query('Student').get(student.id);
-            studentObj.set('isActive', false);
-            await studentObj.save();
-            console.log(`[archivePreviousSeasons] Archived student: ${studentObj.get('name')}`);
-        } catch (error) {
-            console.error(`[archivePreviousSeasons] Error archiving student ${student.id}:`, error);
+    // Collect all season IDs from courses
+    courses.forEach(course => {
+        const seasonId = course.get('seasonId');
+        if (seasonId) {
+            seasons.add(seasonId);
         }
+    });
+    
+    // Convert to sorted array
+    return Array.from(seasons).sort((a, b) => a - b);
+}
+
+function renderSeasonsTable() {
+    const tableBody = document.querySelector('#seasonsTable tbody');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = '';
+    
+    const seasons = getAllSeasons();
+    
+    if (seasons.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 5;
+        td.style.textAlign = 'center';
+        td.textContent = 'No season data available.';
+        tr.appendChild(td);
+        tableBody.appendChild(tr);
+        return;
     }
     
-    // Reload data after archiving
-    if (studentsToArchive.length > 0) {
-        await loadAllData();
-    }
+    seasons.forEach(seasonId => {
+        const row = tableBody.insertRow();
+        
+        const studentsInSeason = getStudentsBySeason(seasonId);
+        const coursesInSeason = getCoursesBySeason(seasonId);
+        const isCurrentSeason = seasonId === getCurrentSeason();
+        const status = isCurrentSeason ? 'Active' : 'Archived';
+        
+        const makeCell = (value) => {
+            const td = document.createElement('td');
+            td.textContent = value;
+            return td;
+        };
+        
+        row.appendChild(makeCell(`Season ${seasonId}`));
+        row.appendChild(makeCell(studentsInSeason.length));
+        row.appendChild(makeCell(coursesInSeason.length));
+        row.appendChild(makeCell(status));
+        
+        const actionsTd = document.createElement('td');
+        if (isCurrentSeason) {
+            const viewBtn = document.createElement('button');
+            viewBtn.className = 'button secondary-button';
+            viewBtn.textContent = 'View';
+            viewBtn.style.marginRight = '10px';
+            viewBtn.addEventListener('click', () => {
+                // Switch to overview tab to view this season's data
+                setCurrentSeason(seasonId);
+                switchToTab('overview');
+            });
+            actionsTd.appendChild(viewBtn);
+        } else {
+            const restoreBtn = document.createElement('button');
+            restoreBtn.className = 'button secondary-button';
+            restoreBtn.textContent = 'Restore';
+            restoreBtn.style.marginRight = '10px';
+            restoreBtn.addEventListener('click', () => {
+                setCurrentSeason(seasonId);
+                showMessage(`Season ${seasonId} is now the current season.`, 'success');
+            });
+            actionsTd.appendChild(restoreBtn);
+        }
+        row.appendChild(actionsTd);
+    });
+}
+
+async function advanceToNextSeason() {
+    const nextSeason = getCurrentSeason() + 1;
+    
+    showConfirmDialog(`Are you sure you want to advance to Season ${nextSeason}? This will archive all current students and courses.`, async () => {
+        try {
+            // Archive current season students
+            const currentStudents = getStudentsBySeason(getCurrentSeason());
+            for (const student of currentStudents) {
+                try {
+                    const studentObj = await new Parse.Query('Student').get(student.id);
+                    studentObj.set('isActive', false);
+                    await studentObj.save();
+                } catch (error) {
+                    console.error(`Error archiving student ${student.id}:`, error);
+                }
+            }
+            
+            // Set new current season
+            setCurrentSeason(nextSeason);
+            showMessage(`Advanced to Season ${nextSeason}. Previous season archived.`, 'success');
+        } catch (error) {
+            console.error('Error advancing season:', error);
+            showMessage('Error advancing season. Please try again.', 'error');
+        }
+    });
+}
+
+async function archiveCurrentSeason() {
+    showConfirmDialog(`Are you sure you want to archive Season ${getCurrentSeason()}? This will mark all current students as inactive.`, async () => {
+        try {
+            // Archive current season students
+            const currentStudents = getStudentsBySeason(getCurrentSeason());
+            let archivedCount = 0;
+            
+            for (const student of currentStudents) {
+                try {
+                    const studentObj = await new Parse.Query('Student').get(student.id);
+                    if (studentObj.get('isActive') !== false) {
+                        studentObj.set('isActive', false);
+                        await studentObj.save();
+                        archivedCount++;
+                    }
+                } catch (error) {
+                    console.error(`Error archiving student ${student.id}:`, error);
+                }
+            }
+            
+            showMessage(`Archived ${archivedCount} students from Season ${getCurrentSeason()}.`, 'success');
+            await loadAllData();
+        } catch (error) {
+            console.error('Error archiving season:', error);
+            showMessage('Error archiving season. Please try again.', 'error');
+        }
+    });
+}
+
+function switchToTab(tabId) {
+    // Switch to the specified tab
+    const sidebarLinks = document.querySelectorAll('.sidebar a');
+    const sections = document.querySelectorAll('.dashboard-content-section');
+    
+    sidebarLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === `#${tabId}`) {
+            link.classList.add('active');
+        }
+    });
+    
+    sections.forEach(section => {
+        section.style.display = 'none';
+        if (section.id === tabId) {
+            section.style.display = 'block';
+        }
+    });
 }
 
 // ======================
@@ -634,8 +777,7 @@ async function addOrUpdateCourse(event) {
         // Add season information
         course.set('seasonId', getCurrentSeason());
         course.set('startDate', new Date());
-        const seasonDates = getSeasonDates(getCurrentSeason());
-        course.set('endDate', seasonDates.endDate);
+        course.set('endDate', new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)); // 90 days from now
 
         await course.save();
         showMessage('Course saved successfully!', 'success');
@@ -1518,11 +1660,9 @@ function updateUI() {
     updateSummaryMetrics();
     updateWelcomeMessage();
     
-    // Update current season display
-    const currentSeasonDisplay = document.getElementById('currentSeasonDisplay');
-    if (currentSeasonDisplay) {
-        currentSeasonDisplay.textContent = getCurrentSeason();
-    }
+    // Update season displays
+    updateSeasonDisplay();
+    renderSeasonsTable();
 
     console.log("[updateUI] UI update complete.");
 
@@ -2044,6 +2184,31 @@ function attachEventListeners() {
     if (checkGraduationBtn) {
         checkGraduationBtn.addEventListener('click', checkGraduationEligibility);
     }
+    
+    // Seasons tab buttons
+    const advanceSeasonBtn = document.getElementById('advanceSeasonBtn');
+    if (advanceSeasonBtn) {
+        advanceSeasonBtn.addEventListener('click', advanceToNextSeason);
+    }
+    
+    const archiveCurrentSeasonBtn = document.getElementById('archiveCurrentSeasonBtn');
+    if (archiveCurrentSeasonBtn) {
+        archiveCurrentSeasonBtn.addEventListener('click', archiveCurrentSeason);
+    }
+    
+    const exportCurrentSeasonBtn = document.getElementById('exportCurrentSeasonBtn');
+    if (exportCurrentSeasonBtn) {
+        exportCurrentSeasonBtn.addEventListener('click', () => {
+            showMessage('Current season export functionality coming soon.', 'info');
+        });
+    }
+    
+    const exportAllSeasonsBtn = document.getElementById('exportAllSeasonsBtn');
+    if (exportAllSeasonsBtn) {
+        exportAllSeasonsBtn.addEventListener('click', () => {
+            showMessage('All seasons export functionality coming soon.', 'info');
+        });
+    }
 
     console.log("[attachEventListeners] All event listeners attached.");
 }
@@ -2127,13 +2292,6 @@ async function initDashboard() {
     
     // Load data after confirming we have a valid session
     await loadAllData();
-    
-    // Automatically archive previous seasons
-    try {
-        await archivePreviousSeasons();
-    } catch (error) {
-        console.error('[initDashboard] Error archiving previous seasons:', error);
-    }
 }
 
 if (document.readyState === 'loading') {
