@@ -1381,8 +1381,7 @@ function updateUI() {
 
     console.log("[updateUI] UI update complete.");
 
-    // Attach sliders for horizontally overflowed containers
-    document.querySelectorAll('.table-container').forEach(addHorizontalSlider);
+    // Additionally, enable a horizontal slider on the Students form when it overflows
     var studentsFormContainer = document.querySelector('#students .form-container');
     if (studentsFormContainer) addHorizontalSlider(studentsFormContainer);
     
@@ -1691,7 +1690,7 @@ function attachEventListeners() {
                 if (targetEl) {
                     targetEl.style.display = 'block';
                     setTimeout(() => {
-                        targetEl.querySelectorAll('.table-container').forEach(addHorizontalSlider);
+                        // Additionally, enable a horizontal slider on the Students form when it overflows
                         const studentsFormContainer = targetEl.querySelector('.form-container');
                         if (studentsFormContainer) addHorizontalSlider(studentsFormContainer);
                         
