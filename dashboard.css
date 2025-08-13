@@ -1,6 +1,47 @@
 /* dashboard.css */
 
-/* Inline-style replacements: toast message and scroll helpers */
+/* CSS Custom Properties */
+:root {
+    --ease-out-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+    --hover-duration: 0.25s;
+    --shadow-duration: 0.25s;
+    --primary-gradient: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%);
+    --primary-gradient-hover: linear-gradient(135deg, #1a5ac9 0%, #5a0ebf 100%);
+    --red-gradient: linear-gradient(135deg, #ff4d4d 0%, #c82333 100%);
+    --dark-gradient: linear-gradient(135deg, #1d4ed8 0%, #5b21b6 100%);
+    --dark-red-gradient: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
+    --sidebar-gradient: linear-gradient(180deg, #2F1857 0%, #1A237E 100%);
+    --light-green: #e8f5e9;
+    --light-red: #ffebee;
+    --light-orange: #fff3e0;
+    --green-accent: #4CAF50;
+    --red-accent: #dc3545;
+    --orange-accent: #ffc107;
+    --blue-accent: #2575fc;
+    --header-bg-light: #ffffff;
+    --header-shadow-light: rgba(0, 0, 0, 0.08);
+    --card-bg-light: #ffffff;
+    --card-shadow-light: rgba(0, 0, 0, 0.08);
+    --table-header-bg-light: #eff3f9;
+    --border-color-light: #e0e0e0;
+    --text-color-light: #333;
+    --text-color-light-secondary: #555;
+    --text-color-light-tertiary: #666;
+    --bg-color-light: #f8f9fa;
+    --input-bg-light: #fcfcfc;
+    --header-bg-dark: #2d2d2d;
+    --header-shadow-dark: rgba(0, 0, 0, 0.3);
+    --card-bg-dark: #2d2d2d;
+    --card-shadow-dark: rgba(0, 0, 0, 0.3);
+    --table-header-bg-dark: #404040;
+    --border-color-dark: #404040;
+    --text-color-dark: #e0e0e0;
+    --text-color-dark-secondary: #ccc;
+    --bg-color-dark: #1a1a1a;
+    --input-bg-dark: #404040;
+}
+
+/* Utility Classes */
 .app-message {
     position: fixed;
     top: 20px;
@@ -14,37 +55,33 @@
     font-size: 14px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-    background-color: #333; /* default */
+    background-color: #333;
 }
 .app-message.visible {
     opacity: 1;
     transform: translateY(0);
 }
-.app-message--success { background-color: #4CAF50; }
+.app-message--success { background-color: var(--green-accent); }
 .app-message--error { background-color: #f44336; }
 .app-message--warning { background-color: #ff9800; }
 
-/* Utility to enable horizontal scrolling without inline styles */
 .has-hscroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 16px; /* ensures space for slider */
+    padding-bottom: 16px;
 }
 
-
-:root {
-    --ease-out-smooth: cubic-bezier(0.22, 1, 0.36, 1);
-    --hover-duration: 0.25s;
-    --shadow-duration: 0.25s;
+.scroll-auto {
+    overflow: auto !important;
 }
 
-/* General Body and HTML Reset */
+/* Base Styles */
 body, html {
     margin: 0;
     padding: 0;
     font-family: 'Roboto', sans-serif;
-    background-color: #f4f7f6;
-    color: #333;
+    background-color: var(--bg-color-light);
+    color: var(--text-color-light);
     line-height: 1.6;
     height: 100%;
     width: 100%;
@@ -52,121 +89,73 @@ body, html {
     position: relative;
 }
 
-/* --- Login Page Styles (Included for reference, actual loginPage.css should handle these) --- */
-/* These styles are kept here as a reference to the desired "vibe" */
-.login-container {
+/* Layout */
+.dashboard {
     display: flex;
-    justify-content: center;
-    align-items: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); /* Login page gradient */
 }
 
-.login-box {
-    background-color: #ffffff;
-    padding: 40px;
+.main-content {
+    flex: 1;
+    padding: 30px;
+    background-color: var(--bg-color-light);
+    overflow-y: auto;
+    margin-left: 250px;
+    height: 100vh;
+    box-sizing: border-box;
+    transition: all 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.header-content {
+    background-color: var(--header-bg-light);
+    padding: 20px 25px;
     border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    text-align: center;
-    width: 100%;
-    max-width: 400px;
-    box-sizing: border-box; /* Include padding in width */
-    animation: fadeIn 1s ease-out; /* Fade in animation for the box */
+    box-shadow: 0 4px 15px var(--header-shadow-light);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
-
-.login-box h2 {
-    color: #333;
-    margin-bottom: 30px;
+.header-content h1 {
+    margin: 0;
+    color: var(--text-color-light);
+    font-size: 1.8rem;
     font-weight: 700;
 }
-
-.input-group {
-    margin-bottom: 20px;
-    text-align: left;
-}
-
-.input-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: #555;
-    font-weight: 500;
-}
-
-.input-group input[type="text"],
-.input-group input[type="password"] {
-    width: calc(100% - 20px); /* Adjust for padding */
-    padding: 12px 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 1rem;
-    box-sizing: border-box;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.input-group input[type="text"]:focus,
-.input-group input[type="password"]:focus {
-    border-color: #2575fc; /* Primary blue focus */
-    box-shadow: 0 0 8px rgba(37, 117, 252, 0.2);
-    outline: none;
-}
-
-.login-button {
-    background-color: #4CAF50; /* Green from login page */
-    color: white;
-    padding: 15px 30px;
-    border: none;
-    border-radius: 5px;
+.burger {
     cursor: pointer;
-    font-size: 1.1rem;
-    font-weight: 600;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    width: 100%;
-    box-sizing: border-box;
+    font-size: 1.8rem;
+    color: #2F1857;
+    user-select: none;
+    display: none;
+    background: none;
+    border: none;
+    line-height: 1;
+}
+.burger:focus-visible {
+    outline: 3px solid var(--blue-accent);
+    outline-offset: 2px;
 }
 
-.login-button:hover {
-    background-color: #45a049; /* Darker green on hover */
-    transform: translateY(-2px);
-}
-
-.message {
-    font-weight: bold;
-    margin-top: 20px;
-    padding: 10px;
-    border-radius: 5px;
-    text-align: center;
-    opacity: 0;
-    transition: opacity 0.5s ease-in-out;
+.admin-welcome {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-weight: 500;
+    color: #2F1857;
     background-color: #f0f0f0;
-    color: #333;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    width: calc(100% - 20px);
-    box-sizing: border-box;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.message.success {
-    background-color: #4CAF50; /* Green */
-    color: white;
-}
-
-.message.error {
-    background-color: #f44336; /* Red */
-    color: white;
-}
-
-
-/* --- Dashboard Layout --- */
-.dashboard-container {
-    display: flex;
-    height: 100vh; /* Ensures 100% viewport height */
+    padding: 8px 15px;
+    border-radius: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
 /* Sidebar */
 .sidebar {
     width: 250px;
-    background: linear-gradient(180deg, #2F1857 0%, #1A237E 100%);
+    background: var(--sidebar-gradient);
     color: white;
     padding: 20px;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
@@ -182,40 +171,29 @@ body, html {
     transition: transform 0.3s ease-in-out;
 }
 
-.sidebar .logo {
+.sidebar-brand {
     text-align: center;
     margin-bottom: 30px;
     padding-bottom: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* Slightly stronger separator */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.sidebar .logo h3 {
-    margin: 0;
-    font-size: 1.9rem;
-    font-weight: 700;
-    color: #ffffff; /* Pure white for logo */
-}
-
-.sidebar nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.sidebar nav ul li {
-    margin-bottom: 10px;
+.sidebar-logo {
+    width: 96px;
+    height: 96px;
 }
 
 .sidebar a {
-    color: #fff; /* White text on gradient */
+    color: #fff;
     text-decoration: none;
     padding: 12px 15px;
-    display: block; /* Make the whole area clickable */
+    display: block;
     border-radius: 8px;
-    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.25s var(--ease-out-smooth), box-shadow 0.25s var(--ease-out-smooth);
     font-weight: 600;
-    background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%);
+    background: var(--primary-gradient);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    margin-bottom: 10px;
 }
 
 .sidebar a:hover {
@@ -229,107 +207,38 @@ body, html {
 
 .sidebar-footer {
     margin-top: auto;
-    padding-top: 35px; /* Increased padding-top for more space */
-    padding-bottom: 25px; /* Increased padding-bottom for more space */
+    padding-top: 35px;
+    padding-bottom: 25px;
     border-top: 1px solid rgba(255, 255, 255, 0.15);
     text-align: center;
 }
 
-.sidebar-footer .logout-btn {
+.logout-btn {
     border-radius: 8px;
     text-decoration: none;
-    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.25s var(--ease-out-smooth), box-shadow 0.25s var(--ease-out-smooth);
     display: inline-block;
     font-weight: 600;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    background: var(--red-gradient);
+    color: #fff;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    border: none;
+    cursor: pointer;
 }
 
-.sidebar-footer .logout-btn:hover {
+.logout-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Main Content Area */
-.dashboard {
-    display: flex;
-    height: 100vh;
-    width: 100%;
-    position: relative;
-    overflow: hidden;
-}
-
-.main-content {
-    flex: 1;
-    padding: 30px;
-    background-color: #f8f9fa;
-    overflow-y: auto;
-    margin-left: 250px;
-    height: 100vh;
-    box-sizing: border-box;
-    transition: all 0.3s ease-in-out;
-    display: flex;
-    flex-direction: column;
-}
-
-.main-header {
-    background-color: #ffffff;
-    padding: 25px 30px; /* Increased padding */
-    border-radius: 10px; /* Slightly more rounded corners */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Softer, more diffuse shadow */
-    margin-bottom: 30px; /* Increased margin */
-    display: flex; /* Use flex to align hamburger and title */
-    align-items: center;
-    justify-content: space-between; /* Space between hamburger/title */
-    position: relative; /* For hamburger button positioning */
-}
-
-.main-header h1 {
-    margin: 0;
-    color: #333;
-    font-size: 2rem; /* Larger heading */
-    font-weight: 700;
-    flex-grow: 1; /* Allow title to take available space */
-    text-align: center; /* Center the title by default */
-}
-
-/* Welcome Message */
-.admin-welcome {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    font-weight: 500;
-    color: #2F1857;
-    background-color: #f0f0f0;
-    padding: 8px 15px;
-    border-radius: 20px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-/* Hamburger Button Styling */
-.hamburger-btn {
-    background: none;
-    border: none;
-    font-size: 1.8rem; /* Size of the icon */
-    color: #2F1857; /* Matches sidebar logo color */
-    cursor: pointer;
-    padding: 5px 10px;
-    display: none; /* Hidden by default on large screens */
-    z-index: 100; /* Ensure it's above other elements if positioned absolutely */
-    transition: color 0.2s ease;
-    line-height: 1; /* Align icon vertically */
-}
-
-.hamburger-btn:hover {
-    color: #2575fc; /* Primary blue on hover */
-}
-
-
-/* Dashboard Content Sections (shared styles) */
+/* Dashboard Sections */
 .dashboard-content-section {
-    background-color: #ffffff;
+    background-color: var(--card-bg-light);
     padding: 30px;
     border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 15px var(--card-shadow-light);
     margin-bottom: 30px;
     display: none;
     overflow: visible;
@@ -339,7 +248,7 @@ body, html {
 
 .dashboard-content-section.active {
     display: block;
-    animation: fadeIn 0.5s ease-out; /* Fade-in effect */
+    animation: fadeIn 0.5s ease-out;
 }
 
 @keyframes fadeIn {
@@ -348,371 +257,221 @@ body, html {
 }
 
 .dashboard-content-section h2 {
-    color: #2F1857; /* Deep indigo for section headings */
+    color: #2F1857;
     margin-top: 0;
-    margin-bottom: 25px; /* Increased margin */
-    border-bottom: 2px solid #eee; /* Slightly thicker separator */
-    padding-bottom: 15px; /* Increased padding */
-    font-size: 2.2rem; /* Larger heading */
+    margin-bottom: 25px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 15px;
+    font-size: 2.2rem;
     font-weight: 700;
 }
 
-/* Cards (general style for content blocks within sections) */
+/* Cards */
 .card {
-    background-color: #ffffff;
-    padding: 25px; /* Consistent padding */
-    border-radius: 10px; /* Consistent rounded corners */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Consistent shadow */
+    background-color: var(--card-bg-light);
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px var(--card-shadow-light);
     margin-bottom: 25px;
-    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1); /* Added hover effect */
+    transition: transform 0.25s var(--ease-out-smooth), box-shadow 0.25s var(--ease-out-smooth);
 }
 
 .card:hover {
-    transform: translateY(-3px); /* Lift effect on hover */
+    transform: translateY(-3px);
 }
 
 .card h3 {
-    color: #333;
+    color: var(--text-color-light);
     margin-top: 0;
     margin-bottom: 20px;
-    font-size: 1.7rem; /* Larger heading */
+    font-size: 1.7rem;
     font-weight: 600;
 }
 
-/* Dashboard Overview Specifics */
-.stats-grid, .quick-actions {
-    display: flex;
-    gap: 25px; /* Increased gap */
-    margin-top: 25px;
-    flex-wrap: wrap;
-}
-
-/* Stat Cards */
-.stat-card {
-    flex: 1;
-    min-width: 250px; /* Slightly larger min-width */
-    text-align: center;
-    padding: 30px; /* Increased padding */
-    border-radius: 10px; /* Consistent rounded corners */
-    border-left: 6px solid; /* Thicker accent border */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-}
-
-/* Specific colors for stat cards */
-.stat-card.students {
-    background-color: #e8f5e9; /* Light green */
-    border-left-color: #4CAF50; /* Green accent */
-}
-
-.stat-card.absences {
-    background-color: #ffebee; /* Light red */
-    border-left-color: #dc3545; /* Red accent */
-}
-
-.stat-card.assignments {
-    background-color: #fff3e0; /* Light orange */
-    border-left-color: #ffc107; /* Orange accent */
-}
-
-.stat-card p {
-    margin: 0;
-    font-size: 1.2rem;
-    color: #555;
-}
-
-.stat-card .count {
-    font-size: 3.5rem; /* Larger count */
-    font-weight: 800; /* Bolder */
-    color: #333;
-    margin-top: 15px; /* Increased margin */
-}
-
-/* --- General Button Styling (used across dashboard) --- */
-.button, .action-button, .submit-button, .cancel-button, .edit-button, .delete-button {
-    padding: 12px 25px; /* Standard padding for all buttons */
-    border: none;
-    border-radius: 8px; /* More rounded buttons */
-    cursor: pointer;
-    font-size: 1.05rem;
-    font-weight: 600;
-    transition: background-color 0.25s ease, transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1), filter 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-    margin-top: 15px; /* Standard spacing above buttons */
-    margin-right: 15px; /* Spacing between buttons */
-    display: inline-block; /* Allows side-by-side layout */
-    text-decoration: none; /* Ensure no underline on anchor-buttons */
-    text-align: center;
-    box-sizing: border-box; /* Crucial for consistent sizing */
-    color: #fff;
-}
-
-.button:last-child,
-.action-button:last-child,
-.submit-button:last-child,
-.cancel-button:last-child {
-    margin-right: 0;
-}
-
-.button:hover, .action-button:hover, .submit-button:hover, .cancel-button:hover, .edit-button:hover, .delete-button:hover {
-    transform: translateY(-2px); /* Consistent lift on hover */
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* More pronounced shadow on hover */
-}
-
-/* Primary Action Buttons (Quick Actions, Save, Load, etc.) */
-.action-button, .submit-button, .primary-button, .button {
-    background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%); /* Blue-to-purple gradient */
-    color: #fff;
-    border: none; /* Ensure no border interferes with gradient */
-}
-
-.action-button:hover, .submit-button:hover, .primary-button:hover {
-    background: linear-gradient(135deg, #1a5ac9 0%, #5a0ebf 100%); /* Slightly darker gradient on hover */
-}
-
-/* Secondary Action Buttons (e.g., Cancel, Clear Form, Change Password) */
-.cancel-button, .secondary-button {
-    background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%); /* Match primary gradient */
-    color: #fff;
-}
-
-.cancel-button:hover, .secondary-button:hover {
-    background-color: #5a6268; /* Darker grey on hover */
-}
-
-/* Specific button colors for student table actions */
-.edit-button {
-    background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%);
-    color: #fff;
-    padding: 10px 18px; /* Slightly smaller padding for table buttons */
-    font-size: 0.95rem;
-    margin-right: 8px; /* Smaller margin */
-}
-.edit-button:hover {
-    filter: brightness(0.95);
-}
-
-.delete-button, .logout-btn {
-    background: linear-gradient(135deg, #ff4d4d 0%, #c82333 100%); /* Red gradient */
-    color: #fff;
-    padding: 10px 18px;
-    font-size: 0.95rem;
-}
-.delete-button:hover, .logout-btn:hover {
-    filter: brightness(0.95);
-}
-
-
-/* Form Styles (general across sections) */
-.form-group {
-    margin-bottom: 20px; /* Increased spacing */
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: #444;
-}
-
-.form-group input[type="text"],
-.form-group input[type="number"],
-.form-group input[type="tel"],
-.form-group input[type="date"],
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 12px 15px;
-    border: 1px solid #ccc;
-    border-radius: 8px; /* Consistent rounded corners */
-    box-sizing: border-box;
-    font-size: 1rem;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    background-color: #fcfcfc; /* Slightly off-white input background */
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-    border-color: #2575fc; /* Primary blue focus */
-    outline: none;
-    box-shadow: 0 0 0 4px rgba(37, 117, 252, 0.25); /* Larger, softer focus glow */
-}
-
-/* Mobile Responsive Layout */
-@media screen and (max-width: 768px) {
-    .sidebar {
-        transform: translateX(-100%);
-    }
-    
-    .sidebar.active {
-        transform: translateX(0);
-    }
-    
-    .main-content {
-        margin-left: 0;
-        padding: 20px;
-    }
-
-    .burger {
-        display: block;
-    }
-    
-    .dashboard-content-section {
-        padding: 20px;
-    }
-}
-
-/* Custom date input styling for calendar icon */
-.input-date-custom::-webkit-inner-spin-button,
-.input-date-custom::-webkit-calendar-picker-indicator {
-    opacity: 1;
-    display: block;
-    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="%232575fc"><path d="M19 4h-3V2h-2v2h-4V2H8v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM12 11h-2v2H9v-2H7v2h2v2h1v-2h2v-2h-1z"/></svg>') no-repeat center center;
-    background-size: 24px; /* Larger icon */
-    width: 28px; /* Larger click area */
-    height: 28px;
-    cursor: pointer;
-    /* Filter to match the primary blue color */
-    filter: invert(39%) sepia(87%) saturate(2000%) hue-rotate(190deg) brightness(90%) contrast(100%);
-}
-
-
-/* Unified Form Controls: apply when markup lacks .form-group wrappers */
-.dashboard-content-section .form-container form {
+/* Forms */
+.form-container form {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 20px;
     align-items: start;
 }
 
-/* Ensure buttons span full width */
-.dashboard-content-section .form-container .form-actions {
+.form-actions {
     grid-column: 1 / -1;
     display: flex;
     gap: 15px;
     flex-wrap: wrap;
 }
 
-.dashboard-content-section .form-container .form-actions button {
+.form-actions button {
     margin: 0;
 }
 
-/* Create form field groups */
-.dashboard-content-section .form-container .form-field {
+.form-field {
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
 
-.dashboard-content-section .form-container label {
+.form-container label {
     display: block;
     font-weight: 500;
-    color: #444;
+    color: var(--text-color-light-secondary);
     margin-top: 6px;
 }
 
-.dashboard-content-section .form-container input[type="text"],
-.dashboard-content-section .form-container input[type="number"],
-.dashboard-content-section .form-container input[type="tel"],
-.dashboard-content-section .form-container input[type="email"],
-.dashboard-content-section .form-container input[type="date"],
-.dashboard-content-section .form-container input[type="file"],
-.dashboard-content-section .form-container select,
-.dashboard-content-section .form-container textarea {
+.form-container input[type="text"],
+.form-container input[type="number"],
+.form-container input[type="tel"],
+.form-container input[type="email"],
+.form-container input[type="date"],
+.form-container input[type="file"],
+.form-container select,
+.form-container textarea {
     width: 100%;
     padding: 12px 15px;
     border: 1px solid #ccc;
     border-radius: 8px;
     box-sizing: border-box;
     font-size: 1rem;
-    background-color: #fcfcfc;
+    background-color: var(--input-bg-light);
     transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.2s ease;
 }
 
-.dashboard-content-section .form-container textarea {
+.form-container textarea {
     min-height: 110px;
     resize: vertical;
 }
 
-/* Space between each label and its control */
-.dashboard-content-section .form-container label + input,
-.dashboard-content-section .form-container label + select,
-.dashboard-content-section .form-container label + textarea {
+.form-container label + input,
+.form-container label + select,
+.form-container label + textarea {
     margin-top: 6px;
 }
 
-/* Focus styles */
-.dashboard-content-section .form-container input:focus,
-.dashboard-content-section .form-container select:focus,
-.dashboard-content-section .form-container textarea:focus {
-    border-color: #2575fc;
+.form-container input:focus,
+.form-container select:focus,
+.form-container textarea:focus {
+    border-color: var(--blue-accent);
     outline: none;
     box-shadow: 0 0 0 4px rgba(37, 117, 252, 0.25);
 }
 
-/* Placeholder color */
-.dashboard-content-section .form-container input::placeholder,
-.dashboard-content-section .form-container textarea::placeholder {
+.form-container input::placeholder,
+.form-container textarea::placeholder {
     color: #999;
 }
 
-/* File input adjustments */
-.dashboard-content-section .form-container input[type="file"] {
+.form-container input[type="file"] {
     padding: 10px;
     background-color: #fff;
 }
 
-/* Dark mode overrides for file input */
-body.dark-mode .dashboard-content-section .form-container input[type="file"] {
-    background-color: #404040;
+/* Buttons */
+.button, .primary-button, .secondary-button, .edit-button, .delete-button, .cancel-button {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.05rem;
+    font-weight: 600;
+    transition: background-color 0.25s ease, transform 0.25s var(--ease-out-smooth), box-shadow 0.25s var(--ease-out-smooth), filter 0.25s var(--ease-out-smooth);
+    margin-top: 15px;
+    margin-right: 15px;
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+    box-sizing: border-box;
+    color: #fff;
 }
 
-/* Bulk upload section tweaks */
-.bulk-upload-section h3 { margin-top: 25px; }
-.bulk-upload-section #uploadStatus { margin-top: 10px; color: #555; }
+.button:last-child,
+.primary-button:last-child,
+.secondary-button:last-child,
+.edit-button:last-child,
+.delete-button:last-child,
+.cancel-button:last-child {
+    margin-right: 0;
+}
 
-/* Tables (general styling) */
+.button:hover, .primary-button:hover, .secondary-button:hover, .edit-button:hover, .delete-button:hover, .cancel-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.primary-button, .button {
+    background: var(--primary-gradient);
+    color: #fff;
+    border: none;
+}
+
+.primary-button:hover, .button:hover {
+    background: var(--primary-gradient-hover);
+}
+
+.secondary-button, .cancel-button {
+    background: var(--primary-gradient);
+    color: #fff;
+}
+
+.secondary-button:hover, .cancel-button:hover {
+    background-color: #5a6268;
+}
+
+.edit-button {
+    background: var(--primary-gradient);
+    color: #fff;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    margin-right: 8px;
+}
+
+.edit-button:hover {
+    filter: brightness(0.95);
+}
+
+.delete-button {
+    background: var(--red-gradient);
+    color: #fff;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+}
+
+.delete-button:hover {
+    filter: brightness(0.95);
+}
+
+/* Tables */
 .table-container {
     background: white;
     border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 15px var(--card-shadow-light);
     padding: 20px;
     margin-top: 25px;
     overflow: auto;
     max-height: calc(100vh - 500px);
 }
 
-.table-responsive {
-    width: 100%;
-    overflow-x: auto;
-    margin-top: 25px;
-}
-
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
-    background-color: #ffffff; /* White table background */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Consistent shadow */
-    border-radius: 10px; /* Consistent rounded corners */
-    overflow: hidden; /* Ensures border-radius applies to table content */
+    background-color: var(--card-bg-light);
+    box-shadow: 0 4px 15px var(--card-shadow-light);
+    border-radius: 10px;
+    overflow: hidden;
 }
 
 table thead {
-    background-color: #eff3f9; /* Lighter blue-grey for header */
-    color: #333;
+    background-color: var(--table-header-bg-light);
+    color: var(--text-color-light);
 }
 
 table th, table td {
-    padding: 15px 20px; /* Increased padding */
+    padding: 15px 20px;
     text-align: left;
-    border-bottom: 1px solid #e0e0e0; /* Softer border */
-    color: #333;
+    border-bottom: 1px solid var(--border-color-light);
+    color: var(--text-color-light);
 }
 
 table th {
@@ -722,198 +481,76 @@ table th {
 }
 
 table tr:hover {
-    background-color: #fcfdfe; /* Very subtle hover effect */
+    background-color: #fcfdfe;
 }
 
-/* Specific table actions column */
 table td.actions {
     white-space: nowrap;
 }
 
-@media (min-width: 769px) {
-    /* Enable horizontal scrolling for wide tables on larger screens */
-    .table-container table {
-        width: max-content; /* grow by content width */
-        min-width: 100%;    /* but never less than container */
-    }
-    .table-container th,
-    .table-container td {
-        white-space: nowrap; /* prevent squeezing; allow horizontal scroll */
-    }
+/* Charts */
+.overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
 }
 
-/* Ensure each section can scroll horizontally if content overflows */
-.main-content,
-.dashboard-content-section {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
-}
-
-/* Horizontal slider control for overflowing content */
-.h-scroll-slider {
-    position: sticky;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding-top: 8px;
-    background: transparent;
-    z-index: 5;
-    pointer-events: none; /* do not block clicks to content below */
-}
-.h-scroll-slider input[type="range"] {
-    width: 100%;
-    height: 6px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: #e5e7eb; /* neutral track */
-    border-radius: 9999px;
-    outline: none;
-    pointer-events: auto; /* keep slider interactive */
-}
-/* WebKit thumb */
-.h-scroll-slider input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    cursor: pointer;
-    border: none;
-}
-/* Firefox */
-.h-scroll-slider input[type="range"]::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    cursor: pointer;
-    border: none;
-}
-
-/* Provide a little extra bottom space so slider doesn't overlap content */
-.dashboard-content-section { padding-bottom: 22px; }
-.table-container { padding-bottom: 10px; }
-
-
-/* Attendance Management Specifics */
-.attendance-controls, .grades-controls, .add-assignment-controls {
+.chart-container {
+    min-height: 320px;
+    height: 360px;
     display: flex;
-    gap: 20px; /* Consistent gap */
-    margin-bottom: 25px; /* Increased margin */
-    flex-wrap: wrap;
-    align-items: flex-end;
+    align-items: stretch;
+    justify-content: stretch;
 }
 
-.attendance-controls .form-group, .grades-controls .form-group, .add-assignment-controls .form-group {
-    flex: 1;
-    min-width: 200px; /* Adjusted min-width */
-    margin-bottom: 0;
+.chart-container > canvas {
+    width: 100%;
+    height: 100%;
 }
 
-.attendance-controls .form-group label, .grades-controls .form-group label, .add-assignment-controls .form-group label {
-    margin-bottom: 8px; /* Consistent label spacing */
+#reports-analytics .chart-card {
+    min-height: 320px;
+    height: 340px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
 }
 
-.attendance-controls input[type="date"],
-.attendance-controls select,
-.grades-controls select,
-.add-assignment-controls select,
-.add-assignment-controls input[type="text"],
-.add-assignment-controls input[type="number"] {
-    padding: 10px 12px; /* Slightly more padding */
-    border-radius: 8px; /* Consistent rounded corners */
-}
-
-.attendance-controls button,
-.grades-controls button,
-.add-assignment-controls button {
-    height: 45px; /* Match input height for better alignment */
-    padding: 0 20px; /* Adjusted padding */
-    margin-top: 0; /* Align with inputs */
-    margin-right: 0; /* Removed extra margin if it was stacking */
-}
-
-#currentAttendanceDateDisplay, #currentGradesStudentName {
-    font-size: 1.3rem; /* Larger text */
-    font-weight: bold;
-    color: #2575fc; /* Primary blue */
-    margin-top: 15px;
+#reports-analytics .chart-card canvas {
+    min-height: 260px;
+    height: 260px !important;
+    width: 100% !important;
+    max-width: 100%;
     display: block;
+    margin: 0 auto;
 }
 
-
-/* Grades Management Specifics */
-/* Announcements Specifics */
-.add-announcement-form .form-group {
-    margin-bottom: 20px;
-}
-
-.add-announcement-form textarea {
-    min-height: 120px; /* Taller textarea */
-    border-radius: 8px;
-}
-
-.announcements-list-container {
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    gap: 25px;
     margin-top: 25px;
+    flex-wrap: wrap;
 }
 
-.announcement-item {
-    border: 1px solid #e0e0e0;
-    border-radius: 10px; /* Consistent rounded corners */
-    padding: 20px;
-    margin-bottom: 20px;
-    background-color: #fefefe;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Softer shadow */
-    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.announcement-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.announcement-item h4 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    color: #6a11cb; /* Primary purple from login */
-    font-size: 1.4rem;
-    font-weight: 600;
-}
-
-.announcement-item p {
-    margin-bottom: 12px;
-    color: #444;
-    line-height: 1.7;
-}
-
-.announcement-item small {
-    display: block;
-    text-align: right;
-    color: #777;
-    font-size: 0.9rem;
-}
-
-
-/* Reports & Analytics Specifics */
+/* Reports & Analytics */
 .reports-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Adjusted min-width */
-    gap: 25px; /* Consistent gap */
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 25px;
     margin-top: 25px;
 }
 
 .report-card {
-    background-color: #ffffff;
-    padding: 30px; /* Increased padding */
+    background-color: var(--card-bg-light);
+    padding: 30px;
     border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Consistent shadow */
+    box-shadow: 0 4px 15px var(--card-shadow-light);
 }
 
 .report-card h3 {
-    color: #333;
+    color: var(--text-color-light);
     margin-top: 0;
     margin-bottom: 20px;
     border-bottom: 1px solid #eee;
@@ -924,7 +561,7 @@ table td.actions {
 
 .report-content p, .report-content ul, .report-content ol {
     margin-bottom: 10px;
-    color: #666;
+    color: var(--text-color-light-tertiary);
     line-height: 1.6;
 }
 
@@ -936,8 +573,7 @@ table td.actions {
     margin-bottom: 6px;
 }
 
-
-/* Settings Specifics */
+/* Settings */
 .settings-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -946,14 +582,14 @@ table td.actions {
 }
 
 .setting-card {
-    background-color: #ffffff;
+    background-color: var(--card-bg-light);
     padding: 30px;
     border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 15px var(--card-shadow-light);
 }
 
 .setting-card h3 {
-    color: #333;
+    color: var(--text-color-light);
     margin-top: 0;
     margin-bottom: 20px;
     border-bottom: 1px solid #eee;
@@ -962,44 +598,61 @@ table td.actions {
     font-weight: 600;
 }
 
-/* Exams Specifics */
-#exams .card {
-    margin-bottom: 25px;
-}
-
-#exams .card h3 {
-    margin-top: 0;
-    color: #2F1857;
-}
-
-#exams .card p {
-    color: #555;
-    line-height: 1.6;
-}
-
-#examTable {
+.switch {
+    position: relative;
+    display: flex;
+    align-items: center;
     width: 100%;
-    border-collapse: collapse;
     margin-top: 15px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-color-light-secondary);
 }
 
-#examTable th,
-#examTable td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #e0e0e0;
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
 }
 
-#examTable th {
-    background-color: #eff3f9;
-    font-weight: 600;
+.slider {
+    position: relative;
+    flex-shrink: 0;
+    width: 55px;
+    height: 30px;
+    background-color: #ccc;
+    transition: background-color .4s;
+    border-radius: 30px;
+    margin-left: auto;
 }
 
-#examTable tr:hover {
-    background-color: #f5f5f5;
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: transform .4s;
+    border-radius: 50%;
 }
 
-/* Graduation Specifics */
+input:checked + .slider {
+    background-color: var(--blue-accent);
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px var(--blue-accent);
+}
+
+input:checked + .slider:before {
+    transform: translateX(25px);
+}
+
+/* Graduation */
 #graduation .card {
     margin-bottom: 25px;
 }
@@ -1028,11 +681,11 @@ table td.actions {
 #eligibleStudentsTable td {
     padding: 12px 15px;
     text-align: left;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border-color-light);
 }
 
 #eligibleStudentsTable th {
-    background-color: #eff3f9;
+    background-color: var(--table-header-bg-light);
     font-weight: 600;
 }
 
@@ -1040,92 +693,77 @@ table td.actions {
     background-color: #f5f5f5;
 }
 
-.setting-content label {
-    display: block;
-    margin-bottom: 10px;
-    font-weight: 500;
-    color: #555;
+/* Horizontal Scroll Slider */
+.h-scroll-slider {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding-top: 8px;
+    background: transparent;
+    z-index: 5;
+    pointer-events: none;
 }
 
-.setting-content select {
+.h-scroll-slider input[type="range"] {
     width: 100%;
-    padding: 10px;
-    margin-bottom: 20px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-sizing: border-box;
-    font-size: 1rem;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    outline: none;
+    pointer-events: auto;
 }
 
-.setting-content p {
-    margin-bottom: 10px;
-    color: #666;
-}
-
-/* Toggle Switch Styles */
-.switch {
-    position: relative;
-    display: flex;
-    align-items: center;
-    width: 100%;
-    margin-top: 15px;
-    margin-bottom: 20px;
-    cursor: pointer;
-    font-size: 1rem; /* Adjust font size for label */
-    font-weight: 500;
-    color: #555;
-}
-
-/* Hide default HTML checkbox */
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-/* The slider (the actual toggle track) */
-.slider {
-    position: relative;
-    flex-shrink: 0;
-    width: 55px; /* Slightly larger toggle */
-    height: 30px;
-    background-color: #ccc;
-    transition: background-color .4s;
-    border-radius: 30px;
-    margin-left: auto; /* Push slider to the right */
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 22px; /* Size of the circle */
-    width: 22px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: transform .4s;
+.h-scroll-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
+    background: var(--primary-gradient);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    cursor: pointer;
+    border: none;
 }
 
-input:checked + .slider {
-    background-color: #2575fc; /* Primary blue when checked */
+.h-scroll-slider input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    cursor: pointer;
+    border: none;
 }
 
-input:focus + .slider {
-    box-shadow: 0 0 1px #2575fc;
+.dashboard-content-section { padding-bottom: 22px; }
+.table-container { padding-bottom: 10px; }
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1500;
+    display: none;
+    opacity: 1;
 }
 
-input:checked + .slider:before {
-    transform: translateX(25px); /* Move circle to the right */
+body:has(.sidebar.open) #sidebar-overlay {
+    display: block;
 }
 
-
-/* --- Responsive Adjustments --- */
-
-/* Desktop to Tablet transition */
+/* Responsive Adjustments */
 @media (max-width: 992px) {
     .sidebar {
-        width: 180px; /* Slightly narrower sidebar */
+        width: 180px;
         padding: 15px;
     }
 
@@ -1134,12 +772,12 @@ input:checked + .slider:before {
         padding: 20px;
     }
 
-    .main-header {
+    .header-content {
         padding: 20px;
         margin-bottom: 20px;
     }
 
-    .main-header h1 {
+    .header-content h1 {
         font-size: 1.5rem;
     }
 
@@ -1164,26 +802,11 @@ input:checked + .slider:before {
         margin-bottom: 15px;
     }
 
-    .stats-grid, .quick-actions {
+    .quick-actions {
         gap: 15px;
     }
 
-    .stat-card {
-        min-width: 200px;
-        padding: 20px;
-    }
-
-    .stat-card .count {
-        font-size: 2.8rem;
-    }
-
-    .quick-actions .button {
-        min-width: 150px;
-        font-size: 1rem;
-        padding: 12px 8px;
-    }
-
-    .button, .action-button, .submit-button, .cancel-button, .primary-button, .secondary-button {
+    .button, .primary-button, .secondary-button {
         padding: 10px 20px;
         font-size: 0.95rem;
         margin-right: 10px;
@@ -1194,11 +817,7 @@ input:checked + .slider:before {
         font-size: 0.85rem;
     }
 
-    .form-group {
-        margin-bottom: 15px;
-    }
-
-    .form-group input, .form-group select, .form-group textarea {
+    .form-container input, .form-container select, .form-container textarea {
         padding: 10px 12px;
     }
 
@@ -1207,35 +826,9 @@ input:checked + .slider:before {
         font-size: 0.95rem;
     }
 
-    .attendance-controls, .grades-controls, .add-assignment-controls {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-    }
-
-    .attendance-controls .form-group, .grades-controls .form-group, .add-assignment-controls .form-group {
-        min-width: unset;
-        width: 100%;
-    }
-
-    .attendance-controls button, .grades-controls button, .add-assignment-controls button {
-        width: 100%;
-        margin-top: 5px;
-        margin-right: 0;
-        height: auto;
-        padding: 10px;
-    }
-
     .reports-grid, .settings-grid {
         grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
         gap: 15px;
-    }
-
-    .setting-card .button {
-        display: block;
-        width: 100%;
-        margin-right: 0;
-        margin-bottom: 10px;
     }
 
     .switch {
@@ -1243,119 +836,99 @@ input:checked + .slider:before {
     }
 }
 
-/* Tablet to Mobile transition (Hamburger Menu Behavior) */
 @media (max-width: 768px) {
     .sidebar {
-        /* Sidebar becomes an off-canvas overlay */
-        width: 250px; /* Keep a fixed width for the overlay */
-        transform: translateX(-100%); /* Start off-screen to the left */
+        width: 250px;
+        transform: translateX(-100%);
         position: fixed;
-        height: 100vh; /* Full viewport height */
+        height: 100vh;
         top: 0;
         left: 0;
-        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.3); /* More prominent shadow when open */
+        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.3);
         border-radius: 0;
-        z-index: 2000; /* Ensure it's above everything else */
-        /* Transition already defined on .sidebar */
+        z-index: 2000;
     }
 
-    /* Class added by JS when sidebar is open */
     .sidebar.open {
-        transform: translateX(0); /* Slide into view */
+        transform: translateX(0);
     }
 
     .main-content {
-        margin-left: 0; /* No offset needed for main content on mobile */
-        padding: 10px; /* Adjusted padding for smaller screens */
-        /* Margin-top to account for fixed header below */
-        margin-top: 80px; /* This value will be based on header height */
+        margin-left: 0;
+        padding: 10px;
+        margin-top: 80px;
     }
 
-    .main-header {
-        position: fixed; /* Header becomes fixed at the top */
+    .header-content {
+        position: fixed;
         top: 0;
         left: 0;
-        width: 100%; /* Full width */
-        z-index: 1000; /* Ensure header is above main content */
-        border-radius: 0; /* No border-radius on fixed top bar */
-        justify-content: flex-start; /* Align items to the start */
-        padding: 15px 20px; /* Adjusted padding for header */
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); /* Header shadow */
+        width: 100%;
+        z-index: 1000;
+        border-radius: 0;
+        justify-content: flex-start;
+        padding: 15px 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
     }
 
-    .main-header h1 {
-        text-align: left; /* Align title to left, next to hamburger */
-        margin-left: 15px; /* Spacing between hamburger and title */
-        font-size: 1.6rem; /* Adjust title size */
+    .header-content h1 {
+        text-align: left;
+        margin-left: 15px;
+        font-size: 1.6rem;
     }
 
-    .hamburger-btn {
-        display: block; /* Show hamburger button on mobile */
-        order: -1; /* Place button first in flex order */
+    .burger {
+        display: block;
+        order: -1;
     }
 
-    /* Sidebar Overlay (appears when sidebar is open) */
     .sidebar-overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.6); /* Semi-transparent black overlay */
-        z-index: 1500; /* Between sidebar and main content */
-        display: none; /* Hidden by default */
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 1500;
+        display: none;
         transition: opacity 0.3s ease-in-out;
-        opacity: 0; /* Start hidden */
+        opacity: 0;
     }
+
     .sidebar-overlay.visible {
-        display: block; /* Show when active */
-        opacity: 1; /* Fade in */
+        display: block;
+        opacity: 1;
     }
 
-
-    /* Elements inside sidebar when it's an overlay */
-    .sidebar .logo {
-        display: block; /* Ensure logo is visible in overlay */
-        width: auto; /* Auto width */
+    .sidebar-brand {
+        display: block;
+        width: auto;
         margin-bottom: 20px;
         padding-bottom: 15px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .sidebar nav ul {
-        flex-direction: column; /* Stack nav items vertically */
-        align-items: flex-start; /* Align items to the start */
-        width: 100%;
-        margin-bottom: 20px;
-    }
-
-    .sidebar nav ul li {
-        width: 100%; /* Full width for each nav item */
-        margin: 0; /* Remove horizontal margin */
-        margin-bottom: 8px; /* Vertical spacing */
-    }
-
     .sidebar a {
-        padding: 12px 20px; /* Adequate padding for clickable area */
+        padding: 12px 20px;
         font-size: 1rem;
-        border-left: 5px solid transparent; /* Retain accent border for active state */
-        border-bottom: none; /* Remove bottom border for active state */
+        border-left: 5px solid transparent;
+        border-bottom: none;
+        margin-bottom: 8px;
     }
 
     .sidebar a.active {
-        background-color: rgba(255, 255, 255, 0.2); /* Active background */
-        border-left-color: #2575fc; /* Primary blue accent */
+        background-color: rgba(255, 255, 255, 0.2);
+        border-left-color: var(--blue-accent);
     }
 
     .sidebar-footer {
-        display: block; /* Always show logout button in mobile sidebar */
+        display: block;
         width: 100%;
-        padding-top: 20px; /* Adjusted padding for logout button */
+        padding-top: 20px;
         padding-bottom: 20px;
         border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* General mobile section/card adjustments */
     .dashboard-content-section {
         padding: 15px;
         margin-bottom: 15px;
@@ -1377,21 +950,17 @@ input:checked + .slider:before {
         margin-bottom: 10px;
     }
 
-    .stats-grid, .quick-actions {
+    .quick-actions {
         flex-direction: column;
-        align-items: stretch; /* Stretch to full width */
+        align-items: stretch;
         gap: 10px;
     }
 
-    .stat-card, .quick-actions .button {
+    .quick-actions .button {
         width: 100%;
         min-width: unset;
-        margin-right: 0; /* No horizontal margin */
-        padding: 20px; /* Adjust padding for mobile cards */
-    }
-
-    .stat-card .count {
-        font-size: 2.5rem;
+        margin-right: 0;
+        padding: 20px;
     }
 
     .quick-actions .button {
@@ -1399,29 +968,28 @@ input:checked + .slider:before {
         font-size: 1rem;
     }
 
-    /* Table Responsiveness (card-like display) - CRITICAL FIXES FOR STUDENT MANAGEMENT */
     .table-responsive {
-        overflow-x: auto; /* Ensures horizontal scrolling for tables if needed */
-        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 15px;
-        background-color: #ffffff;
+        background-color: var(--card-bg-light);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         border-radius: 8px;
-        overflow: hidden; /* Ensures inner content stays within border-radius */
+        overflow: hidden;
     }
 
     table thead {
-        display: none; /* Hide table headers on mobile */
+        display: none;
     }
 
     table, tbody, tr, td {
-        display: block; /* Stack table elements vertically */
-        width: 100%; /* Ensure each stacked element takes full width */
+        display: block;
+        width: 100%;
     }
 
     table tr {
@@ -1429,93 +997,89 @@ input:checked + .slider:before {
         margin-bottom: 15px;
         border-radius: 8px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        overflow: hidden; /* Crucial for containing inner flex items within rounded corners */
-        padding: 0; /* Reset row padding for precise cell control */
+        overflow: hidden;
+        padding: 0;
     }
 
     table td {
         border: none;
         border-bottom: 1px solid #eee;
         position: relative;
-        padding: 12px 15px; /* Adjusted padding for better fit */
-        text-align: left; /* Align content left for readability */
-        min-height: 45px; /* Ensure a minimum height for cells to prevent squishing */
-        display: flex; /* Use flexbox for label and content alignment */
-        align-items: center; /* Vertically align items */
-        justify-content: flex-start; /* Align content to the left */
-        box-sizing: border-box; /* Crucial for padding calculation */
+        padding: 12px 15px;
+        text-align: left;
+        min-height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        box-sizing: border-box;
     }
 
     table td:last-child {
-        border-bottom: 0; /* No border for the last cell */
-        justify-content: center; /* Center action buttons */
-        padding-left: 15px; /* Adjust padding for action buttons row */
+        border-bottom: 0;
+        justify-content: center;
+        padding-left: 15px;
         padding-right: 15px;
-        flex-wrap: wrap; /* Allow buttons to wrap if too many */
+        flex-wrap: wrap;
     }
 
     table td::before {
         content: attr(data-label);
-        position: absolute; /* Position label absolutely */
+        position: absolute;
         left: 15px;
-        width: 40%; /* Stronger fixed width for the label to prevent overlap */
+        width: 40%;
         padding-right: 10px;
-        white-space: normal; /* Allow label to wrap if needed */
+        white-space: normal;
         text-align: left;
         font-weight: bold;
         color: #555;
         box-sizing: border-box;
-        flex-shrink: 0; /* Prevent label from shrinking */
+        flex-shrink: 0;
     }
 
-    /* Adjust specific elements in responsive mode */
-    #attendanceTable td:nth-child(2) { /* Status column (radio buttons) */
-        text-align: left; /* Align radio buttons left */
-        justify-content: flex-start; /* Align flex items to start */
+    #attendanceTable td:nth-child(2) {
+        text-align: left;
+        justify-content: flex-start;
     }
+
     #attendanceTable label {
-        margin-right: 8px; /* Slightly more margin */
-        display: inline-flex; /* Use inline-flex for labels to align radio/checkbox */
+        margin-right: 8px;
+        display: inline-flex;
         align-items: center;
-        white-space: nowrap; /* Keep label text and radio on one line */
+        white-space: nowrap;
     }
+
     #attendanceTable input[type="radio"] {
         margin-right: 3px;
     }
 
-
     .settings-grid {
-        grid-template-columns: 1fr; /* Stack settings cards */
+        grid-template-columns: 1fr;
     }
+
+    header { position: sticky; top: 0; z-index: 1200; }
+    .header-content { border-radius: 0; }
+    .main-content { margin-top: 80px; }
+    .sidebar { left: 0; box-sizing: border-box; will-change: transform; }
 }
 
-/* Very Small Screens (e.g., small phones) */
 @media (max-width: 480px) {
-    .login-box {
-        padding: 20px;
-    }
-    .login-box h2 {
-        font-size: 1.4rem;
-        margin-bottom: 20px;
-    }
-    .login-button {
-        padding: 10px 15px;
-        font-size: 1rem;
+    .sidebar {
+        width: 200px;
     }
 
-    .sidebar {
-        width: 200px; /* Slightly narrower sidebar overlay for very small screens */
-    }
     .sidebar.open {
-        transform: translateX(0); /* Ensure it slides to 0 */
+        transform: translateX(0);
     }
-    .sidebar .logo h3 {
-        font-size: 1.5rem; /* Smaller logo text */
+
+    .sidebar-brand h3 {
+        font-size: 1.5rem;
     }
-    .sidebar nav ul li a {
-        font-size: 0.9rem; /* Smaller nav links */
+
+    .sidebar a {
+        font-size: 0.9rem;
         padding: 10px 15px;
     }
+
     .sidebar-footer .logout-btn {
         padding: 8px 15px;
         font-size: 0.9rem;
@@ -1523,28 +1087,31 @@ input:checked + .slider:before {
 
     .main-content {
         padding: 10px;
-        margin-top: 70px; /* Adjusted margin-top for potentially smaller header */
+        margin-top: 70px;
     }
 
-    .main-header {
-        padding: 10px 15px; /* Smaller header padding */
+    .header-content {
+        padding: 10px 15px;
     }
-    .main-header h1 {
-        font-size: 1.2rem; /* Smaller header title */
-        margin-left: 10px; /* Adjusted spacing */
+
+    .header-content h1 {
+        font-size: 1.2rem;
+        margin-left: 10px;
     }
-    .hamburger-btn {
-        font-size: 1.5rem; /* Smaller hamburger icon */
+
+    .burger {
+        font-size: 1.5rem;
     }
 
     .dashboard-content-section {
         padding: 15px;
     }
+
     .dashboard-content-section h2 {
         font-size: 1.4rem;
     }
 
-    .button, .action-button, .submit-button, .cancel-button, .primary-button, .secondary-button {
+    .button, .primary-button, .secondary-button {
         padding: 8px 15px;
         font-size: 0.9rem;
     }
@@ -1554,298 +1121,194 @@ input:checked + .slider:before {
         font-size: 0.8rem;
     }
 
-    .form-group input, .form-group select, .form-group textarea {
+    .form-container input, .form-container select, .form-container textarea {
         padding: 10px;
         font-size: 0.9rem;
     }
 
     table td {
-        padding: 10px 10px; /* Reduced table cell padding */
-        min-height: 40px; /* Slightly smaller min-height */
-    }
-    table td::before {
-        left: 10px;
-        width: 45%; /* Adjust label width for very small screens */
+        padding: 10px 10px;
+        min-height: 40px;
     }
 
-    /* Adjust toggle switch for very small screens */
+    table td::before {
+        left: 10px;
+        width: 45%;
+    }
+
     .switch .slider {
         width: 40px;
         height: 22px;
     }
+
     .slider:before {
         height: 16px;
         width: 16px;
         left: 3px;
         bottom: 3px;
     }
+
     input:checked + .slider:before {
         transform: translateX(18px);
     }
+
     .switch label {
         font-size: 0.9rem;
     }
 }
 
-/* Ensure chart canvases in reports tab are visible and responsive */
-#reports-analytics .chart-card {
-  min-height: 320px;
-  height: 340px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: stretch;
-}
-#reports-analytics .chart-card canvas {
-  min-height: 260px;
-  height: 260px !important;
-  width: 100% !important;
-  max-width: 100%;
-  display: block;
-  margin: 0 auto;
-}
-
-/* Dark Mode Toggle Button */
-.dark-mode-toggle {
-    background: linear-gradient(45deg, #FFD700, #FFA500); /* Yellow to Orange gradient */
-    border: none;
-    border-radius: 25px; /* Rounded button */
-    width: 50px; /* Fixed width */
-    height: 25px; /* Fixed height */
-    cursor: pointer;
-    position: relative; /* For positioning icons */
-    overflow: hidden; /* Hide parts of icons that go out of bounds */
-    transition: all 0.3s ease; /* Smooth transition for hover and state changes */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 20px; /* Spacing from header title */
-}
-
-.dark-mode-toggle:hover {
-    transform: scale(1.05); /* Slight enlargement on hover */
-}
-
-/* Icons inside the toggle */
-.dark-mode-toggle .sun-icon,
-.dark-mode-toggle .moon-icon {
-    position: absolute; /* Position icons absolutely within the button */
-    font-size: 14px; /* Size of the icon */
-    color: #fff; /* White color for icons */
-    transition: all 0.3s ease; /* Smooth transition for opacity and transform */
-}
-
-.dark-mode-toggle .sun-icon {
-    opacity: 1; /* Sun is visible by default */
-    transform: translateY(0); /* Sun is centered vertically */
-}
-
-.dark-mode-toggle .moon-icon {
-    opacity: 0; /* Moon is hidden by default */
-    transform: translateY(20px); /* Moon is pushed down, out of view */
-}
-
-/* Dark mode styles applied to the body */
+/* Dark Mode */
 body.dark-mode {
-    background-color: #1a1a1a; /* Dark background */
-    color: #e0e0e0; /* Light text */
+    background-color: var(--bg-color-dark);
+    color: var(--text-color-dark);
 }
 
-/* Dark mode specific styles for header */
-body.dark-mode .header {
-    background-color: #2d2d2d; /* Darker header background */
-    border-bottom-color: #404040; /* Darker border */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3); /* Stronger shadow for dark mode */
+body.dark-mode .header-content {
+    background-color: var(--header-bg-dark);
+    box-shadow: 0 2px 4px var(--header-shadow-dark);
 }
 
-body.dark-mode .header h1 {
-    color: #e0e0e0; /* Light heading text */
+body.dark-mode .header-content h1 {
+    color: var(--text-color-dark);
 }
 
-/* Dark mode styles for the toggle button itself */
-body.dark-mode .dark-mode-toggle {
-    background: linear-gradient(45deg, #4A4A4A, #2D2D2D); /* Darker gradient for toggle */
-}
-
-/* Hiding and showing icons in dark mode */
-body.dark-mode .dark-mode-toggle .sun-icon {
-    opacity: 0; /* Hide sun */
-    transform: translateY(-20px); /* Push sun up, out of view */
-}
-
-body.dark-mode .dark-mode-toggle .moon-icon {
-    opacity: 1; /* Show moon */
-    transform: translateY(0); /* Center moon vertically */
-}
-
-/* Dark mode styles for the sidebar */
 body.dark-mode .sidebar {
-    background-color: #2d2d2d; /* Dark sidebar background */
-    border-right-color: #404040; /* Dark border */
+    background-color: var(--header-bg-dark);
 }
 
 body.dark-mode .sidebar a {
-    color: #fff;
-    background: linear-gradient(135deg, #1d4ed8 0%, #5b21b6 100%); /* Dark mode blue gradient */
+    background: var(--dark-gradient);
 }
 
 body.dark-mode .sidebar a:hover {
     filter: brightness(0.95);
 }
 
-body.dark-mode .logout-btn, body.dark-mode .delete-button {
-    background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
+body.dark-mode .logout-btn,
+body.dark-mode .delete-button {
+    background: var(--dark-red-gradient);
 }
 
-/* Dark mode styles for the main content area */
 body.dark-mode .main-content {
-    background-color: #1a1a1a; /* Dark main content background */
+    background-color: var(--bg-color-dark);
 }
 
-/* Dark mode styles for dashboard sections */
 body.dark-mode .dashboard-content-section {
-    background-color: #2d2d2d; /* Dark section background */
-    border-color: #404040; /* Dark section border */
+    background-color: var(--card-bg-dark);
 }
 
 body.dark-mode .dashboard-content-section h2 {
-    color: #e0e0e0; /* Light section heading text */
+    color: var(--text-color-dark);
 }
 
-/* Dark mode styles for form inputs */
+body.dark-mode .card {
+    background-color: var(--card-bg-dark);
+}
+
+body.dark-mode .card h3 {
+    color: var(--text-color-dark);
+}
+
 body.dark-mode input,
 body.dark-mode select,
 body.dark-mode textarea {
-    background-color: #404040; /* Dark input background */
-    border-color: #555; /* Darker border */
-    color: #e0e0e0; /* Light input text */
+    background-color: var(--input-bg-dark);
+    border-color: #555;
+    color: var(--text-color-dark);
 }
 
-/* Dark mode styles for buttons */
 body.dark-mode button {
-    background-color: #404040; /* Dark button background */
-    color: #e0e0e0; /* Light button text */
-    border-color: #555; /* Darker border */
-}
-
-body.dark-mode button:hover {
-    background-color: #555; /* Slightly lighter dark background on hover */
-}
-
-/* Dark mode styles for tables */
-body.dark-mode table {
-    background-color: #2d2d2d; /* Dark table background */
-}
-
-body.dark-mode table th {
-    background-color: #404040; /* Dark table header background */
-    color: #e0e0e0; /* Light table header text */
-}
-
-body.dark-mode table td {
-    background-color: #2d2d2d; /* Dark table cell background */
-    color: #e0e0e0; /* Light table cell text */
-    border-color: #404040; /* Darker cell border */
-}
-
-/* Specific styles for dark mode dropdowns */
-body.dark-mode select {
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="%23e0e0e0"><path d="M7 10l5 5 5-5z"/></svg>'); /* Light arrow for dropdown */
+    background-color: var(--input-bg-dark);
+    color: var(--text-color-dark);
     border-color: #555;
 }
 
-/* Dark mode styles for the toggle switch */
+body.dark-mode button:hover {
+    background-color: #555;
+}
+
+body.dark-mode table {
+    background-color: var(--card-bg-dark);
+}
+
+body.dark-mode table th {
+    background-color: var(--table-header-bg-dark);
+    color: var(--text-color-dark);
+}
+
+body.dark-mode table td {
+    background-color: var(--card-bg-dark);
+    color: var(--text-color-dark);
+    border-color: var(--border-color-dark);
+}
+
+body.dark-mode select {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="%23e0e0e0"><path d="M7 10l5 5 5-5z"/></svg>');
+    border-color: #555;
+}
+
 body.dark-mode .switch .slider {
-    background-color: #555; /* Darker slider track */
+    background-color: #555;
 }
 
 body.dark-mode input:checked + .slider {
-    background-color: #007bff; /* Blue when toggled on in dark mode */
+    background-color: #007bff;
 }
 
 body.dark-mode .switch label {
-    color: #e0e0e0; /* Light label text */
+    color: var(--text-color-dark);
 }
 
-/* ==== FIX: Dashboard tabs layout and sidebar overlay coverage ==== */
-
-/* Match current HTML structure */
-.dashboard {
-    display: flex;
-    min-height: 100vh;
+body.dark-mode .report-card {
+    background-color: var(--card-bg-dark);
 }
 
-/* Header styles matching current HTML (header > .header-content + .burger) */
-.header-content {
-    background-color: #ffffff;
-    padding: 20px 25px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-.header-content h1 {
-    margin: 0;
-    color: #333;
-    font-size: 1.8rem;
-    font-weight: 700;
-}
-.burger {
-    cursor: pointer;
-    font-size: 1.8rem;
-    color: #2F1857;
-    user-select: none;
-    display: none; /* shown on mobile */
-    background: none;
-    border: none;
-    line-height: 1;
-}
-.burger:focus-visible {
-    outline: 3px solid #2575fc;
-    outline-offset: 2px;
+body.dark-mode .report-card h3 {
+    color: var(--text-color-dark);
 }
 
-/* Overview grid and chart containers so the Overview tab lays out correctly */
-.overview-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
-}
-.chart-container {
-    min-height: 320px;
-    height: 360px;
-    display: flex;
-    align-items: stretch;
-    justify-content: stretch;
-}
-.chart-container > canvas {
-    width: 100%;
-    height: 100%;
+body.dark-mode .report-content p,
+body.dark-mode .report-content ul,
+body.dark-mode .report-content ol {
+    color: var(--text-color-dark-secondary);
 }
 
-/* Sidebar overlay: ensure full-viewport coverage and correct stacking */
-.sidebar-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 1500; /* Below sidebar (2000), above content */
-    display: none; /* Will be shown when sidebar is open */
-    opacity: 1; /* Visible when displayed */
+body.dark-mode .setting-card {
+    background-color: var(--card-bg-dark);
 }
 
-/* Use :has to display overlay purely via CSS when sidebar is open (modern browsers) */
-body:has(.sidebar.open) #sidebar-overlay {
-    display: block;
+body.dark-mode .setting-card h3 {
+    color: var(--text-color-dark);
 }
 
-/* Respect reduced motion preferences */
+/* Bulk Upload Section */
+.bulk-upload-section h3 { 
+    margin-top: 25px; 
+}
+
+.bulk-upload-section #uploadStatus { 
+    margin-top: 10px; 
+    color: #555; 
+}
+
+/* Summary Section */
+#summaryTotalStudents,
+#summaryTotalCourses,
+#summaryTotalTeachers {
+    font-weight: bold;
+}
+
+/* Graduation Results */
+#graduationResults {
+    margin-top: 20px;
+}
+
+#graduationStats p {
+    font-size: 1.1rem;
+    margin: 10px 0;
+}
+
+/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
     * {
         animation-duration: 0.001ms !important;
@@ -1855,7 +1318,7 @@ body:has(.sidebar.open) #sidebar-overlay {
     }
 }
 
-/* Global overflow handling: show scrollbars when content exceeds container */
+/* Global overflow handling */
 .main-content,
 .dashboard-content-section,
 .card,
@@ -1863,35 +1326,10 @@ body:has(.sidebar.open) #sidebar-overlay {
 .overview-grid,
 .reports-grid,
 .settings-grid {
-    overflow: auto; /* Adds vertical/horizontal scrollbar only when needed */
+    overflow: auto;
 }
 
-/* Explicit horizontal scroll for wide tables/forms */
 .table-container {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-}
-
-/* Utility class to force overflow behavior on any element */
-.scroll-auto {
-    overflow: auto !important;
-}
-
-/* Mobile adjustments */
-@media (max-width: 768px) {
-    .burger { display: block; }
-
-    /* Fix header as top bar on mobile to prevent layout shift */
-    header { position: sticky; top: 0; z-index: 1200; }
-    .header-content { border-radius: 0; }
-
-    /* Ensure main content has top spacing under sticky header */
-    .main-content { margin-top: 80px; }
-
-    /* Sidebar is overlay; ensure it starts exactly at the left edge */
-    .sidebar {
-        left: 0;
-        box-sizing: border-box;
-        will-change: transform;
-    }
 }

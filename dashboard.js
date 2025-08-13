@@ -1,22 +1,20 @@
 // dashboard.js
 
-// Back4App Parse SDK Initialization (IMPORTANT: These are now filled with your keys)
+// Back4App Parse SDK Initialization
 const B4A_APP_ID = '1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0';
 const B4A_JS_KEY = '7CE7gnknAyyfSZRTWpqvuDvNhLOMsF0DNYk8qvgn';
 const B4A_SERVER_URL = 'https://parseapi.back4app.com/';
 
-// --- Initialize Parse SDK immediately on script load ---
-// FIX: Moved initialization to the top to ensure it's always ready.
+// Initialize Parse SDK
 Parse.initialize(B4A_APP_ID, B4A_JS_KEY);
 Parse.serverURL = B4A_SERVER_URL;
 
 // Global data arrays
 let students = [];
 let attendanceRecords = [];
-let announcements = [];
 let teachers = [];
 let courses = [];
-let exams = []; // New array for exam records
+let exams = [];
 
 // Chart instances
 let coursePopularityChartInstance = null;
@@ -29,7 +27,9 @@ window.editingStudentId = null;
 window.editingTeacherId = null;
 window.editingCourseId = null;
 
-// --- UTILITY FUNCTIONS ---
+// ======================
+// UTILITY FUNCTIONS
+// ======================
 
 function showMessage(message, type = "info", duration = 3000) {
     let box = document.getElementById('appMessage');
@@ -89,7 +89,9 @@ function showConfirmDialog(message, onConfirm) {
     noBtn.addEventListener('click', () => dialog.remove());
 }
 
-// --- BACKEND COMMUNICATION FUNCTIONS ---
+// ======================
+// BACKEND COMMUNICATION
+// ======================
 
 async function loadParseData(className) {
     try {
@@ -101,7 +103,6 @@ async function loadParseData(className) {
         console.error(`[loadParseData] Error fetching ${className} data:`, error);
         console.error(`[loadParseData] Error details - Code: ${error.code}, Message: ${error.message}`);
         
-        // More detailed error messages for specific cases
         let userMessage = `Error fetching ${className} data.`;
         if (error.code === Parse.Error.INVALID_SESSION_TOKEN) {
             userMessage = 'Your session has expired. Please log in again.';
@@ -151,7 +152,6 @@ async function deleteParseData(className, id) {
         await loadAllData();
     } catch (error) {
         console.error(`Error deleting ${className}:`, error);
-        // More detailed error message for the user
         if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
             showMessage(`Error: ${className} not found.`, 'error');
         } else if (error.code === Parse.Error.SESSION_MISSING || error.code === Parse.Error.INVALID_SESSION_TOKEN) {
@@ -165,8 +165,9 @@ async function deleteParseData(className, id) {
     }
 }
 
-
-// --- STUDENT MANAGEMENT FUNCTIONS ---
+// ======================
+// STUDENT MANAGEMENT
+// ======================
 
 function renderStudentTable() {
     const studentTableBody = document.querySelector('#studentTable tbody');
@@ -295,8 +296,9 @@ function resetStudentForm() {
     document.getElementById('cancelStudentBtn').style.display = 'none';
 }
 
-
-// --- TEACHER MANAGEMENT FUNCTIONS ---
+// ======================
+// TEACHER MANAGEMENT
+// ======================
 
 function renderTeacherTable() {
     const teacherTableBody = document.querySelector('#teacherTable tbody');
@@ -417,8 +419,9 @@ function resetTeacherForm() {
     window.editingTeacherId = null;
 }
 
-
-// --- COURSE MANAGEMENT FUNCTIONS ---
+// ======================
+// COURSE MANAGEMENT
+// ======================
 
 function renderCourseTable() {
     const courseTableBody = document.querySelector('#courseTable tbody');
@@ -558,8 +561,9 @@ function resetCourseForm() {
     window.editingCourseId = null;
 }
 
-
-// --- SESSION MANAGEMENT FUNCTIONS ---
+// ======================
+// SESSION MANAGEMENT
+// ======================
 
 async function refreshSessionToken() {
     console.log("[refreshSessionToken] Checking user session...");
@@ -585,8 +589,9 @@ async function refreshSessionToken() {
     }
 }
 
-
-// --- ATTENDANCE FUNCTIONS ---
+// ======================
+// ATTENDANCE MANAGEMENT
+// ======================
 
 function renderAttendanceTable() {
     const tableBody = document.querySelector('#attendanceTable tbody');
@@ -642,7 +647,6 @@ function renderAttendanceTable() {
     }
 }
 
-// FIX: Added the missing renderOverallAttendanceChart function
 function renderOverallAttendanceChart() {
     const canvas = document.getElementById('overallAttendanceChart');
     if (!canvas) return;
@@ -741,17 +745,9 @@ async function deleteAttendanceRecord(id) {
     });
 }
 
-
-// --- GRADES MANAGEMENT FUNCTIONS ---
-
-async function deleteGrade(id) {
-    showConfirmDialog('Are you sure you want to delete this grade?', async () => {
-        await deleteParseData('Grade', id);
-    });
-}
-
-
-// --- EXAM MANAGEMENT FUNCTIONS ---
+// ======================
+// EXAM MANAGEMENT
+// ======================
 
 function renderExamTable() {
     console.log("[renderExamTable] Rendering exam table with data:", exams);
@@ -989,8 +985,9 @@ function showExamsTab() {
     }
 }
 
-
-// --- DASHBOARD OVERVIEW FUNCTIONS ---
+// ======================
+// DASHBOARD OVERVIEW
+// ======================
 
 function renderCoursePopularityChart() {
     const canvas = document.getElementById('coursePopularityChart');
@@ -1042,19 +1039,24 @@ function renderTopStudentsChart() {
     }
 
     const studentScores = students.reduce((acc, student) => {
-        acc[student.id] = { name: student.get('name'), totalScore: 0, totalAssignments: 0 };
+        acc[student.id] = { name: student.get('name'), totalScore: 0, totalExams: 0 };
         return acc;
     }, {});
 
-    grades.forEach(grade => {
-        if (studentScores[grade.get('studentId')]) {
-            studentScores[grade.get('studentId')].totalScore += grade.get('score');
-            studentScores[grade.get('studentId')].totalAssignments += 1;
+    exams.forEach(exam => {
+        if (studentScores[exam.get('studentId')]) {
+            // Calculate percentage score
+            const score = exam.get('score');
+            const totalScore = exam.get('totalScore') || 100;
+            const percentage = (score / totalScore) * 100;
+            
+            studentScores[exam.get('studentId')].totalScore += percentage;
+            studentScores[exam.get('studentId')].totalExams += 1;
         }
     });
 
     const topStudents = Object.values(studentScores)
-        .map(s => ({ ...s, average: s.totalAssignments > 0 ? s.totalScore / s.totalAssignments : 0 }))
+        .map(s => ({ ...s, average: s.totalExams > 0 ? s.totalScore / s.totalExams : 0 }))
         .sort((a, b) => b.average - a.average)
         .slice(0, 5);
 
@@ -1078,14 +1080,15 @@ function renderTopStudentsChart() {
             maintainAspectRatio: false,
             plugins: {
                 legend: { position: 'right' },
-                title: { display: true, text: 'Top 5 Students by Average Grade' }
+                title: { display: true, text: 'Top 5 Students by Average Exam Score' }
             }
         }
     });
 }
 
-
-// --- FILE UPLOAD FUNCTIONS ---
+// ======================
+// FILE UPLOAD
+// ======================
 
 const expectedHeaders = ['name', 'course', 'season', 'enrollment start date', 'enrollment end date', 'national id', 'phone number', 'place of living'];
 
@@ -1178,50 +1181,10 @@ async function processStudentRecords(records) {
     }
 }
 
+// ======================
+// REPORTS & EXPORTS
+// ======================
 
-// --- MAIN APPLICATION LOGIC ---
-
-async function loadAllData() {
-    console.log("[loadAllData] Starting to load all dashboard data in parallel...");
-    
-    // Check if we have a valid session first
-    const currentUser = Parse.User.current();
-    if (!currentUser) {
-        console.log("[loadAllData] No current user, skipping data load");
-        showMessage('No valid session. Please log in again.', 'error');
-        setTimeout(() => window.location.href = 'loginPage.html', 3000);
-        return;
-    }
-    
-    try {
-        const [studentsR, attendanceR, announcementsR, teachersR, coursesR, examsR] = await Promise.all([
-            loadParseData('Student'),
-            loadParseData('Attendance'),
-            loadParseData('Announcement'),
-            loadParseData('Teacher'),
-            loadParseData('Course'),
-            loadParseData('Exam'), // Add Exam data loading
-        ]);
-        
-        students = studentsR;
-        attendanceRecords = attendanceR;
-        announcements = announcementsR;
-        teachers = teachersR;
-        courses = coursesR;
-        exams = examsR; // Store exam data
-
-        console.log(`[loadAllData] Data loaded. Students: ${students.length}, Teachers: ${teachers.length}, Courses: ${courses.length}, Attendance: ${attendanceRecords.length}, Exams: ${exams.length}`);
-        updateUI();
-        console.log("[loadAllData] All data loaded and UI updated.");
-    } catch (error) {
-        console.error("[loadAllData] Critical error during data loading:", error);
-        showMessage('Critical error loading dashboard data. Some features may not work correctly.', 'error');
-        // Still try to update UI with whatever data we have
-        updateUI();
-    }
-}
-
-// Quick actions helpers used by buttons
 async function refreshDashboard() {
     await loadAllData();
     showMessage('Dashboard refreshed.', 'success');
@@ -1325,6 +1288,10 @@ function resetPreferences() {
     }
 }
 
+// ======================
+// UI UTILITIES
+// ======================
+
 function addHorizontalSlider(container) {
     if (!container || container.querySelector(':scope > .h-scroll-slider')) return;
     const contentEl = container.querySelector('form') || container.querySelector('table') || container.firstElementChild || container;
@@ -1396,13 +1363,13 @@ function updateUI() {
 
     renderStudentTable();
     renderAttendanceTable();
-    renderExamTable(); // Add exam table rendering
+    renderExamTable();
     renderTeacherTable();
     renderCourseTable();
 
     populateCourseDropdowns();
-    populateExamStudentDropdown(); // Populate exam student dropdown
-    populateExamCourseDropdown(); // Populate exam course dropdown
+    populateExamStudentDropdown();
+    populateExamCourseDropdown();
     populateTeacherDropdown();
 
     renderCoursePopularityChart();
@@ -1410,14 +1377,12 @@ function updateUI() {
     renderTopStudentsChart();
     renderLowPerformingAssignmentsChart();
     updateSummaryMetrics();
-    updateWelcomeMessage(); // Update welcome message
+    updateWelcomeMessage();
 
     console.log("[updateUI] UI update complete.");
 
     // Attach sliders for horizontally overflowed containers
-    // Only attach sliders to table containers to avoid overlaying form buttons
     document.querySelectorAll('.table-container').forEach(addHorizontalSlider);
-    // Additionally, enable a horizontal slider on the Students form when it overflows
     var studentsFormContainer = document.querySelector('#students .form-container');
     if (studentsFormContainer) addHorizontalSlider(studentsFormContainer);
     
@@ -1428,13 +1393,267 @@ function updateUI() {
     }
 }
 
+// ======================
+// DROPDOWN POPULATION
+// ======================
 
-// --- EVENT LISTENERS AND INITIALIZATION ---
+function populateCourseDropdowns() {
+    const courseDropdowns = [
+        document.getElementById('studentCourse')
+    ];
+    courseDropdowns.forEach(selectElement => {
+        if (!selectElement) return;
+        const currentValue = selectElement.value;
+        selectElement.innerHTML = '<option value="">-- Select a Course --</option>';
+        courses.sort((a, b) => a.get('name').localeCompare(b.get('name'))).forEach(course => {
+            const option = document.createElement('option');
+            option.value = course.get('name');
+            option.textContent = course.get('name');
+            selectElement.appendChild(option);
+        });
+        selectElement.value = currentValue;
+    });
+}
 
-// Bootstrap session: rely solely on Parse SDK session; clear any legacy localStorage token
+function populateAttendanceStudentDropdown() {
+    const attendanceStudentSelect = document.getElementById('attendanceStudent');
+    if (!attendanceStudentSelect) return;
+    
+    const currentValue = attendanceStudentSelect.value;
+    attendanceStudentSelect.innerHTML = '<option value="">-- Select a Student --</option>';
+    
+    const sortedStudents = [...students].sort((a, b) => 
+        (a.get('name') || '').localeCompare(b.get('name') || ''));
+    
+    sortedStudents.forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.id;
+        option.textContent = `${student.get('name') || 'Unnamed'} (${student.get('course') || 'No Course'})`;
+        attendanceStudentSelect.appendChild(option);
+    });
+    
+    if (currentValue && sortedStudents.some(s => s.id === currentValue)) {
+        attendanceStudentSelect.value = currentValue;
+    }
+}
+
+function populateStudentDropdowns(selectElement, course = '') {
+    if (!selectElement) return;
+    const currentValue = selectElement.value;
+    selectElement.innerHTML = '<option value="">-- Select a Student --</option>';
+    const filteredStudents = course ? students.filter(s => s.get('course') === course) : students;
+    filteredStudents.sort((a, b) => a.get('name').localeCompare(b.get('name'))).forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.id;
+        option.textContent = student.get('name') + (course ? '' : ` (${student.get('course')})`);
+        selectElement.appendChild(option);
+    });
+    selectElement.value = currentValue;
+}
+
+function showAttendanceTab() {
+    populateAttendanceStudentDropdown();
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('attendanceDate');
+    if (dateInput && !dateInput.value) {
+        dateInput.value = today;
+    }
+}
+
+// ======================
+// CHARTS
+// ======================
+
+function renderLowPerformingAssignmentsChart() {
+    const canvas = document.getElementById('lowPerformingAssignmentsChart');
+    if (!canvas) return;
+
+    if (lowPerformingAssignmentsChartInstance) {
+        lowPerformingAssignmentsChartInstance.destroy();
+    }
+
+    const assignmentScores = {};
+    exams.forEach(g => {
+        const name = `${g.get('examType') || 'Exam'} - ${g.get('examCategory') || 'General'} (${g.get('course') || 'Unknown Course'})`;
+        const score = g.get('score');
+        const total = g.get('totalScore') || 100;
+        if (!name || typeof score !== 'number') return;
+        const percent = (score / total) * 100;
+        if (!(name in assignmentScores)) {
+            assignmentScores[name] = { min: percent, count: 1 };
+        } else {
+            assignmentScores[name].min = Math.min(assignmentScores[name].min, percent);
+            assignmentScores[name].count += 1;
+        }
+    });
+
+    const entries = Object.entries(assignmentScores)
+        .map(([name, { min, count }]) => ({ name, min, count }))
+        .sort((a, b) => a.min - b.min)
+        .slice(0, 10);
+
+    const labels = entries.map(e => e.name);
+    const data = entries.map(e => Math.round(e.min));
+
+    lowPerformingAssignmentsChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Lowest % score',
+                data,
+                backgroundColor: 'rgba(244, 67, 54, 0.6)',
+                borderColor: 'rgba(244, 67, 54, 1)',
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
+            plugins: { title: { display: true, text: 'Low Performing Exams (min %)' } }
+        }
+    });
+}
+
+function updateSummaryMetrics() {
+    const elStudents = document.getElementById('summaryTotalStudents');
+    const elCourses = document.getElementById('summaryTotalCourses');
+    const elTeachers = document.getElementById('summaryTotalTeachers');
+    if (elStudents) elStudents.textContent = students.length;
+    if (elCourses) elCourses.textContent = courses.length;
+    if (elTeachers) elTeachers.textContent = teachers.length;
+}
+
+// ======================
+// USER INTERFACE
+// ======================
+
+function updateWelcomeMessage() {
+    const currentUser = Parse.User.current();
+    if (currentUser) {
+        const username = currentUser.get('username');
+        const welcomeMessageElement = document.getElementById('welcomeMessage');
+        if (welcomeMessageElement) {
+            welcomeMessageElement.textContent = `Welcome, ${username}`;
+        }
+    }
+}
+
+// ======================
+// GRADUATION
+// ======================
+
+function checkGraduationEligibility() {
+    console.log("[checkGraduationEligibility] Starting graduation eligibility check...");
+    
+    const resultsContainer = document.getElementById('graduationResults');
+    const statsContainer = document.getElementById('graduationStats');
+    const eligibleStudentsTableBody = document.querySelector('#eligibleStudentsTable tbody');
+    
+    if (!resultsContainer || !statsContainer || !eligibleStudentsTableBody) {
+        console.error("Graduation UI elements not found.");
+        return;
+    }
+    
+    statsContainer.innerHTML = '';
+    eligibleStudentsTableBody.innerHTML = '';
+    
+    let eligibleCount = 0;
+    let totalCount = students.length;
+    const eligibleStudents = [];
+    
+    students.forEach(student => {
+        const studentId = student.id;
+        const studentName = student.get('name') || 'N/A';
+        const studentCourse = student.get('course') || 'N/A';
+        
+        // Calculate attendance percentage
+        const studentAttendanceRecords = attendanceRecords.filter(record => record.get('studentId') === studentId);
+        const totalAttendanceDays = studentAttendanceRecords.length;
+        const presentDays = studentAttendanceRecords.filter(record => record.get('status') === 'Present').length;
+        const attendancePercentage = totalAttendanceDays > 0 ? (presentDays / totalAttendanceDays) * 100 : 0;
+        
+        // Check for required exams
+        let hasMidterm = false;
+        let hasFinal = false;
+        
+        exams.forEach(exam => {
+            if (exam.get('studentId') === studentId && exam.get('examType')) {
+                const examType = exam.get('examType').toLowerCase();
+                
+                if (!hasMidterm && (examType === 'midterm')) {
+                    hasMidterm = true;
+                }
+                
+                if (!hasFinal && (examType === 'endterm')) {
+                    hasFinal = true;
+                }
+            }
+        });
+        
+        // Determine eligibility (50% attendance + both midterm and final exams)
+        const isEligible = attendancePercentage >= 50 && hasMidterm && hasFinal;
+        
+        if (isEligible) {
+            eligibleCount++;
+            eligibleStudents.push({
+                id: studentId,
+                name: studentName,
+                course: studentCourse,
+                attendancePercentage: attendancePercentage.toFixed(2)
+            });
+        }
+    });
+    
+    resultsContainer.style.display = 'block';
+    
+    statsContainer.innerHTML = `
+        <p>Total Students: <strong>${totalCount}</strong></p>
+        <p>Eligible for Graduation: <strong>${eligibleCount}</strong></p>
+        <p>Not Eligible: <strong>${totalCount - eligibleCount}</strong></p>
+        <p>Eligibility Rate: <strong>${totalCount > 0 ? ((eligibleCount / totalCount) * 100).toFixed(2) : '0.00'}%</strong></p>
+    `;
+    
+    if (eligibleStudents.length > 0) {
+        eligibleStudents.forEach(student => {
+            const row = document.createElement('tr');
+            
+            const nameCell = document.createElement('td');
+            nameCell.textContent = student.name;
+            
+            const courseCell = document.createElement('td');
+            courseCell.textContent = student.course;
+            
+            const attendanceCell = document.createElement('td');
+            attendanceCell.textContent = `${student.attendancePercentage}%`;
+            
+            row.appendChild(nameCell);
+            row.appendChild(courseCell);
+            row.appendChild(attendanceCell);
+            
+            eligibleStudentsTableBody.appendChild(row);
+        });
+    } else {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 3;
+        cell.textContent = 'No students are currently eligible for graduation.';
+        cell.style.textAlign = 'center';
+        row.appendChild(cell);
+        eligibleStudentsTableBody.appendChild(row);
+    }
+    
+    console.log(`[checkGraduationEligibility] Check complete. ${eligibleCount}/${totalCount} students eligible.`);
+    showMessage(`Graduation eligibility check complete. ${eligibleCount} students are eligible.`, 'success');
+}
+
+// ======================
+// EVENT LISTENERS
+// ======================
+
 async function bootstrapSessionFromLocalStorage() {
     try {
-        // Remove any leftover legacy entry to reduce exposure
         if (localStorage.getItem('currentUser')) {
             localStorage.removeItem('currentUser');
         }
@@ -1466,28 +1685,24 @@ function attachEventListeners() {
                 e.preventDefault();
                 sidebarLinks.forEach(l => l.classList.remove('active'));
                 link.classList.add('active');
-                sections.forEach(s => s.style.display = 'none');
+                sections.forEach(s => s.style.display = 'none';
                 const targetId = href.substring(1);
                 const targetEl = document.getElementById(targetId);
                 if (targetEl) {
                     targetEl.style.display = 'block';
-                    // After making the section visible, attach sliders for any overflowing containers
                     setTimeout(() => {
                         targetEl.querySelectorAll('.table-container').forEach(addHorizontalSlider);
                         const studentsFormContainer = targetEl.querySelector('.form-container');
                         if (studentsFormContainer) addHorizontalSlider(studentsFormContainer);
                         
-                        // Check graduation eligibility when the graduation tab is opened
                         if (targetId === 'graduation') {
                             checkGraduationEligibility();
                         }
                         
-                        // Populate attendance dropdown when attendance tab is opened
                         if (targetId === 'attendance') {
                             showAttendanceTab();
                         }
                         
-                        // Populate exam dropdowns when exams tab is opened
                         if (targetId === 'exams') {
                             showExamsTab();
                         }
@@ -1501,7 +1716,6 @@ function attachEventListeners() {
         }
     });
 
-    // Dedicated logout handler: clears Parse session then redirects
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async (e) => {
@@ -1511,7 +1725,6 @@ function attachEventListeners() {
             } catch (err) {
                 console.error('Error logging out:', err);
             }
-            // Clear any legacy local storage entry
             try { localStorage.removeItem('currentUser'); } catch (_) {}
             window.location.href = 'loginPage.html';
         });
@@ -1643,10 +1856,8 @@ function attachEventListeners() {
         assignedTeacherSelect.addEventListener('focus', populateTeacherDropdown);
     }
 
-    // Settings tab handlers
     const settingsDarkModeToggle = document.getElementById('settingsDarkModeToggle');
     if (settingsDarkModeToggle) {
-        // Initialize based on current state
         settingsDarkModeToggle.checked = document.body.classList.contains('dark-mode');
         settingsDarkModeToggle.addEventListener('change', (e) => {
             const checked = e.target.checked;
@@ -1655,12 +1866,10 @@ function attachEventListeners() {
             } else {
                 document.body.classList.remove('dark-mode');
             }
-            // Persist preference alongside login page toggle
             localStorage.setItem('darkMode', checked);
         });
     }
 
-    // Wire buttons (migrating away from inline onclick)
     const bindClick = (id, handler) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('click', (e) => { e.preventDefault(); handler(); });
@@ -1674,7 +1883,6 @@ function attachEventListeners() {
     if (dla) dla.addEventListener('click', (e) => { e.preventDefault(); downloadChart('lowPerformingAssignmentsChart','low-performing-assignments.png'); });
     bindClick('resetPreferencesBtn', resetPreferences);
     
-    // Graduation tab button
     const checkGraduationBtn = document.getElementById('checkGraduationBtn');
     if (checkGraduationBtn) {
         checkGraduationBtn.addEventListener('click', checkGraduationEligibility);
@@ -1683,6 +1891,10 @@ function attachEventListeners() {
     console.log("[attachEventListeners] All event listeners attached.");
 }
 
+// ======================
+// INITIALIZATION
+// ======================
+
 async function initDashboard() {
     const ok = await bootstrapSessionFromLocalStorage();
     if (!ok) {
@@ -1690,7 +1902,6 @@ async function initDashboard() {
         return;
     }
     
-    // Double-check that we have a valid Parse session
     const sessionValid = await refreshSessionToken();
     if (!sessionValid) {
         showMessage('Invalid session. Please log in again.', 'error');
@@ -1699,17 +1910,16 @@ async function initDashboard() {
     
     attachEventListeners();
     
-    // Display welcome message
     const currentUser = Parse.User.current();
     if (currentUser) {
         const username = currentUser.get('username');
+        const isAdmin = currentUser.get('isAdmin') || false;
         const welcomeMessageElement = document.getElementById('welcomeMessage');
         if (welcomeMessageElement) {
-            welcomeMessageElement.textContent = `Welcome, ${username}`;
+            welcomeMessageElement.textContent = `Welcome, ${username}${isAdmin ? ' (Admin)' : ''}`;
         }
     }
     
-    // Load data after confirming we have a valid session
     await loadAllData();
 }
 
@@ -1717,292 +1927,4 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initDashboard);
 } else {
     initDashboard();
-}
-
-// FIX: Added missing populate dropdown functions
-function populateCourseDropdowns() {
-    const courseDropdowns = [
-        document.getElementById('studentCourse')
-    ];
-    courseDropdowns.forEach(selectElement => {
-        if (!selectElement) return;
-        const currentValue = selectElement.value;
-        selectElement.innerHTML = '<option value="">-- Select a Course --</option>';
-        courses.sort((a, b) => a.get('name').localeCompare(b.get('name'))).forEach(course => {
-            const option = document.createElement('option');
-            option.value = course.get('name');
-            option.textContent = course.get('name');
-            selectElement.appendChild(option);
-        });
-        selectElement.value = currentValue;
-    });
-}
-
-function populateAttendanceStudentDropdown() {
-    const attendanceStudentSelect = document.getElementById('attendanceStudent');
-    if (!attendanceStudentSelect) return;
-    
-    // Save current value
-    const currentValue = attendanceStudentSelect.value;
-    
-    // Clear and repopulate
-    attendanceStudentSelect.innerHTML = '<option value="">-- Select a Student --</option>';
-    
-    // Sort students by name
-    const sortedStudents = [...students].sort((a, b) => 
-        (a.get('name') || '').localeCompare(b.get('name') || ''));
-    
-    sortedStudents.forEach(student => {
-        const option = document.createElement('option');
-        option.value = student.id;
-        option.textContent = `${student.get('name') || 'Unnamed'} (${student.get('course') || 'No Course'})`;
-        attendanceStudentSelect.appendChild(option);
-    });
-    
-    // Restore previous selection if still valid
-    if (currentValue && sortedStudents.some(s => s.id === currentValue)) {
-        attendanceStudentSelect.value = currentValue;
-    }
-}
-
-// Original function used by other dropdowns
-function populateStudentDropdowns(selectElement, course = '') {
-    if (!selectElement) return;
-    const currentValue = selectElement.value;
-    selectElement.innerHTML = '<option value="">-- Select a Student --</option>';
-    const filteredStudents = course ? students.filter(s => s.get('course') === course) : students;
-    filteredStudents.sort((a, b) => a.get('name').localeCompare(b.get('name'))).forEach(student => {
-        const option = document.createElement('option');
-        option.value = student.id;
-        option.textContent = student.get('name') + (course ? '' : ` (${student.get('course')})`);
-        selectElement.appendChild(option);
-    });
-    selectElement.value = currentValue;
-}
-
-// Call this when the attendance tab is shown
-function showAttendanceTab() {
-    populateAttendanceStudentDropdown();
-    // Set today's date as default
-    const today = new Date().toISOString().split('T')[0];
-    const dateInput = document.getElementById('attendanceDate');
-    if (dateInput && !dateInput.value) {
-        dateInput.value = today;
-    }
-}
-
-// FIX: Added a function that was referenced but not defined.
-function renderLowPerformingAssignmentsChart() {
-    const canvas = document.getElementById('lowPerformingAssignmentsChart');
-    if (!canvas) return;
-
-    if (lowPerformingAssignmentsChartInstance) {
-        lowPerformingAssignmentsChartInstance.destroy();
-    }
-
-    // Aggregate minimum scores per assignment name from exams
-    const assignmentScores = {};
-    exams.forEach(g => {
-        // For exams, we'll use a combination of exam type, category, and course as the "assignment name"
-        const name = `${g.get('examType') || 'Exam'} - ${g.get('examCategory') || 'General'} (${g.get('course') || 'Unknown Course'})`;
-        const score = g.get('score');
-        const total = g.get('totalScore') || 100;
-        if (!name || typeof score !== 'number') return;
-        const percent = (score / total) * 100;
-        if (!(name in assignmentScores)) {
-            assignmentScores[name] = { min: percent, count: 1 };
-        } else {
-            assignmentScores[name].min = Math.min(assignmentScores[name].min, percent);
-            assignmentScores[name].count += 1;
-        }
-    });
-
-    const entries = Object.entries(assignmentScores)
-        .map(([name, { min, count }]) => ({ name, min, count }))
-        .sort((a, b) => a.min - b.min)
-        .slice(0, 10); // show worst 10
-
-    const labels = entries.map(e => e.name);
-    const data = entries.map(e => Math.round(e.min));
-
-    lowPerformingAssignmentsChartInstance = new Chart(canvas, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [{
-                label: 'Lowest % score',
-                data,
-                backgroundColor: 'rgba(244, 67, 54, 0.6)',
-                borderColor: 'rgba(244, 67, 54, 1)',
-                borderWidth: 1,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
-            plugins: { title: { display: true, text: 'Low Performing Exams (min %)' } }
-        }
-    });
-}
-
-function updateSummaryMetrics() {
-    const elStudents = document.getElementById('summaryTotalStudents');
-    const elCourses = document.getElementById('summaryTotalCourses');
-    const elTeachers = document.getElementById('summaryTotalTeachers');
-    if (elStudents) elStudents.textContent = students.length;
-    if (elCourses) elCourses.textContent = courses.length;
-    if (elTeachers) elTeachers.textContent = teachers.length;
-}
-
-// Function to update the welcome message
-function updateWelcomeMessage() {
-    const currentUser = Parse.User.current();
-    if (currentUser) {
-        const username = currentUser.get('username');
-        const welcomeMessageElement = document.getElementById('welcomeMessage');
-        if (welcomeMessageElement) {
-            welcomeMessageElement.textContent = `Welcome, ${username}`;
-        }
-    }
-}
-
-// --- GRADUATION ELIGIBILITY FUNCTIONS ---
-
-function checkGraduationEligibility() {
-    console.log("[checkGraduationEligibility] Starting graduation eligibility check...");
-    
-    // Reset results display
-    const resultsContainer = document.getElementById('graduationResults');
-    const statsContainer = document.getElementById('graduationStats');
-    const eligibleStudentsTableBody = document.querySelector('#eligibleStudentsTable tbody');
-    
-    if (!resultsContainer || !statsContainer || !eligibleStudentsTableBody) {
-        console.error("Graduation UI elements not found.");
-        return;
-    }
-    
-    // Clear previous results
-    statsContainer.innerHTML = '';
-    eligibleStudentsTableBody.innerHTML = '';
-    
-    // Initialize counters
-    let eligibleCount = 0;
-    let totalCount = students.length;
-    const eligibleStudents = [];
-    
-    // Define required exam names (case-insensitive partial match)
-    const midtermExamNames = ['mid-term', 'midterm', 'mid term'];
-    const finalExamNames = ['end-term', 'end term', 'final', 'final exam'];
-    
-    // Process each student
-    students.forEach(student => {
-        const studentId = student.id;
-        const studentName = student.get('name') || 'N/A';
-        const studentCourse = student.get('course') || 'N/A';
-        
-        // 1. Calculate attendance percentage
-        const studentAttendanceRecords = attendanceRecords.filter(record => record.get('studentId') === studentId);
-        const totalAttendanceDays = studentAttendanceRecords.length;
-        const presentDays = studentAttendanceRecords.filter(record => record.get('status') === 'Present').length;
-        const attendancePercentage = totalAttendanceDays > 0 ? (presentDays / totalAttendanceDays) * 100 : 0;
-        
-        // 2. Check for required exams (now including both old grades and new exam records)
-        let hasMidterm = false;
-        let hasFinal = false;
-        
-        // Check in grades
-        grades.forEach(grade => {
-            if (grade.get('studentId') === studentId) {
-                const assignmentName = (grade.get('assignmentName') || '').toLowerCase();
-                
-                // Check if assignment name matches midterm criteria
-                if (!hasMidterm && midtermExamNames.some(term => assignmentName.includes(term))) {
-                    hasMidterm = true;
-                }
-                
-                // Check if assignment name matches final exam criteria
-                if (!hasFinal && finalExamNames.some(term => assignmentName.includes(term))) {
-                    hasFinal = true;
-                }
-            }
-        });
-        
-        // Check in new exam records
-        if (!hasMidterm || !hasFinal) {
-            exams.forEach(exam => {
-                if (exam.get('studentId') === studentId && exam.get('examType')) {
-                    const examType = exam.get('examType').toLowerCase();
-                    
-                    // Check if exam type matches midterm criteria
-                    if (!hasMidterm && (examType === 'midterm')) {
-                        hasMidterm = true;
-                    }
-                    
-                    // Check if exam type matches final exam criteria
-                    if (!hasFinal && (examType === 'endterm')) {
-                        hasFinal = true;
-                    }
-                }
-            });
-        }
-        
-        // 3. Determine eligibility
-        const isEligible = attendancePercentage >= 50 && hasMidterm && hasFinal;
-        
-        // 4. Update counters and lists
-        if (isEligible) {
-            eligibleCount++;
-            eligibleStudents.push({
-                id: studentId,
-                name: studentName,
-                course: studentCourse,
-                attendancePercentage: attendancePercentage.toFixed(2)
-            });
-        }
-    });
-    
-    // 5. Update UI with results
-    resultsContainer.style.display = 'block';
-    
-    // Display statistics
-    statsContainer.innerHTML = `
-        <p>Total Students: <strong>${totalCount}</strong></p>
-        <p>Eligible for Graduation: <strong>${eligibleCount}</strong></p>
-        <p>Not Eligible: <strong>${totalCount - eligibleCount}</strong></p>
-        <p>Eligibility Rate: <strong>${totalCount > 0 ? ((eligibleCount / totalCount) * 100).toFixed(2) : '0.00'}%</strong></p>
-    `;
-    
-    // Display eligible students in table
-    if (eligibleStudents.length > 0) {
-        eligibleStudents.forEach(student => {
-            const row = document.createElement('tr');
-            
-            const nameCell = document.createElement('td');
-            nameCell.textContent = student.name;
-            
-            const courseCell = document.createElement('td');
-            courseCell.textContent = student.course;
-            
-            const attendanceCell = document.createElement('td');
-            attendanceCell.textContent = `${student.attendancePercentage}%`;
-            
-            row.appendChild(nameCell);
-            row.appendChild(courseCell);
-            row.appendChild(attendanceCell);
-            
-            eligibleStudentsTableBody.appendChild(row);
-        });
-    } else {
-        const row = document.createElement('tr');
-        const cell = document.createElement('td');
-        cell.colSpan = 3;
-        cell.textContent = 'No students are currently eligible for graduation.';
-        cell.style.textAlign = 'center';
-        row.appendChild(cell);
-        eligibleStudentsTableBody.appendChild(row);
-    }
-    
-    console.log(`[checkGraduationEligibility] Check complete. ${eligibleCount}/${totalCount} students eligible.`);
-    showMessage(`Graduation eligibility check complete. ${eligibleCount} students are eligible.`, 'success');
 }

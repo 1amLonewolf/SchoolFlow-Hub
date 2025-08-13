@@ -1,0 +1,17 @@
+{
+  "name": "schoolflow-hub-admin-setup",
+  "version": "1.0.0",
+  "description": "Admin user setup for SchoolFlow Hub",
+  "main": "scripts/createAdminUser.js",
+  "scripts": {
+    "create-admin": "node scripts/createAdminUser.js",
+    "setup-admin": "node scripts/createAdminUser.js"
+  },
+  "keywords": ["schoolflow", "admin", "back4app"],
+  "author": "SchoolFlow Hub Team",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "parse": "^3.4.4"
+  }
+}

@@ -12,17 +12,13 @@
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://parseapi.back4app.com" crossorigin>
-
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link id="css-dashboard" rel="stylesheet" href="dashboard.css">
-    
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha384-5e2ESR8Ycmos6g3gAKr1Jvwye8sW4U1u/cAKulfVJnkakCcMqhOudbtPnvJ+nbv7" crossorigin="anonymous">
-     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous" defer></script>
 </head>
 <body>
-
     <div class="dashboard">
         <aside class="sidebar" id="sidebar" role="navigation">
             <div class="sidebar-brand">
@@ -34,12 +30,12 @@
             <a href="#courses">Courses</a>
             <a href="#attendance">Attendance</a>
             <a href="#exams">Exams</a>
-            <a href="#reports-analytics">Reports &amp; Analytics</a>
+            <a href="#reports-analytics">Reports & Analytics</a>
             <a href="#graduation">Graduation</a>
             <a href="#settings">Settings</a>
             <div class="sidebar-footer">
                 <button id="logoutBtn" class="logout-btn">Logout</button>
-                            </div>
+            </div>
         </aside>
 
         <main class="main-content">
@@ -71,7 +67,6 @@
                     <a href="#teachers" class="button primary-button">Add Teacher</a>
                     <a href="#courses" class="button primary-button">Add Course</a>
                     <a href="#attendance" class="button primary-button">Record Attendance</a>
-                    <a href="#grades" class="button primary-button">Add Grade</a>
                     <button class="button secondary-button" id="refreshDashboardBtn">Refresh Dashboard</button>
                 </div>
             </div>
@@ -85,32 +80,26 @@
                             <label for="studentName">Student Name</label>
                             <input type="text" id="studentName" name="studentName" placeholder="Student Name" required autocomplete="name">
                         </div>
-                        
                         <div class="form-field">
                             <label for="studentID">National ID</label>
                             <input type="text" id="studentID" name="studentID" placeholder="National ID" required autocomplete="off">
                         </div>
-                        
                         <div class="form-field">
                             <label for="studentCourse">Course</label>
                             <input type="text" id="studentCourse" name="studentCourse" placeholder="Course" autocomplete="off">
                         </div>
-                        
                         <div class="form-field">
                             <label for="studentSeason">Season</label>
                             <input type="number" id="studentSeason" name="studentSeason" placeholder="Season" autocomplete="off">
                         </div>
-                        
                         <div class="form-field">
                             <label for="studentPhone">Phone Number</label>
                             <input type="tel" id="studentPhone" name="studentPhone" placeholder="Phone Number" autocomplete="tel">
                         </div>
-                        
                         <div class="form-field">
                             <label for="studentLocation">Place of Living</label>
                             <input type="text" id="studentLocation" name="studentLocation" placeholder="Place of Living" autocomplete="street-address">
                         </div>
-                        
                         <div class="form-actions">
                             <button type="submit" class="button primary-button" id="saveStudentBtn">Save Student</button>
                             <button type="button" class="button cancel-button" id="cancelStudentBtn" style="display: none;">Cancel</button>
@@ -139,8 +128,7 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -150,17 +138,22 @@
                 <div class="card form-container">
                     <h3 id="teacher-form-heading">Add New Teacher</h3>
                     <form id="addTeacherForm">
-                        <label for="teacherName">Teacher Name</label>
-                        <input type="text" id="teacherName" name="teacherName" placeholder="Teacher Name" required autocomplete="name">
-                        
-                        <label for="teacherEmail">Email</label>
-                        <input type="email" id="teacherEmail" name="teacherEmail" placeholder="Email" required autocomplete="email">
-                        
-                        <label for="teacherPhone">Phone Number</label>
-                        <input type="tel" id="teacherPhone" name="teacherPhone" placeholder="Phone Number" autocomplete="tel">
-                        
-                        <button type="submit" class="button primary-button" id="saveTeacherBtn">Save Teacher</button>
-                        <button type="button" class="button cancel-button" id="cancelTeacherBtn" style="display: none;">Cancel</button>
+                        <div class="form-field">
+                            <label for="teacherName">Teacher Name</label>
+                            <input type="text" id="teacherName" name="teacherName" placeholder="Teacher Name" required autocomplete="name">
+                        </div>
+                        <div class="form-field">
+                            <label for="teacherEmail">Email</label>
+                            <input type="email" id="teacherEmail" name="teacherEmail" placeholder="Email" required autocomplete="email">
+                        </div>
+                        <div class="form-field">
+                            <label for="teacherPhone">Phone Number</label>
+                            <input type="tel" id="teacherPhone" name="teacherPhone" placeholder="Phone Number" autocomplete="tel">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="button primary-button" id="saveTeacherBtn">Save Teacher</button>
+                            <button type="button" class="button cancel-button" id="cancelTeacherBtn" style="display: none;">Cancel</button>
+                        </div>
                     </form>
                 </div>
                 <div class="card table-container">
@@ -174,8 +167,7 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -185,18 +177,24 @@
                 <div class="card form-container">
                     <h3 id="course-form-heading">Add New Course</h3>
                     <form id="addCourseForm">
-                        <label for="courseName">Course Name</label>
-                        <input type="text" id="courseName" name="courseName" placeholder="Course Name" required autocomplete="off">
-                        
-                        <label for="courseDescription">Course Description</label>
-                        <textarea id="courseDescription" name="courseDescription" placeholder="Course Description" required autocomplete="off"></textarea>
-                        
-                        <label for="assignedTeacher">Assigned Teacher</label>
-                        <select id="assignedTeacher" name="assignedTeacher" required autocomplete="off">
-                            <option value="">-- Select Teacher --</option>
-                        </select>
-                        <button type="submit" class="button primary-button" id="saveCourseBtn">Save Course</button>
-                        <button type="button" class="button cancel-button" id="cancelCourseBtn" style="display: none;">Cancel</button>
+                        <div class="form-field">
+                            <label for="courseName">Course Name</label>
+                            <input type="text" id="courseName" name="courseName" placeholder="Course Name" required autocomplete="off">
+                        </div>
+                        <div class="form-field">
+                            <label for="courseDescription">Course Description</label>
+                            <textarea id="courseDescription" name="courseDescription" placeholder="Course Description" required autocomplete="off"></textarea>
+                        </div>
+                        <div class="form-field">
+                            <label for="assignedTeacher">Assigned Teacher</label>
+                            <select id="assignedTeacher" name="assignedTeacher" required autocomplete="off">
+                                <option value="">-- Select Teacher --</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="button primary-button" id="saveCourseBtn">Save Course</button>
+                            <button type="button" class="button cancel-button" id="cancelCourseBtn" style="display: none;">Cancel</button>
+                        </div>
                     </form>
                 </div>
                 <div class="card table-container">
@@ -210,8 +208,7 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -221,20 +218,26 @@
                 <div class="card form-container">
                     <h3>Record Attendance</h3>
                     <form id="addAttendanceForm">
-                        <label for="attendanceStudent">Student</label>
-                        <select id="attendanceStudent" name="attendanceStudent" required>
-                            <option value="">-- Select a Student --</option>
-                        </select>
-                        
-                        <label for="attendanceDate">Date</label>
-                        <input type="date" id="attendanceDate" name="attendanceDate" required autocomplete="off">
-                        
-                        <label for="attendanceStatus">Status</label>
-                        <select id="attendanceStatus" name="attendanceStatus" required autocomplete="off">
-                            <option value="Present">Present</option>
-                            <option value="Absent">Absent</option>
-                        </select>
-                        <button type="submit" class="button primary-button">Record Attendance</button>
+                        <div class="form-field">
+                            <label for="attendanceStudent">Student</label>
+                            <select id="attendanceStudent" name="attendanceStudent" required>
+                                <option value="">-- Select a Student --</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="attendanceDate">Date</label>
+                            <input type="date" id="attendanceDate" name="attendanceDate" required autocomplete="off">
+                        </div>
+                        <div class="form-field">
+                            <label for="attendanceStatus">Status</label>
+                            <select id="attendanceStatus" name="attendanceStatus" required autocomplete="off">
+                                <option value="Present">Present</option>
+                                <option value="Absent">Absent</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="button primary-button">Record Attendance</button>
+                        </div>
                     </form>
                 </div>
                 <div class="card table-container">
@@ -249,18 +252,16 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
 
-        <div id="reports-analytics" class="dashboard-content-section">
-                <h2>Reports &amp; Analytics</h2>
+            <div id="reports-analytics" class="dashboard-content-section">
+                <h2>Reports & Analytics</h2>
                 <div class="quick-actions">
                     <button class="button primary-button" id="refreshDashboardReportsBtn">Refresh Data</button>
                     <button class="button secondary-button" id="exportStudentsCsvBtn">Export Students CSV</button>
-                    <button class="button secondary-button" id="exportGradesCsvBtn">Export Grades CSV</button>
                     <button class="button secondary-button" id="exportAttendanceCsvBtn">Export Attendance CSV</button>
                     <button class="button secondary-button" id="downloadLowAssignmentsBtn">Download Chart</button>
                     <button class="button secondary-button" id="exportSummaryJsonBtn">Export Summary JSON</button>
@@ -295,7 +296,6 @@
                                 <option value="">-- Select a Student --</option>
                             </select>
                         </div>
-                        
                         <div class="form-field">
                             <label for="examType">Exam Type</label>
                             <select id="examType" name="examType" required>
@@ -304,7 +304,6 @@
                                 <option value="Endterm">Endterm</option>
                             </select>
                         </div>
-                        
                         <div class="form-field">
                             <label for="examCategory">Exam Category</label>
                             <select id="examCategory" name="examCategory" required>
@@ -313,36 +312,30 @@
                                 <option value="Course">Course</option>
                             </select>
                         </div>
-                        
                         <div class="form-field">
                             <label for="examCourse">Course</label>
                             <select id="examCourse" name="examCourse" required>
                                 <option value="">-- Select a Course --</option>
                             </select>
                         </div>
-                        
                         <div class="form-field">
                             <label for="examScore">Score</label>
                             <input type="number" id="examScore" name="examScore" placeholder="Score" min="0" required>
                         </div>
-                        
                         <div class="form-field">
                             <label for="examTotalScore">Total Score</label>
                             <input type="number" id="examTotalScore" name="examTotalScore" placeholder="Total Score" min="1" required>
                         </div>
-                        
                         <div class="form-field">
                             <label for="examDate">Date</label>
                             <input type="date" id="examDate" name="examDate" required>
                         </div>
-                        
                         <div class="form-actions">
                             <button type="submit" class="button primary-button" id="saveExamBtn">Save Exam Record</button>
                             <button type="button" class="button cancel-button" id="cancelExamBtn" style="display: none;">Cancel</button>
                         </div>
                     </form>
                 </div>
-                
                 <div class="card table-container">
                     <h3>Exam Records</h3>
                     <table id="examTable">
@@ -357,9 +350,7 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <!-- Exam records will be populated here -->
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -371,11 +362,9 @@
                     <p>Verify which students meet the requirements for graduation based on attendance and exam completion.</p>
                     <button id="checkGraduationBtn" class="button primary-button">Check Eligibility Now</button>
                 </div>
-                
                 <div id="graduationResults" class="card" style="display: none;">
                     <h3>Results</h3>
                     <div id="graduationStats"></div>
-                    
                     <h4>Eligible Students</h4>
                     <div class="table-container" id="eligibleStudentsContainer">
                         <table id="eligibleStudentsTable">
@@ -386,9 +375,7 @@
                                     <th>Attendance %</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <!-- Eligible students will be populated here -->
-                            </tbody>
+                            <tbody></tbody>
                         </table>
                     </div>
                 </div>
@@ -411,7 +398,6 @@
                     </div>
                 </div>
             </div>
-
         </main>
     </div>
 
