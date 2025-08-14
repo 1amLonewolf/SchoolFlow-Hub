@@ -2025,7 +2025,34 @@ function renderLowPerformingAssignmentsChart() {
     });
 }
 
-function downloadGraduationList() {\n    if (!window.eligibleStudentsData || window.eligibleStudentsData.length === 0) {\n        showMessage('No eligible students data available for download.', 'warning');\n        return;\n    }\n    \n    // Create CSV content\n    let csvContent = 'Student Name,Course\\n';\n    window.eligibleStudentsData.forEach(student => {\n        // Sanitize data to prevent CSV injection\n        const sanitizedName = String(student.name).replace(/"/g, '""');\n        const sanitizedCourse = String(student.course).replace(/"/g, '""');\n        csvContent += `"${sanitizedName}","${sanitizedCourse}"\\n`;\n    });\n    \n    // Create blob and download link\n    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });\n    const url = URL.createObjectURL(blob);\n    const link = document.createElement('a');\n    link.setAttribute('href', url);\n    link.setAttribute('download', `eligible_graduation_students_${new Date().toISOString().slice(0, 10)}.csv`);\n    link.style.visibility = 'hidden';\n    document.body.appendChild(link);\n    link.click();\n    document.body.removeChild(link);\n    \n    showMessage('Graduation list downloaded successfully!', 'success');\n}
+function downloadGraduationList() {
+    if (!window.eligibleStudentsData || window.eligibleStudentsData.length === 0) {
+        showMessage('No eligible students data available for download.', 'warning');
+        return;
+    }
+    
+    // Create CSV content
+    let csvContent = 'Student Name,Course\n';
+    window.eligibleStudentsData.forEach(student => {
+        // Sanitize data to prevent CSV injection
+        const sanitizedName = String(student.name).replace(/"/g, '""');
+        const sanitizedCourse = String(student.course).replace(/"/g, '""');
+        csvContent += `"${sanitizedName}","${sanitizedCourse}"\n`;
+    });
+    
+    // Create blob and download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `eligible_graduation_students_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showMessage('Graduation list downloaded successfully!', 'success');
+}
 
 // ======================
 // USER INTERFACE
