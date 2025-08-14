@@ -2025,19 +2025,7 @@ function renderLowPerformingAssignmentsChart() {
     });
 }
 
-function updateSummaryMetrics() {
-    const elStudents = document.getElementById('summaryTotalStudents');
-    const elCourses = document.getElementById('summaryTotalCourses');
-    const elTeachers = document.getElementById('summaryTotalTeachers');
-    
-    // Use only active students from current season
-    const activeStudents = getStudentsBySeason(getCurrentSeason());
-    const activeCourses = getCoursesBySeason(getCurrentSeason());
-    
-    if (elStudents) elStudents.textContent = activeStudents.length;
-    if (elCourses) elCourses.textContent = activeCourses.length;
-    if (elTeachers) elTeachers.textContent = teachers.length;
-}
+function downloadGraduationList() {\n    if (!window.eligibleStudentsData || window.eligibleStudentsData.length === 0) {\n        showMessage('No eligible students data available for download.', 'warning');\n        return;\n    }\n    \n    // Create CSV content\n    let csvContent = 'Student Name,Course\\n';\n    window.eligibleStudentsData.forEach(student => {\n        // Sanitize data to prevent CSV injection\n        const sanitizedName = String(student.name).replace(/"/g, '""');\n        const sanitizedCourse = String(student.course).replace(/"/g, '""');\n        csvContent += `"${sanitizedName}","${sanitizedCourse}"\\n`;\n    });\n    \n    // Create blob and download link\n    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });\n    const url = URL.createObjectURL(blob);\n    const link = document.createElement('a');\n    link.setAttribute('href', url);\n    link.setAttribute('download', `eligible_graduation_students_${new Date().toISOString().slice(0, 10)}.csv`);\n    link.style.visibility = 'hidden';\n    document.body.appendChild(link);\n    link.click();\n    document.body.removeChild(link);\n    \n    showMessage('Graduation list downloaded successfully!', 'success');\n}
 
 // ======================
 // USER INTERFACE
@@ -2139,24 +2127,23 @@ function checkGraduationEligibility() {
             const courseCell = document.createElement('td');
             courseCell.textContent = student.course;
             
-            const attendanceCell = document.createElement('td');
-            attendanceCell.textContent = `${student.attendancePercentage}%`;
-            
             row.appendChild(nameCell);
             row.appendChild(courseCell);
-            row.appendChild(attendanceCell);
             
             eligibleStudentsTableBody.appendChild(row);
         });
     } else {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 3;
+        cell.colSpan = 2;
         cell.textContent = 'No students are currently eligible for graduation.';
         cell.style.textAlign = 'center';
         row.appendChild(cell);
         eligibleStudentsTableBody.appendChild(row);
     }
+    
+    // Store eligible students data for download
+    window.eligibleStudentsData = eligibleStudents;
     
     console.log(`[checkGraduationEligibility] Check complete. ${eligibleCount}/${totalCount} students eligible.`);
     showMessage(`Graduation eligibility check complete. ${eligibleCount} students are eligible.`, 'success');
@@ -2402,6 +2389,12 @@ function attachEventListeners() {
         checkGraduationBtn.addEventListener('click', checkGraduationEligibility);
     }
     
+    // Graduation list download button
+    const downloadGraduationBtn = document.getElementById('downloadGraduationList');
+    if (downloadGraduationBtn) {
+        downloadGraduationBtn.addEventListener('click', downloadGraduationList);
+    }
+    
     // Seasons tab buttons
     const advanceSeasonBtn = document.getElementById('advanceSeasonBtn');
     if (advanceSeasonBtn) {
@@ -2474,6 +2467,20 @@ async function loadAllData() {
         // Still try to update UI with whatever data we have
         updateUI();
     }
+}
+
+function updateSummaryMetrics() {
+    const elStudents = document.getElementById('summaryTotalStudents');
+    const elCourses = document.getElementById('summaryTotalCourses');
+    const elTeachers = document.getElementById('summaryTotalTeachers');
+    
+    // Use only active students from current season
+    const activeStudents = getStudentsBySeason(getCurrentSeason());
+    const activeCourses = getCoursesBySeason(getCurrentSeason());
+    
+    if (elStudents) elStudents.textContent = activeStudents.length;
+    if (elCourses) elCourses.textContent = activeCourses.length;
+    if (elTeachers) elTeachers.textContent = teachers.length;
 }
 
 // ======================
