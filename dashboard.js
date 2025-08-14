@@ -2725,6 +2725,9 @@ function attachEventListeners() {
     // Initialize exam table controls
     initializeExamTableControls();
     
+    // Initialize exam table controls
+    initializeExamTableControls();
+    
     // Seasons tab buttons
     const advanceSeasonBtn = document.getElementById('advanceSeasonBtn');
     if (advanceSeasonBtn) {
