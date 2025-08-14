@@ -1064,84 +1064,15 @@ async function deleteAttendanceRecord(id) {
 
 function renderExamTable() {
     console.log("[renderExamTable] Rendering exam table with data:", exams);
-    const examTableBody = document.querySelector('#examTable tbody');
-    if (!examTableBody) {
-        console.error("Exam table body not found.");
-        return;
-    }
-    examTableBody.innerHTML = '';
-
-    if (exams.length === 0) {
-        const tr = document.createElement('tr');
-        const td = document.createElement('td');
-        td.colSpan = 7;
-        td.style.textAlign = 'center';
-        td.textContent = 'No exam records added yet.';
-        tr.appendChild(td);
-        examTableBody.appendChild(tr);
-        return;
-    }
-
-    exams.forEach(exam => {
-        if (typeof exam.get !== 'function') {
-            console.error("Invalid exam object found:", exam);
-            return;
-        }
-
-        const student = students.find(s => s.id === exam.get('studentId'));
-        const examDate = exam.get('date');
-        const formattedDate = examDate ? examDate.toISOString().split('T')[0] : '';
-
-        const row = document.createElement('tr');
-
-        const makeCell = (label, value) => {
-            const td = document.createElement('td');
-            td.setAttribute('data-label', label);
-            td.textContent = value ?? '';
-            return td;
-        };
-
-        row.appendChild(makeCell('Student', student ? student.get('name') : 'N/A'));
-        row.appendChild(makeCell('Exam Type', exam.get('examType')));
-        row.appendChild(makeCell('Category', exam.get('examCategory')));
-        row.appendChild(makeCell('Course', exam.get('course')));
-        row.appendChild(makeCell('Score', `${exam.get('score')} / ${exam.get('totalScore')}`));
-        row.appendChild(makeCell('Date', formattedDate));
-
-        const actionsTd = document.createElement('td');
-        actionsTd.setAttribute('data-label', 'Actions');
-        actionsTd.className = 'actions';
-        actionsTd.style.position = 'relative';
-        actionsTd.style.zIndex = '1';
-
-        const editBtn = document.createElement('button');
-        editBtn.className = 'edit-button';
-        editBtn.textContent = 'Edit';
-        editBtn.style.position = 'relative';
-        editBtn.style.zIndex = '2';
-        editBtn.dataset.id = exam.id;
-        editBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            editExam(e.currentTarget.dataset.id);
-        });
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'delete-button';
-        deleteBtn.textContent = 'Delete';
-        deleteBtn.style.position = 'relative';
-        deleteBtn.style.zIndex = '2';
-        deleteBtn.dataset.id = exam.id;
-        deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            deleteExam(e.currentTarget.dataset.id);
-        });
-
-        actionsTd.appendChild(editBtn);
-        actionsTd.appendChild(deleteBtn);
-        row.appendChild(actionsTd);
-
-        examTableBody.appendChild(row);
-    });
+    
+    // Update course filter dropdown
+    populateExamCourseFilter();
+    
+    // Reset to first page
+    examTableState.currentPage = 1;
+    
+    // Render filtered table
+    renderFilteredExamTable();
 }
 
 async function addOrUpdateExam(event) {
@@ -1284,6 +1215,372 @@ function populateExamCourseDropdown() {
     if (currentValue && sortedCourses.some(c => c.get('name') === currentValue)) {
         examCourseSelect.value = currentValue;
     }
+}
+
+// ======================
+// EXAM TABLE ORGANIZATION
+// ======================
+
+// Exam table state management
+let examTableState = {
+    currentPage: 1,
+    pageSize: 25,
+    sortBy: 'newest',
+    searchQuery: '',
+    courseFilter: '',
+    examTypeFilter: '',
+    filteredExams: []
+};
+
+function initializeExamTableControls() {
+    // Get control elements
+    const searchInput = document.getElementById('examSearch');
+    const courseFilter = document.getElementById('examCourseFilter');
+    const typeFilter = document.getElementById('examTypeFilter');
+    const sortSelect = document.getElementById('examDateSort');
+    const clearBtn = document.getElementById('clearExamFilters');
+    const pageSizeSelect = document.getElementById('examPageSize');
+    const prevBtn = document.getElementById('examPrevPage');
+    const nextBtn = document.getElementById('examNextPage');
+    
+    // Populate course filter dropdown
+    populateExamCourseFilter();
+    
+    // Add event listeners
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(handleExamSearch, 300));
+    }
+    
+    if (courseFilter) {
+        courseFilter.addEventListener('change', handleExamFilterChange);
+    }
+    
+    if (typeFilter) {
+        typeFilter.addEventListener('change', handleExamFilterChange);
+    }
+    
+    if (sortSelect) {
+        sortSelect.addEventListener('change', handleExamSortChange);
+    }
+    
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearExamFilters);
+    }
+    
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', handlePageSizeChange);
+    }
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => navigateExamPage(-1));
+    }
+    
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => navigateExamPage(1));
+    }
+}
+
+function populateExamCourseFilter() {
+    const courseFilter = document.getElementById('examCourseFilter');
+    if (!courseFilter) return;
+    
+    // Save current selection
+    const currentValue = courseFilter.value;
+    
+    // Clear and repopulate
+    courseFilter.innerHTML = '<option value="">All Courses</option>';
+    
+    // Get unique courses from exams
+    const examCourses = [...new Set(exams.map(exam => exam.get('course')).filter(Boolean))];
+    
+    // Add courses from current course list as well
+    const allCourses = [...new Set([...examCourses, ...courses.map(c => c.get('name')).filter(Boolean)])];
+    
+    // Sort and add to dropdown
+    allCourses.sort().forEach(course => {
+        const option = document.createElement('option');
+        option.value = course;
+        option.textContent = course;
+        courseFilter.appendChild(option);
+    });
+    
+    // Restore selection if it still exists
+    if (currentValue && allCourses.includes(currentValue)) {
+        courseFilter.value = currentValue;
+    }
+}
+
+function handleExamSearch(event) {
+    examTableState.searchQuery = event.target.value.toLowerCase();
+    examTableState.currentPage = 1;
+    renderFilteredExamTable();
+}
+
+function handleExamFilterChange() {
+    const courseFilter = document.getElementById('examCourseFilter');
+    const typeFilter = document.getElementById('examTypeFilter');
+    
+    if (courseFilter) {
+        examTableState.courseFilter = courseFilter.value;
+    }
+    
+    if (typeFilter) {
+        examTableState.examTypeFilter = typeFilter.value;
+    }
+    
+    examTableState.currentPage = 1;
+    renderFilteredExamTable();
+}
+
+function handleExamSortChange(event) {
+    examTableState.sortBy = event.target.value;
+    examTableState.currentPage = 1;
+    renderFilteredExamTable();
+}
+
+function handlePageSizeChange(event) {
+    examTableState.pageSize = parseInt(event.target.value);
+    examTableState.currentPage = 1;
+    renderFilteredExamTable();
+}
+
+function clearExamFilters() {
+    // Reset all filters
+    examTableState.searchQuery = '';
+    examTableState.courseFilter = '';
+    examTableState.examTypeFilter = '';
+    examTableState.sortBy = 'newest';
+    examTableState.currentPage = 1;
+    
+    // Update UI controls
+    const searchInput = document.getElementById('examSearch');
+    const courseFilter = document.getElementById('examCourseFilter');
+    const typeFilter = document.getElementById('examTypeFilter');
+    const sortSelect = document.getElementById('examDateSort');
+    
+    if (searchInput) searchInput.value = '';
+    if (courseFilter) courseFilter.value = '';
+    if (typeFilter) typeFilter.value = '';
+    if (sortSelect) sortSelect.value = 'newest';
+    
+    renderFilteredExamTable();
+}
+
+function navigateExamPage(direction) {
+    const newPage = examTableState.currentPage + direction;
+    const totalPages = Math.ceil(examTableState.filteredExams.length / examTableState.pageSize);
+    
+    if (newPage >= 1 && newPage <= totalPages) {
+        examTableState.currentPage = newPage;
+        renderFilteredExamTable();
+    }
+}
+
+function filterAndSortExams() {
+    let filtered = [...exams];
+    
+    // Apply search filter
+    if (examTableState.searchQuery) {
+        filtered = filtered.filter(exam => {
+            const student = students.find(s => s.id === exam.get('studentId'));
+            const studentName = student ? student.get('name') || '' : '';
+            const course = exam.get('course') || '';
+            const examType = exam.get('examType') || '';
+            const category = exam.get('examCategory') || '';
+            
+            const searchText = `${studentName} ${course} ${examType} ${category}`.toLowerCase();
+            return searchText.includes(examTableState.searchQuery);
+        });
+    }
+    
+    // Apply course filter
+    if (examTableState.courseFilter) {
+        filtered = filtered.filter(exam => exam.get('course') === examTableState.courseFilter);
+    }
+    
+    // Apply exam type filter
+    if (examTableState.examTypeFilter) {
+        filtered = filtered.filter(exam => exam.get('examType') === examTableState.examTypeFilter);
+    }
+    
+    // Apply sorting
+    filtered.sort((a, b) => {
+        switch (examTableState.sortBy) {
+            case 'oldest':
+                return new Date(a.get('date')) - new Date(b.get('date'));
+            case 'highest':
+                const scoreA = (a.get('score') / a.get('totalScore')) || 0;
+                const scoreB = (b.get('score') / b.get('totalScore')) || 0;
+                return scoreB - scoreA;
+            case 'lowest':
+                const scoreC = (a.get('score') / a.get('totalScore')) || 0;
+                const scoreD = (b.get('score') / b.get('totalScore')) || 0;
+                return scoreC - scoreD;
+            case 'newest':
+            default:
+                return new Date(b.get('date')) - new Date(a.get('date'));
+        }
+    });
+    
+    return filtered;
+}
+
+function renderFilteredExamTable() {
+    // Filter and sort exams
+    examTableState.filteredExams = filterAndSortExams();
+    
+    // Update record counts
+    updateExamRecordCounts();
+    
+    // Calculate pagination
+    const totalPages = Math.ceil(examTableState.filteredExams.length / examTableState.pageSize);
+    const startIndex = (examTableState.currentPage - 1) * examTableState.pageSize;
+    const endIndex = Math.min(startIndex + examTableState.pageSize, examTableState.filteredExams.length);
+    const pageExams = examTableState.filteredExams.slice(startIndex, endIndex);
+    
+    // Render table
+    renderExamTablePage(pageExams);
+    
+    // Update pagination controls
+    updateExamPaginationControls(totalPages);
+}
+
+function renderExamTablePage(examsToShow) {
+    const examTableBody = document.querySelector('#examTable tbody');
+    if (!examTableBody) return;
+    
+    examTableBody.innerHTML = '';
+    
+    if (examsToShow.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 7;
+        td.style.textAlign = 'center';
+        td.textContent = 'No exam records match the current filters.';
+        tr.appendChild(td);
+        examTableBody.appendChild(tr);
+        return;
+    }
+    
+    examsToShow.forEach(exam => {
+        if (typeof exam.get !== 'function') {
+            console.error("Invalid exam object found:", exam);
+            return;
+        }
+        
+        const student = students.find(s => s.id === exam.get('studentId'));
+        const examDate = exam.get('date');
+        const formattedDate = examDate ? examDate.toISOString().split('T')[0] : '';
+        
+        const row = document.createElement('tr');
+        
+        const makeCell = (label, value) => {
+            const td = document.createElement('td');
+            td.setAttribute('data-label', label);
+            td.textContent = value ?? '';
+            return td;
+        };
+        
+        // Add visual indicators for scores
+        const scoreValue = exam.get('score');
+        const totalScore = exam.get('totalScore');
+        let scoreText = `${scoreValue} / ${totalScore}`;
+        if (totalScore > 0) {
+            const percentage = (scoreValue / totalScore) * 100;
+            if (percentage >= 80) {
+                scoreText += ' 🟢'; // High score
+            } else if (percentage >= 60) {
+                scoreText += ' 🟡'; // Medium score
+            } else {
+                scoreText += ' 🔴'; // Low score
+            }
+        }
+        
+        row.appendChild(makeCell('Student', student ? student.get('name') : 'N/A'));
+        row.appendChild(makeCell('Exam Type', exam.get('examType')));
+        row.appendChild(makeCell('Category', exam.get('examCategory')));
+        row.appendChild(makeCell('Course', exam.get('course')));
+        row.appendChild(makeCell('Score', scoreText));
+        row.appendChild(makeCell('Date', formattedDate));
+        
+        const actionsTd = document.createElement('td');
+        actionsTd.setAttribute('data-label', 'Actions');
+        actionsTd.className = 'actions';
+        actionsTd.style.position = 'relative';
+        actionsTd.style.zIndex = '1';
+        
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-button';
+        editBtn.textContent = 'Edit';
+        editBtn.style.position = 'relative';
+        editBtn.style.zIndex = '2';
+        editBtn.dataset.id = exam.id;
+        editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            editExam(e.currentTarget.dataset.id);
+        });
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-button';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.style.position = 'relative';
+        deleteBtn.style.zIndex = '2';
+        deleteBtn.dataset.id = exam.id;
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteExam(e.currentTarget.dataset.id);
+        });
+        
+        actionsTd.appendChild(editBtn);
+        actionsTd.appendChild(deleteBtn);
+        row.appendChild(actionsTd);
+        
+        examTableBody.appendChild(row);
+    });
+}
+
+function updateExamRecordCounts() {
+    const totalCountElement = document.getElementById('examTotalCount');
+    const filteredCountElement = document.getElementById('examFilteredCount');
+    
+    if (totalCountElement) {
+        totalCountElement.textContent = exams.length;
+    }
+    
+    if (filteredCountElement) {
+        filteredCountElement.textContent = examTableState.filteredExams.length;
+    }
+}
+
+function updateExamPaginationControls(totalPages) {
+    const prevBtn = document.getElementById('examPrevPage');
+    const nextBtn = document.getElementById('examNextPage');
+    const pageInfo = document.getElementById('examPageInfo');
+    
+    if (prevBtn) {
+        prevBtn.disabled = examTableState.currentPage <= 1;
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = examTableState.currentPage >= totalPages;
+    }
+    
+    if (pageInfo) {
+        pageInfo.textContent = `Page ${examTableState.currentPage} of ${totalPages || 1}`;
+    }
+}
+
+// Utility function for debouncing search input
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
 function showExamsTab() {
@@ -2421,6 +2718,12 @@ function attachEventListeners() {
     if (downloadGraduationBtn) {
         downloadGraduationBtn.addEventListener('click', downloadGraduationList);
     }
+    
+    // Initialize exam table controls
+    initializeExamTableControls();
+    
+    // Initialize exam table controls
+    initializeExamTableControls();
     
     // Seasons tab buttons
     const advanceSeasonBtn = document.getElementById('advanceSeasonBtn');

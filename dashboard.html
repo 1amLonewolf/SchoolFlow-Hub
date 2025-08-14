@@ -339,6 +339,46 @@
                 </div>
                 <div class="card table-container">
                     <h3>Exam Records</h3>
+                    <!-- Exam Records Controls -->
+                    <div class="exam-controls" style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+                            <div>
+                                <label for="examSearch" style="font-weight: 500; margin-right: 10px;">Search:</label>
+                                <input type="text" id="examSearch" placeholder="Search exams..." style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px;">
+                            </div>
+                            <div>
+                                <label for="examCourseFilter" style="font-weight: 500; margin-right: 10px;">Course:</label>
+                                <select id="examCourseFilter" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                                    <option value="">All Courses</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="examTypeFilter" style="font-weight: 500; margin-right: 10px;">Exam Type:</label>
+                                <select id="examTypeFilter" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                                    <option value="">All Types</option>
+                                    <option value="Midterm">Midterm</option>
+                                    <option value="Endterm">Endterm</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="examDateSort" style="font-weight: 500; margin-right: 10px;">Sort By:</label>
+                                <select id="examDateSort" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                                    <option value="newest">Newest First</option>
+                                    <option value="oldest">Oldest First</option>
+                                    <option value="highest">Highest Score</option>
+                                    <option value="lowest">Lowest Score</option>
+                                </select>
+                            </div>
+                            <div>
+                                <button id="clearExamFilters" class="button secondary-button" style="padding: 8px 15px;">Clear Filters</button>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <span id="examRecordCount" style="font-weight: 500;">Total Records: <span id="examTotalCount">0</span></span>
+                            <span id="filteredRecordCount" style="font-weight: 500; color: #2575fc;">Filtered: <span id="examFilteredCount">0</span></span>
+                        </div>
+                    </div>
+                    <!-- End Exam Records Controls -->
                     <table id="examTable">
                         <thead>
                             <tr>
@@ -353,6 +393,19 @@
                         </thead>
                         <tbody></tbody>
                     </table>
+                    <!-- Pagination Controls -->
+                    <div id="examPagination" class="pagination-controls" style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 10px;">
+                        <button id="examPrevPage" class="button secondary-button" disabled>Previous</button>
+                        <span id="examPageInfo">Page 1 of 1</span>
+                        <button id="examNextPage" class="button secondary-button" disabled>Next</button>
+                        <select id="examPageSize" style="padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                            <option value="10">10 per page</option>
+                            <option value="25" selected>25 per page</option>
+                            <option value="50">50 per page</option>
+                            <option value="100">100 per page</option>
+                        </select>
+                    </div>
+                    <!-- End Pagination Controls -->
                 </div>
             </div>
 
