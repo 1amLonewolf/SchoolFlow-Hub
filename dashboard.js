@@ -2038,7 +2038,8 @@ function downloadGraduationList() {
         // Sanitize data to prevent CSV injection
         const sanitizedName = String(student.name).replace(/"/g, '""');
         const sanitizedCourse = String(student.course).replace(/"/g, '""');
-        csvContent += `"${sanitizedName}","${sanitizedCourse}"\n`;
+        csvContent += `"${sanitizedName}","${sanitizedCourse}"
+`;
     });
     
     // Create blob and download link
