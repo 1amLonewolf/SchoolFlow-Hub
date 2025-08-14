@@ -1336,6 +1336,55 @@ body.dark-mode .setting-card h3 {
     }
 }
 
+/* Confirm Dialog */
+.confirm-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.confirm-dialog-content {
+    background-color: var(--card-bg-light);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+}
+
+.confirm-dialog-content p {
+    font-size: 1.1rem;
+    margin-bottom: 25px;
+    color: var(--text-color-light);
+}
+
+.confirm-dialog-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.confirm-dialog-buttons .button {
+    margin: 0;
+}
+
+/* Dark mode support for confirm dialog */
+body.dark-mode .confirm-dialog-content {
+    background-color: var(--card-bg-dark);
+}
+
+body.dark-mode .confirm-dialog-content p {
+    color: var(--text-color-dark);
+}
+
 /* Global overflow handling */
 .main-content,
 .dashboard-content-section,
