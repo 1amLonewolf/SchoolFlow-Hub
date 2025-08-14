@@ -2032,7 +2032,8 @@ function downloadGraduationList() {
     }
     
     // Create CSV content
-    let csvContent = 'Student Name,Course\n';
+    let csvContent = 'Student Name,Course
+';
     window.eligibleStudentsData.forEach(student => {
         // Sanitize data to prevent CSV injection
         const sanitizedName = String(student.name).replace(/"/g, '""');
