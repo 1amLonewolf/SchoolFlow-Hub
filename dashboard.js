@@ -937,20 +937,60 @@ function renderOverallAttendanceChart() {
             labels: ['Present', 'Absent'],
             datasets: [{
                 data: [presentCount, absentCount],
-                backgroundColor: ['#4CAF50', '#f44336']
+                backgroundColor: [
+                    'rgba(76, 175, 80, 0.8)',   // Green for Present
+                    'rgba(244, 67, 54, 0.8)'    // Red for Absent
+                ],
+                borderColor: [
+                    'rgba(76, 175, 80, 1)',
+                    'rgba(244, 67, 54, 1)'
+                ],
+                borderWidth: 2,
+                hoverOffset: 15
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            cutout: '60%',
             plugins: {
                 legend: {
                     position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
                 },
                 title: {
                     display: true,
-                    text: 'Overall Attendance Summary (Current Season)'
+                    text: 'Overall Attendance Summary (Current Season)',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: 20
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            const total = presentCount + absentCount;
+                            const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
+                            return `${context.label}: ${context.raw} (${percentage}%)`;
+                        }
+                    }
                 }
+            },
+            animation: {
+                animateRotate: true,
+                animateScale: true
             }
         }
     });
@@ -1288,22 +1328,85 @@ function renderCoursePopularityChart() {
             datasets: [{
                 label: 'Number of Students',
                 data: data,
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
+                backgroundColor: labels.map((_, i) => {
+                    const colors = [
+                        'rgba(54, 162, 235, 0.7)',  // Blue
+                        'rgba(255, 99, 132, 0.7)',  // Red
+                        'rgba(255, 206, 86, 0.7)',  // Yellow
+                        'rgba(75, 192, 192, 0.7)',  // Teal
+                        'rgba(153, 102, 255, 0.7)', // Purple
+                        'rgba(255, 159, 64, 0.7)',  // Orange
+                        'rgba(199, 199, 199, 0.7)'  // Grey
+                    ];
+                    return colors[i % colors.length];
+                }),
+                borderColor: labels.map((_, i) => {
+                    const colors = [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(199, 199, 199, 1)'
+                    ];
+                    return colors[i % colors.length];
+                }),
+                borderWidth: 2,
+                borderRadius: 4,
+                borderSkipped: false,
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true }
-            },
             plugins: {
                 title: {
                     display: true,
-                    text: 'Student Enrollment by Course (Current Season)'
+                    text: 'Student Enrollment by Course (Current Season)',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: 20
+                },
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return `Students: ${context.raw}`;
+                        }
+                    }
                 }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        precision: 0
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
             }
         }
     });
@@ -1346,22 +1449,80 @@ function renderTopStudentsChart() {
         data: {
             labels: topStudents.map(s => s.name),
             datasets: [{
+                label: 'Average Score (%)',
                 data: topStudents.map(s => s.average),
                 backgroundColor: [
-                    'rgba(255, 99, 132, 0.5)',
-                    'rgba(54, 162, 235, 0.5)',
-                    'rgba(255, 206, 86, 0.5)',
-                    'rgba(75, 192, 192, 0.5)',
-                    'rgba(153, 102, 255, 0.5)'
-                ]
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ],
+                borderWidth: 2,
+                hoverOffset: 10
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'right' },
-                title: { display: true, text: 'Top 5 Students by Average Exam Score (Current Season)' }
+                legend: { 
+                    position: 'right',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                title: { 
+                    display: true, 
+                    text: 'Top 5 Students by Average Exam Score (Current Season)',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: 20
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.raw.toFixed(1)}%`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                r: {
+                    angleLines: {
+                        display: true
+                    },
+                    suggestedMin: 0,
+                    suggestedMax: 100,
+                    ticks: {
+                        stepSize: 20,
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            animation: {
+                duration: 1500,
+                easing: 'easeOutQuart'
             }
         }
     });
@@ -1794,16 +1955,72 @@ function renderLowPerformingAssignmentsChart() {
             datasets: [{
                 label: 'Lowest % score',
                 data,
-                backgroundColor: 'rgba(244, 67, 54, 0.6)',
-                borderColor: 'rgba(244, 67, 54, 1)',
-                borderWidth: 1,
+                backgroundColor: 'rgba(244, 67, 54, 0.7)',  // Red with transparency
+                borderColor: 'rgba(244, 67, 54, 1)',       // Solid red border
+                borderWidth: 2,
+                borderRadius: 4,
+                borderSkipped: false,
+                hoverBackgroundColor: 'rgba(244, 67, 54, 0.9)',
+                hoverBorderColor: 'rgba(244, 67, 54, 1)',
+                hoverBorderWidth: 3
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
-            plugins: { title: { display: true, text: 'Low Performing Exams (min %) - Current Season' } }
+            indexAxis: 'y',
+            plugins: {
+                title: { 
+                    display: true, 
+                    text: 'Low Performing Exams (min %) - Current Season',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: 20
+                },
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return `Lowest Score: ${context.raw}%`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        },
+                        precision: 0
+                    }
+                },
+                y: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            animation: {
+                duration: 1200,
+                easing: 'easeOutQuart'
+            }
         }
     });
 }
