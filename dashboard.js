@@ -2032,14 +2032,12 @@ function downloadGraduationList() {
     }
     
     // Create CSV content
-    let csvContent = 'Student Name,Course
-';
+    let csvContent = 'Student Name,Course\n';
     window.eligibleStudentsData.forEach(student => {
         // Sanitize data to prevent CSV injection
         const sanitizedName = String(student.name).replace(/"/g, '""');
         const sanitizedCourse = String(student.course).replace(/"/g, '""');
-        csvContent += `"${sanitizedName}","${sanitizedCourse}"
-`;
+        csvContent += `"${sanitizedName}","${sanitizedCourse}"\n`;
     });
     
     // Create blob and download link
