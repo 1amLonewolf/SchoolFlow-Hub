@@ -1376,6 +1376,11 @@ body.dark-mode .setting-card h3 {
     margin: 0;
 }
 
+/* Override default cancel button hiding for confirm dialog */
+.confirm-dialog-buttons .cancel-button {
+    display: inline-block;
+}
+
 /* Dark mode support for confirm dialog */
 body.dark-mode .confirm-dialog-content {
     background-color: var(--card-bg-dark);
