@@ -434,6 +434,14 @@ function attachEventListeners() {
     if (resetPreferencesBtn) {
         resetPreferencesBtn.addEventListener('click', resetPreferences);
     }
+    
+    // Graduation table PDF export
+    const exportGraduationTablePdfBtn = document.getElementById('exportGraduationTablePdfBtn');
+    if (exportGraduationTablePdfBtn) {
+        exportGraduationTablePdfBtn.addEventListener('click', () => {
+            Utils.exportTableToPDF('eligibleStudentsTable', 'Graduation Eligibility Report', 'graduation-eligibility.pdf');
+        });
+    }
 
     console.log("[attachEventListeners] All event listeners attached.");
 }
