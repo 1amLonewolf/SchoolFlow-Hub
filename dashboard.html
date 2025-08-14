@@ -338,13 +338,14 @@
                     </form>
                 </div>
                 <div class="card table-container">
-                    <h3>Exam Records</h3>
+                    <h3>Exam Records <i class="fas fa-graduation-cap animated-icon icon-spin" style="font-size: 0.8em;"></i></h3>
                     <!-- Exam Records Controls -->
                     <div class="exam-controls" style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
                         <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
                             <div>
                                 <label for="examSearch" style="font-weight: 500; margin-right: 10px;">Search:</label>
                                 <input type="text" id="examSearch" placeholder="Search exams..." style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px;">
+                                <i class="fas fa-search animated-icon icon-fade" style="margin-left: 5px; color: #6c757d;"></i>
                             </div>
                             <div>
                                 <label for="examCourseFilter" style="font-weight: 500; margin-right: 10px;">Course:</label>
@@ -376,6 +377,10 @@
                         <div style="margin-top: 15px; display: flex; gap: 10px;">
                             <span id="examRecordCount" style="font-weight: 500;">Total Records: <span id="examTotalCount">0</span></span>
                             <span id="filteredRecordCount" style="font-weight: 500; color: #2575fc;">Filtered: <span id="examFilteredCount">0</span></span>
+                            <button id="refreshExamTable" class="button secondary-button" style="padding: 5px 10px; margin-left: 10px;">
+                                <i class="fas fa-sync-alt animated-icon icon-spin" id="examRefreshIcon" style="display: none;"></i>
+                                <span id="examRefreshText">Refresh</span>
+                            </button>
                         </div>
                     </div>
                     <!-- End Exam Records Controls -->

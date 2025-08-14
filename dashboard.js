@@ -1065,14 +1065,23 @@ async function deleteAttendanceRecord(id) {
 function renderExamTable() {
     console.log("[renderExamTable] Rendering exam table with data:", exams);
     
-    // Update course filter dropdown
-    populateExamCourseFilter();
+    // Show loading indicator
+    const examTableBody = document.querySelector('#examTable tbody');
+    if (examTableBody) {
+        examTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;"><div class="loading-spinner" style="margin: 0 auto;"></div><p style="margin-top: 10px;">Loading exam records...</p></td></tr>';
+    }
     
-    // Reset to first page
-    examTableState.currentPage = 1;
-    
-    // Render filtered table
-    renderFilteredExamTable();
+    // Small delay to show loading spinner
+    setTimeout(() => {
+        // Update course filter dropdown
+        populateExamCourseFilter();
+        
+        // Reset to first page
+        examTableState.currentPage = 1;
+        
+        // Render filtered table
+        renderFilteredExamTable();
+    }, 300);
 }
 
 async function addOrUpdateExam(event) {
@@ -2750,6 +2759,34 @@ function attachEventListeners() {
     if (exportAllSeasonsBtn) {
         exportAllSeasonsBtn.addEventListener('click', () => {
             showMessage('All seasons export functionality coming soon.', 'info');
+        });
+    }
+    
+    // Exam table refresh button
+    const refreshExamTableBtn = document.getElementById('refreshExamTable');
+    if (refreshExamTableBtn) {
+        refreshExamTableBtn.addEventListener('click', async () => {
+            const refreshIcon = document.getElementById('examRefreshIcon');
+            const refreshText = document.getElementById('examRefreshText');
+            
+            // Show loading animation
+            if (refreshIcon) refreshIcon.style.display = 'inline-block';
+            if (refreshText) refreshText.textContent = 'Refreshing...';
+            refreshExamTableBtn.disabled = true;
+            
+            try {
+                // Reload data
+                await loadAllData();
+                showMessage('Exam records refreshed successfully!', 'success');
+            } catch (error) {
+                console.error('Error refreshing exam records:', error);
+                showMessage('Error refreshing exam records. Please try again.', 'error');
+            } finally {
+                // Hide loading animation
+                if (refreshIcon) refreshIcon.style.display = 'none';
+                if (refreshText) refreshText.textContent = 'Refresh';
+                refreshExamTableBtn.disabled = false;
+            }
         });
     }
 
