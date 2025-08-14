@@ -262,6 +262,11 @@ function switchToTab(tabId) {
         section.style.display = 'none';
         if (section.id === tabId) {
             section.style.display = 'block';
+            
+            // Trigger counter animation for reports tab
+            if (tabId === 'reports-analytics') {
+                triggerReportsCounterAnimation();
+            }
         }
     });
 }
@@ -2540,6 +2545,11 @@ function attachEventListeners() {
                         if (targetId === 'exams') {
                             showExamsTab();
                         }
+                        
+                        // Trigger counter animation for reports tab
+                        if (targetId === 'reports-analytics') {
+                            triggerReportsCounterAnimation();
+                        }
                     }, 0);
                 }
                 if (sidebar.classList.contains('open')) {
@@ -2840,17 +2850,80 @@ async function loadAllData() {
 }
 
 function updateSummaryMetrics() {
-    const elStudents = document.getElementById('summaryTotalStudents');
-    const elCourses = document.getElementById('summaryTotalCourses');
-    const elTeachers = document.getElementById('summaryTotalTeachers');
-    
     // Use only active students from current season
     const activeStudents = getStudentsBySeason(getCurrentSeason());
     const activeCourses = getCoursesBySeason(getCurrentSeason());
     
-    if (elStudents) elStudents.textContent = activeStudents.length;
-    if (elCourses) elCourses.textContent = activeCourses.length;
-    if (elTeachers) elTeachers.textContent = teachers.length;
+    // Update counters with animation
+    animateCounter('summaryTotalStudents', activeStudents.length);
+    animateCounter('summaryTotalCourses', activeCourses.length);
+    animateCounter('summaryTotalTeachers', teachers.length);
+}
+
+// Counter animation function
+function animateCounter(elementId, endValue) {
+    const counterElement = document.getElementById(elementId);
+    if (!counterElement) return;
+    
+    // Get current displayed value or default to 0
+    const startValue = parseInt(counterElement.getAttribute('data-current-value') || '0');
+    
+    // If values are the same, no need to animate
+    if (startValue === endValue) return;
+    
+    // Store the end value
+    counterElement.setAttribute('data-current-value', endValue);
+    
+    // Create counter digits if not already created
+    if (counterElement.children.length === 0) {
+        // Create digit container
+        const digitContainer = document.createElement('span');
+        digitContainer.className = 'counter-digit';
+        
+        // Create number element
+        const numberElement = document.createElement('span');
+        numberElement.className = 'counter-number';
+        numberElement.setAttribute('data-digit', startValue);
+        numberElement.textContent = startValue;
+        
+        digitContainer.appendChild(numberElement);
+        counterElement.appendChild(digitContainer);
+    }
+    
+    // Animate the counter
+    let startTimestamp = null;
+    const duration = 1000; // 1 second animation
+    
+    const animate = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        
+        // Ease out function for smooth animation
+        const easeOutQuad = 1 - Math.pow(1 - progress, 2);
+        const currentValue = Math.floor(startValue + (endValue - startValue) * easeOutQuad);
+        
+        // Update the displayed value
+        const numberElement = counterElement.querySelector('.counter-number');
+        if (numberElement) {
+            numberElement.setAttribute('data-digit', currentValue);
+            numberElement.textContent = currentValue;
+        }
+        
+        // Continue animation if not complete
+        if (progress < 1) {
+            window.requestAnimationFrame(animate);
+        }
+    };
+    
+    window.requestAnimationFrame(animate);
+}
+
+// Function to trigger counter animation when reports tab is opened
+function triggerReportsCounterAnimation() {
+    // Small delay to ensure DOM is ready
+    setTimeout(() => {
+        updateSummaryMetrics();
+    }, 100);
 }
 
 // ======================
