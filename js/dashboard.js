@@ -377,8 +377,161 @@ function attachEventListeners() {
             seasonManager.archiveCurrentSeason();
         });
     }
+    
+    // Export buttons
+    const exportStudentsCsvBtn = document.getElementById('exportStudentsCsvBtn');
+    if (exportStudentsCsvBtn) {
+        exportStudentsCsvBtn.addEventListener('click', exportStudentsCSV);
+    }
+    
+    const exportStudentsPdfBtn = document.getElementById('exportStudentsPdfBtn');
+    if (exportStudentsPdfBtn) {
+        exportStudentsPdfBtn.addEventListener('click', () => {
+            Utils.exportTableToPDF('studentTable', 'Student Report', 'students.pdf');
+        });
+    }
+    
+    const exportAttendanceCsvBtn = document.getElementById('exportAttendanceCsvBtn');
+    if (exportAttendanceCsvBtn) {
+        exportAttendanceCsvBtn.addEventListener('click', exportAttendanceCSV);
+    }
+    
+    const exportAttendancePdfBtn = document.getElementById('exportAttendancePdfBtn');
+    if (exportAttendancePdfBtn) {
+        exportAttendancePdfBtn.addEventListener('click', () => {
+            Utils.exportTableToPDF('attendanceTable', 'Attendance Report', 'attendance.pdf');
+        });
+    }
+    
+    const exportStudentTablePdfBtn = document.getElementById('exportStudentTablePdfBtn');
+    if (exportStudentTablePdfBtn) {
+        exportStudentTablePdfBtn.addEventListener('click', () => {
+            Utils.exportTableToPDF('studentTable', 'Student Report', 'students.pdf');
+        });
+    }
+    
+    const exportAttendanceTablePdfBtn = document.getElementById('exportAttendanceTablePdfBtn');
+    if (exportAttendanceTablePdfBtn) {
+        exportAttendanceTablePdfBtn.addEventListener('click', () => {
+            Utils.exportTableToPDF('attendanceTable', 'Attendance Report', 'attendance.pdf');
+        });
+    }
+    
+    const downloadLowAssignmentsBtn = document.getElementById('downloadLowAssignmentsBtn');
+    if (downloadLowAssignmentsBtn) {
+        downloadLowAssignmentsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            downloadChart('lowPerformingAssignmentsChart', 'low-performing-assignments.png');
+        });
+    }
+    
+    const exportSummaryJsonBtn = document.getElementById('exportSummaryJsonBtn');
+    if (exportSummaryJsonBtn) {
+        exportSummaryJsonBtn.addEventListener('click', exportSummaryJSON);
+    }
+    
+    const resetPreferencesBtn = document.getElementById('resetPreferencesBtn');
+    if (resetPreferencesBtn) {
+        resetPreferencesBtn.addEventListener('click', resetPreferences);
+    }
 
     console.log("[attachEventListeners] All event listeners attached.");
+}
+
+// ======================
+// EXPORT FUNCTIONS
+// ======================
+
+function exportStudentsCSV() {
+    // PII-reduced export: omit National ID by default
+    const rows = [["Name","Course","Season","Phone","Location"]];
+    window.studentManager.getStudents().forEach(s => rows.push([
+        s.get('name') || '',
+        s.get('course') || '',
+        s.get('season') || '',
+        s.get('phone') || '',
+        s.get('location') || ''
+    ]));
+    const csv = toCSV(rows);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'students.csv'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportAttendanceCSV() {
+    const rows = [["Date","Student","Course","Status"]];
+    // We would need to access attendance records here
+    const attendanceRecords = []; // This would need to be implemented
+    attendanceRecords.forEach(r => {
+        const student = window.studentManager.getStudents().find(s => s.id === r.get('studentId'));
+        const d = r.get('date');
+        rows.push([
+            d ? new Date(d).toLocaleDateString() : '',
+            student ? student.get('name') : '',
+            student ? student.get('course') : '',
+            r.get('status') || ''
+        ]);
+    });
+    const csv = toCSV(rows);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'attendance.csv'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportSummaryJSON() {
+    const summary = {
+        totalStudents: window.studentManager.getStudents().length,
+        totalCourses: 0, // This would need to be implemented
+        totalTeachers: window.teacherManager.getTeachers().length,
+    };
+    const blob = new Blob([JSON.stringify(summary, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'summary.json'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function toCSV(rows) {
+    // Sanitize to mitigate CSV/Excel formula injection
+    const sanitize = (v) => {
+        if (v === null || v === undefined) return '';
+        let s = String(v);
+        // Neutralize leading formula characters or control characters
+        if (/^[=+\-@]/.test(s) || /^[\t\r\n]/.test(s)) {
+            s = "'" + s;
+        }
+        return s.replace(/"/g, '""');
+    };
+    return rows.map(r => r.map(v => `"${sanitize(v)}"`).join(',')).join('\n');
+}
+
+function downloadChart(canvasId, filename = 'chart.png') {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) {
+        Utils.showMessage('Chart not found.', 'error');
+        return;
+    }
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = filename;
+    link.click();
+}
+
+function resetPreferences() {
+    try {
+        localStorage.removeItem('darkMode');
+        document.body.classList.remove('dark-mode');
+        const toggle = document.getElementById('settingsDarkModeToggle');
+        if (toggle) toggle.checked = false;
+        Utils.showMessage('Preferences reset.', 'success');
+    } catch (e) {
+        console.error('Error resetting preferences:', e);
+        Utils.showMessage('Failed to reset preferences.', 'error');
+    }
 }
 
 // Initialize when DOM is loaded

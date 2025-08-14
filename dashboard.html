@@ -118,6 +118,9 @@
                 </div>
                 <div class="card table-container">
                     <h3>Student List</h3>
+                    <div class="quick-actions">
+                        <button class="button secondary-button" id="exportStudentTablePdfBtn">Export to PDF</button>
+                    </div>
                     <table id="studentTable">
                         <thead>
                             <tr>
@@ -243,6 +246,9 @@
                 </div>
                 <div class="card table-container">
                     <h3>Attendance Records</h3>
+                    <div class="quick-actions">
+                        <button class="button secondary-button" id="exportAttendanceTablePdfBtn">Export to PDF</button>
+                    </div>
                     <table id="attendanceTable">
                         <thead>
                             <tr>
@@ -263,7 +269,9 @@
                 <div class="quick-actions">
                     <button class="button primary-button" id="refreshDashboardReportsBtn">Refresh Data</button>
                     <button class="button secondary-button" id="exportStudentsCsvBtn">Export Students CSV</button>
+                    <button class="button secondary-button" id="exportStudentsPdfBtn">Export Students PDF</button>
                     <button class="button secondary-button" id="exportAttendanceCsvBtn">Export Attendance CSV</button>
+                    <button class="button secondary-button" id="exportAttendancePdfBtn">Export Attendance PDF</button>
                     <button class="button secondary-button" id="downloadLowAssignmentsBtn">Download Chart</button>
                     <button class="button secondary-button" id="exportSummaryJsonBtn">Export Summary JSON</button>
                 </div>
@@ -510,6 +518,9 @@
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
     <script type="text/javascript" src="https://unpkg.com/parse@3.5.0/dist/parse.min.js" integrity="sha384-Mz2IuwzErOmLZO5CL/dA/e9J6/CPmJj85krQJUq7sGQqyKh/tUegVCix9rHZNKeh" crossorigin="anonymous"></script>
+    <!-- PDF Export Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Bundled JavaScript File -->
     <script src="dist/bundle.js"></script>
 </body>
