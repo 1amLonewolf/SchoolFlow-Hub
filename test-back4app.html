@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Back4App Connection Test</title>
+    <script src="https://unpkg.com/parse@3.5.0/dist/parse.min.js"></script>
+</head>
+<body>
+    <h1>Back4App Connection Test</h1>
+    <button id="testConnection">Test Connection</button>
+    <div id="result"></div>
+
+    <script>
+        // Back4App Parse SDK Configuration
+        const B4A_APP_ID = '1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0';
+        const B4A_JS_KEY = '7CE7gnknAyyfSZRTWpqvuDvNhLOMsF0DNYk8qvgn';
+        const B4A_SERVER_URL = 'https://parseapi.back4app.com/';
+
+        // Initialize Parse SDK
+        Parse.initialize(B4A_APP_ID, B4A_JS_KEY);
+        Parse.serverURL = B4A_SERVER_URL;
+
+        document.getElementById('testConnection').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Testing connection...</p>';
+            
+            try {
+                // Try to authenticate as admin
+                const user = await Parse.User.logIn('admin', 'admin123');
+                resultDiv.innerHTML += '<p>✅ Logged in as admin</p>';
+                
+                // Try to query students
+                const query = new Parse.Query('Student');
+                query.limit(5); // Limit to 5 records for testing
+                const students = await query.find();
+                resultDiv.innerHTML += `<p>✅ Retrieved ${students.length} students</p>`;
+                
+                // Display student data
+                if (students.length > 0) {
+                    resultDiv.innerHTML += '<h3>Sample Student Data:</h3><ul>';
+                    students.forEach(student => {
+                        resultDiv.innerHTML += `<li>${student.get('name')} (${student.get('nationalID')})</li>`;
+                    });
+                    resultDiv.innerHTML += '</ul>';
+                }
+                
+                // Log out
+                await Parse.User.logOut();
+                resultDiv.innerHTML += '<p>✅ Logged out</p>';
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+                console.error('Error details:', error);
+            }
+        });
+    </script>
+</body>
+</html>
