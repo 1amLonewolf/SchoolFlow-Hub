@@ -71,6 +71,12 @@ class StudentManager {
             return;
         }
         this.students.forEach(student => {
+            // Check if student is defined
+            if (!student) {
+                console.error("[StudentManager] Encountered undefined student object");
+                return;
+            }
+            
             const row = studentTableBody.insertRow();
 
             const makeCell = (label, value) => {
@@ -92,6 +98,12 @@ class StudentManager {
             actionsTd.className = 'actions';
             actionsTd.style.position = 'relative';
             actionsTd.style.zIndex = '1';
+
+            // Check if student.id is defined before using it
+            if (!student.id) {
+                console.error("[StudentManager] Student object missing id:", student);
+                return;
+            }
 
             const editBtn = document.createElement('button');
             editBtn.className = 'edit-button';
