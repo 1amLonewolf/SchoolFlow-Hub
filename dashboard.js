@@ -1,13 +1,13 @@
 // dashboard.js
 
-// Import our manager modules
-import StudentManager from './studentManager.js';
-import TeacherManager from './teacherManager.js';
-import SeasonManager from './seasonManager.js';
-import CourseManager from './courseManager.js';
-import ExamManager from './examManager.js';
-import AttendanceManager from './attendanceManager.js';
-import Utils from './utils.js'; // Assuming utils.js is structured as a class or static methods
+// Import our manager modules from the 'js/' subdirectory
+import StudentManager from './js/studentManager.js';
+import TeacherManager from './js/teacherManager.js';
+import SeasonManager from './js/seasonManager.js';
+import CourseManager from './js/courseManager.js';
+import ExamManager from './js/examManager.js';
+import AttendanceManager from './js/attendanceManager.js';
+import Utils from './js/utils.js'; // Assuming utils.js is in 'js/'
 
 // Back4App Parse SDK Initialization
 const B4A_APP_ID = '1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0';
@@ -162,7 +162,7 @@ async function loadParseData(className) {
 async function saveParseData(className, data, id = null) {
     // Basic validation for className
     if (typeof className !== 'string' || !className) {
-        const msg = 'Error: Invalid data type (class name) specified for saving.';
+        const msg = 'Error: Invalid data type (class name)नामी specified for saving.';
         console.error("[saveParseData]", msg, { className, data, id });
         window.Utils.showMessage(msg, 'error');
         return null;
@@ -215,7 +215,7 @@ async function saveParseData(className, data, id = null) {
 
         // Set properties from the 'data' object on the Parse object
         for (const key in data) {
-            // Avoid setting 'id' or 'objectId' as Parse manages these internally
+            // Avoid setting 'id' or 'objectId' directly as Parse manages these internally
             if (key !== 'id' && key !== 'objectId' && data[key] !== undefined && data[key] !== null) {
                 obj.set(key, data[key]);
             }
@@ -433,7 +433,7 @@ function updateUI() {
         } else if (activeSection.id === 'attendance') {
             showAttendanceTab(); // This will re-render attendance table with selected date/course
         } else if (activeSection.id === 'exams') {
-            showExamsTab(); // This will re-render exam table with selected filters
+            showExamsTab(); // This will re-render exam table with current filters
         }
     }
 }
@@ -1460,9 +1460,6 @@ function showExamsTab() {
 // If not, they will need to be defined here or sourced correctly.
 // Assuming 'getTodayDateString' is in Utils for showAttendanceTab and showExamsTab
 // Assuming 'applyTheme' is in Utils for settings
-
-// Corrected `Utils` class in `utils.js` is needed to provide `getTodayDateString` and `applyTheme`
-// If your `utils.js` doesn't have them, you'll need to add them or define them here.
 
 // Placeholder for Utils.getTodayDateString if not in utils.js
 if (!window.Utils || !window.Utils.getTodayDateString) {
