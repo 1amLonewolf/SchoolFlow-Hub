@@ -933,3 +933,6 @@ export default {
     seasonManager: window.seasonManager,
     Utils: window.Utils
 };
+
+// Expose saveParseData to the window object for use in other modules
+window.saveParseData = saveParseData;
