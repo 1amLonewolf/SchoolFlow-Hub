@@ -38,9 +38,9 @@ class TeacherManager {
                 return td;
             };
 
-            row.appendChild(makeCell('Name', teacher.get('name')));
-            row.appendChild(makeCell('Email', teacher.get('email')));
-            row.appendChild(makeCell('Phone', teacher.get('phone') || ''));
+            row.appendChild(makeCell('Name', teacher.name));
+            row.appendChild(makeCell('Email', teacher.email));
+            row.appendChild(makeCell('Phone', teacher.phone || ''));
 
             const actionsTd = document.createElement('td');
             actionsTd.setAttribute('data-label', 'Actions');
@@ -98,21 +98,26 @@ class TeacherManager {
             return;
         }
 
-        if (this.editingTeacherId) {
-            await window.saveParseData('Teacher', teacherData, this.editingTeacherId);
-        } else {
-            await window.saveParseData('Teacher', teacherData);
+        try {
+            if (this.editingTeacherId) {
+                await window.saveTeacher(teacherData, this.editingTeacherId);
+            } else {
+                await window.saveTeacher(teacherData);
+            }
+            this.resetTeacherForm();
+        } catch (error) {
+            console.error('Error adding or updating teacher:', error);
+            window.Utils.showMessage('Error saving teacher. Please try again.', 'error');
         }
-        this.resetTeacherForm();
     }
 
     editTeacher(id) {
         const teacherToEdit = this.teachers.find(t => t.id === id);
         if (teacherToEdit) {
-            document.getElementById('teacherName').value = teacherToEdit.get('name');
-            document.getElementById('teacherEmail').value = teacherToEdit.get('email');
-            document.getElementById('teacherPhone').value = teacherToEdit.get('phone');
-            document.getElementById('teacher-form-heading').textContent = `Edit Teacher: ${teacherToEdit.get('name')}`;
+            document.getElementById('teacherName').value = teacherToEdit.name;
+            document.getElementById('teacherEmail').value = teacherToEdit.email;
+            document.getElementById('teacherPhone').value = teacherToEdit.phone;
+            document.getElementById('teacher-form-heading').textContent = `Edit Teacher: ${teacherToEdit.name}`;
             document.getElementById('saveTeacherBtn').textContent = 'Update Teacher';
             document.getElementById('cancelTeacherBtn').style.display = 'inline-block';
             this.editingTeacherId = id;
@@ -121,7 +126,7 @@ class TeacherManager {
 
     async deleteTeacher(id) {
         window.Utils.showConfirmDialog('Are you sure you want to delete this teacher? This action cannot be undone.', async () => {
-            await window.deleteParseData('Teacher', id);
+            await window.deleteTeacher(id);
         });
     }
 
@@ -141,11 +146,18 @@ class TeacherManager {
         this.teachers.forEach(teacher => {
             const option = document.createElement('option');
             option.value = teacher.id;
-            option.textContent = teacher.get('name');
+            option.textContent = teacher.name;
             assignedTeacherSelect.appendChild(option);
         });
         assignedTeacherSelect.value = currentValue;
     }
+}
+
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = TeacherManager;
+} else {
+    window.TeacherManager = TeacherManager;
 }
 
 // Export for use in other modules

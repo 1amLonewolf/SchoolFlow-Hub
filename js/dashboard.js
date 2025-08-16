@@ -111,22 +111,61 @@ async function bootstrapSessionFromLocalStorage() {
 // BACKEND COMMUNICATION
 // ======================
 
+/**
+ * Convert a Parse Object to a plain JavaScript object
+ * @param {Parse.Object} parseObject - The Parse Object to convert
+ * @returns {Object} Plain JavaScript object with all Parse object properties
+ */
+function parseObjectToPlainObject(parseObject) {
+    if (!parseObject) return null;
+    
+    // Get all attributes from the Parse object
+    const attributes = parseObject.attributes || {};
+    
+    // Create a plain object with all the Parse object properties
+    const plainObject = {
+        id: parseObject.id,
+        className: parseObject.className,
+        createdAt: parseObject.createdAt,
+        updatedAt: parseObject.updatedAt,
+        ...attributes
+    };
+    
+    return plainObject;
+}
+
+/**
+ * Convert an array of Parse Objects to plain JavaScript objects
+ * @param {Array} parseObjects - Array of Parse Objects
+ * @returns {Array} Array of plain JavaScript objects
+ */
+function parseObjectsToPlainObjects(parseObjects) {
+    if (!Array.isArray(parseObjects)) return [];
+    return parseObjects.map(obj => parseObjectToPlainObject(obj));
+}
+
+// Generic data loading function
 async function loadParseData(className) {
     try {
         console.log(`[loadParseData] Loading ${className} data from Parse backend...`);
         const query = new Parse.Query(className);
         const results = await query.find();
         console.log(`[loadParseData] Successfully loaded ${results.length} ${className} records`);
+        
+        // Convert Parse objects to plain JavaScript objects
+        const plainObjects = parseObjectsToPlainObjects(results);
+        
         if (className === 'Student') {
-            console.log(`[loadParseData] Student records:`, results.map(s => ({
+            console.log(`[loadParseData] Student records:`, plainObjects.map(s => ({
                 id: s.id,
-                name: s.get('name'),
-                nationalID: s.get('nationalID'),
-                course: s.get('course'),
-                season: s.get('season')
+                name: s.name,
+                nationalID: s.nationalID,
+                course: s.course,
+                season: s.season
             })));
         }
-        return results;
+        
+        return plainObjects;
     } catch (error) {
         console.error(`[loadParseData] Error fetching ${className} data:`, error);
         console.error(`[loadParseData] Error details - Code: ${error.code}, Message: ${error.message}`);
@@ -150,6 +189,7 @@ async function loadParseData(className) {
     }
 }
 
+// Generic data saving function
 async function saveParseData(className, data, id = null) {
     try {
         // Ensure className is valid
@@ -157,36 +197,76 @@ async function saveParseData(className, data, id = null) {
             throw new Error('Class name is required');
         }
         
+        // Validate data is an object
+        if (!data || typeof data !== 'object') {
+            throw new Error('Data must be a valid object');
+        }
+        
         const Class = Parse.Object.extend(className);
         let object;
+        
         if (id) {
-            // For updates, we need to fetch the existing object properly
-            object = await new Parse.Query(className).get(id);
+            // For updates, fetch the existing object
+            try {
+                object = await new Parse.Query(className).get(id);
+            } catch (fetchError) {
+                if (fetchError.code === Parse.Error.OBJECT_NOT_FOUND) {
+                    throw new Error(`${className} with id ${id} not found`);
+                }
+                throw fetchError;
+            }
         } else {
             // For new objects, create a new instance
             object = new Class();
         }
         
-        // Set the properties
+        // Set the properties, filtering out any undefined or null values
+        // Also filter out Parse-specific properties that shouldn't be set manually
+        const reservedProperties = ['id', 'objectId', 'createdAt', 'updatedAt', 'className'];
         for (const key in data) {
-            // Skip any undefined or null values
-            if (data[key] !== undefined && data[key] !== null) {
-                object.set(key, data[key]);
+            // Skip reserved properties, undefined/null values, and functions
+            if (
+                reservedProperties.includes(key) || 
+                data[key] === undefined || 
+                data[key] === null || 
+                typeof data[key] === 'function'
+            ) {
+                continue;
             }
+            
+            // Special handling for date strings - convert to Date objects
+            if (typeof data[key] === 'string' && !isNaN(Date.parse(data[key]))) {
+                // Check if it's an ISO date string
+                const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
+                if (isoDateRegex.test(data[key])) {
+                    object.set(key, new Date(data[key]));
+                    continue;
+                }
+            }
+            
+            object.set(key, data[key]);
         }
         
         // Save the object
-        await object.save();
+        const savedObject = await object.save();
         Utils.showMessage(`${className} saved successfully!`, 'success');
         await loadAllData();
-        return object; // Return the saved object
+        return parseObjectToPlainObject(savedObject); // Return the saved object as plain JS object
     } catch (error) {
         console.error(`Error saving ${className}:`, error);
-        Utils.showMessage(`Error saving ${className}. Please try again.`, 'error');
+        
+        // More specific error messages
+        let userMessage = `Error saving ${className}. Please try again.`;
+        if (error.message) {
+            userMessage = error.message;
+        }
+        
+        Utils.showMessage(userMessage, 'error');
         throw error; // Re-throw the error so caller can handle it
     }
 }
 
+// Generic data deletion function
 async function deleteParseData(className, id) {
     // Add defensive check for className and id
     if (!className || !id) {
@@ -215,6 +295,102 @@ async function deleteParseData(className, id) {
     }
 }
 
+// Specific data access functions for Students
+async function loadStudents() {
+    return await loadParseData('Student');
+}
+
+async function saveStudent(studentData, studentId = null) {
+    // Add default values for student data
+    const data = {
+        seasonId: window.currentSeason,
+        isActive: true,
+        enrollmentDate: new Date(),
+        ...studentData
+    };
+    
+    return await saveParseData('Student', data, studentId);
+}
+
+async function deleteStudent(studentId) {
+    return await deleteParseData('Student', studentId);
+}
+
+async function archiveStudent(studentId) {
+    return await saveParseData('Student', { isActive: false }, studentId);
+}
+
+// Specific data access functions for Teachers
+async function loadTeachers() {
+    return await loadParseData('Teacher');
+}
+
+async function saveTeacher(teacherData, teacherId = null) {
+    return await saveParseData('Teacher', teacherData, teacherId);
+}
+
+async function deleteTeacher(teacherId) {
+    return await deleteParseData('Teacher', teacherId);
+}
+
+// Specific data access functions for Courses
+async function loadCourses() {
+    return await loadParseData('Course');
+}
+
+async function saveCourse(courseData, courseId = null) {
+    // Add default values for course data
+    const data = {
+        seasonId: window.currentSeason,
+        isActive: true,
+        ...courseData
+    };
+    
+    return await saveParseData('Course', data, courseId);
+}
+
+async function deleteCourse(courseId) {
+    return await deleteParseData('Course', courseId);
+}
+
+// Specific data access functions for Exams
+async function loadExams() {
+    return await loadParseData('Exam');
+}
+
+async function saveExam(examData, examId = null) {
+    // Convert date string to Date object if needed
+    const data = { ...examData };
+    if (data.date && typeof data.date === 'string') {
+        data.date = new Date(data.date);
+    }
+    
+    return await saveParseData('Exam', data, examId);
+}
+
+async function deleteExam(examId) {
+    return await deleteParseData('Exam', examId);
+}
+
+// Specific data access functions for Attendance
+async function loadAttendanceRecords() {
+    return await loadParseData('Attendance');
+}
+
+async function saveAttendanceRecord(attendanceData, recordId = null) {
+    // Convert date string to Date object if needed
+    const data = { ...attendanceData };
+    if (data.date && typeof data.date === 'string') {
+        data.date = new Date(data.date);
+    }
+    
+    return await saveParseData('Attendance', data, recordId);
+}
+
+async function deleteAttendanceRecord(recordId) {
+    return await deleteParseData('Attendance', recordId);
+}
+
 // ======================
 // MAIN APPLICATION LOGIC
 // ======================
@@ -237,30 +413,30 @@ async function loadAllData() {
     
     try {
         console.log("[loadAllData] Loading data from Parse backend...");
-        const [studentsR, attendanceR, teachersR, coursesR, examsR] = await Promise.all([
-            loadParseData('Student'),
-            loadParseData('Attendance'),
-            loadParseData('Teacher'),
-            loadParseData('Course'),
-            loadParseData('Exam'),
+        const [students, attendanceRecords, teachers, courses, exams] = await Promise.all([
+            loadStudents(),
+            loadAttendanceRecords(),
+            loadTeachers(),
+            loadCourses(),
+            loadExams(),
         ]);
         
         console.log(`[loadAllData] Data loaded from Parse:`);
-        console.log(`  - Students: ${studentsR.length}`);
-        console.log(`  - Attendance: ${attendanceR.length}`);
-        console.log(`  - Teachers: ${teachersR.length}`);
-        console.log(`  - Courses: ${coursesR.length}`);
-        console.log(`  - Exams: ${examsR.length}`);
+        console.log(`  - Students: ${students.length}`);
+        console.log(`  - Attendance: ${attendanceRecords.length}`);
+        console.log(`  - Teachers: ${teachers.length}`);
+        console.log(`  - Courses: ${courses.length}`);
+        console.log(`  - Exams: ${exams.length}`);
         
         // Set data in our managers
         console.log("[loadAllData] Setting data in managers...");
-        window.studentManager.setStudents(studentsR);
-        window.teacherManager.setTeachers(teachersR);
-        window.courseManager.setCourses(coursesR);
-        window.examManager.setExams(examsR);
-        window.attendanceManager.setAttendanceRecords(attendanceR);
+        window.studentManager.setStudents(students);
+        window.teacherManager.setTeachers(teachers);
+        window.courseManager.setCourses(courses);
+        window.examManager.setExams(exams);
+        window.attendanceManager.setAttendanceRecords(attendanceRecords);
         
-        console.log(`[loadAllData] Data stored in managers. Students: ${studentsR.length}, Teachers: ${teachersR.length}, Courses: ${coursesR.length}, Exams: ${examsR.length}, Attendance: ${attendanceR.length}`);
+        console.log(`[loadAllData] Data stored in managers. Students: ${students.length}, Teachers: ${teachers.length}, Courses: ${courses.length}, Exams: ${exams.length}, Attendance: ${attendanceRecords.length}`);
         console.log("[loadAllData] Calling updateUI...");
         updateUI();
         console.log("[loadAllData] All data loaded and UI updated.");

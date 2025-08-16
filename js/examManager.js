@@ -39,27 +39,27 @@ class ExamManager {
             };
 
             // Get student name
-            const studentId = exam.get('studentId');
+            const studentId = exam.studentId;
             const student = window.studentManager.getStudents().find(s => s.id === studentId);
-            const studentName = student ? student.get('name') : 'Unknown Student';
+            const studentName = student ? student.name : 'Unknown Student';
             
             // Get course name
-            const courseId = exam.get('courseId');
+            const courseId = exam.courseId;
             const course = window.courseManager.getCourses().find(c => c.id === courseId);
-            const courseName = course ? course.get('name') : 'Unknown Course';
+            const courseName = course ? course.name : 'Unknown Course';
 
             row.appendChild(makeCell('Student', studentName));
-            row.appendChild(makeCell('Exam Type', exam.get('examType')));
-            row.appendChild(makeCell('Category', exam.get('category')));
+            row.appendChild(makeCell('Exam Type', exam.examType));
+            row.appendChild(makeCell('Category', exam.category));
             row.appendChild(makeCell('Course', courseName));
             
             // Calculate percentage
-            const score = exam.get('score');
-            const totalScore = exam.get('totalScore');
+            const score = exam.score;
+            const totalScore = exam.totalScore;
             const percentage = totalScore ? Math.round((score / totalScore) * 100) : 0;
             row.appendChild(makeCell('Score', `${score}/${totalScore} (${percentage}%)`));
             
-            const date = exam.get('date');
+            const date = exam.date;
             const formattedDate = date ? new Date(date).toLocaleDateString() : '';
             row.appendChild(makeCell('Date', formattedDate));
 
@@ -129,25 +129,13 @@ class ExamManager {
         }
 
         try {
-            let exam;
-            if (this.editingExamId) {
-                // Updating existing exam
-                exam = await new Parse.Query('Exam').get(this.editingExamId);
-            } else {
-                // Creating new exam
-                exam = new Parse.Object('Exam');
-            }
+            let examId = this.editingExamId || null;
             
-            // Set exam properties
-            exam.set('studentId', examData.studentId);
-            exam.set('examType', examData.examType);
-            exam.set('category', examData.category);
-            exam.set('courseId', examData.courseId);
-            exam.set('score', examData.score);
-            exam.set('totalScore', examData.totalScore);
-            exam.set('date', new Date(examData.date));
-
-            const savedExam = await exam.save();
+            // Convert date string to Date object
+            examData.date = new Date(examData.date);
+            
+            // Use the centralized saveExam function
+            const savedExam = await window.saveExam(examData, examId);
             console.log('Exam saved successfully', savedExam);
             window.Utils.showMessage('Exam record saved successfully!', 'success');
             
@@ -162,13 +150,13 @@ class ExamManager {
     editExam(id) {
         const examToEdit = this.exams.find(e => e.id === id);
         if (examToEdit) {
-            document.getElementById('examStudent').value = examToEdit.get('studentId');
-            document.getElementById('examType').value = examToEdit.get('examType');
-            document.getElementById('examCategory').value = examToEdit.get('category');
-            document.getElementById('examCourse').value = examToEdit.get('courseId');
-            document.getElementById('examScore').value = examToEdit.get('score');
-            document.getElementById('examTotalScore').value = examToEdit.get('totalScore');
-            const date = examToEdit.get('date');
+            document.getElementById('examStudent').value = examToEdit.studentId;
+            document.getElementById('examType').value = examToEdit.examType;
+            document.getElementById('examCategory').value = examToEdit.category;
+            document.getElementById('examCourse').value = examToEdit.courseId;
+            document.getElementById('examScore').value = examToEdit.score;
+            document.getElementById('examTotalScore').value = examToEdit.totalScore;
+            const date = examToEdit.date;
             if (date) {
                 document.getElementById('examDate').value = new Date(date).toISOString().split('T')[0];
             }
@@ -182,7 +170,7 @@ class ExamManager {
 
     async deleteExam(id) {
         window.Utils.showConfirmDialog('Are you sure you want to delete this exam record? This action cannot be undone.', async () => {
-            await window.deleteParseData('Exam', id);
+            await window.deleteExam(id);
         });
     }
 
@@ -203,10 +191,10 @@ class ExamManager {
         const assignmentScores = {};
         
         this.exams.forEach(exam => {
-            const courseId = exam.get('courseId');
-            const examType = exam.get('examType');
+            const courseId = exam.courseId;
+            const examType = exam.examType;
             const course = window.courseManager.getCourses().find(c => c.id === courseId);
-            const courseName = course ? course.get('name') : 'Unknown Course';
+            const courseName = course ? course.name : 'Unknown Course';
             
             // Create a unique key for this assignment
             const assignmentKey = `${courseName} - ${examType}`;
@@ -219,8 +207,8 @@ class ExamManager {
             }
             
             // Calculate percentage score
-            const score = exam.get('score');
-            const totalScore = exam.get('totalScore');
+            const score = exam.score;
+            const totalScore = exam.totalScore;
             if (score !== undefined && totalScore !== undefined && totalScore > 0) {
                 const percentage = (score / totalScore) * 100;
                 assignmentScores[assignmentKey].scores.push(percentage);
@@ -243,6 +231,13 @@ class ExamManager {
             .sort((a, b) => a.averageScore - b.averageScore)
             .slice(0, 5);
     }
+}
+
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = ExamManager;
+} else {
+    window.ExamManager = ExamManager;
 }
 
 // Export for use in other modules

@@ -37,31 +37,25 @@ describe('StudentManager', () => {
 
     describe('getStudentsBySeason', () => {
         it('should filter students by season ID', () => {
-            // Create mock student data
+            // Create mock student data (plain JavaScript objects, not Parse objects)
             const mockStudents = [
                 { 
                     id: '1', 
-                    get: jest.fn((key) => {
-                        if (key === 'seasonId') return 1;
-                        if (key === 'isActive') return true;
-                        return 'Student 1';
-                    }) 
+                    seasonId: 1,
+                    isActive: true,
+                    name: 'Student 1'
                 },
                 { 
                     id: '2', 
-                    get: jest.fn((key) => {
-                        if (key === 'seasonId') return 2;
-                        if (key === 'isActive') return true;
-                        return 'Student 2';
-                    }) 
+                    seasonId: 2,
+                    isActive: true,
+                    name: 'Student 2'
                 },
                 { 
                     id: '3', 
-                    get: jest.fn((key) => {
-                        if (key === 'seasonId') return 1;
-                        if (key === 'isActive') return true;
-                        return 'Student 3';
-                    }) 
+                    seasonId: 1,
+                    isActive: true,
+                    name: 'Student 3'
                 }
             ];
 
@@ -80,11 +74,9 @@ describe('StudentManager', () => {
             const mockStudents = [
                 { 
                     id: '1', 
-                    get: jest.fn((key) => {
-                        if (key === 'seasonId') return null;
-                        if (key === 'isActive') return true;
-                        return 'Student 1';
-                    }) 
+                    seasonId: null,
+                    isActive: true,
+                    name: 'Student 1'
                 }
             ];
 

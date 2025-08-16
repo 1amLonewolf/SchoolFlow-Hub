@@ -35,8 +35,8 @@ class StudentManager {
      */
     getStudentsBySeason(seasonId) {
         return this.students.filter(student => {
-            const studentSeason = student.get('seasonId');
-            const isActive = student.get('isActive');
+            const studentSeason = student.seasonId;
+            const isActive = student.isActive;
             
             // If student doesn't have seasonId, check if they should be included
             if (studentSeason === undefined || studentSeason === null) {
@@ -86,12 +86,12 @@ class StudentManager {
                 return td;
             };
 
-            row.appendChild(makeCell('Name', student.get('name')));
-            row.appendChild(makeCell('Course', student.get('course')));
-            row.appendChild(makeCell('ID', student.get('nationalID')));
-            row.appendChild(makeCell('Season', student.get('season')));
-            row.appendChild(makeCell('Phone', student.get('phone')));
-            row.appendChild(makeCell('Location', student.get('location')));
+            row.appendChild(makeCell('Name', student.name));
+            row.appendChild(makeCell('Course', student.course));
+            row.appendChild(makeCell('ID', student.nationalID));
+            row.appendChild(makeCell('Season', student.season));
+            row.appendChild(makeCell('Phone', student.phone));
+            row.appendChild(makeCell('Location', student.location));
 
             const actionsTd = document.createElement('td');
             actionsTd.setAttribute('data-label', 'Actions');
@@ -143,114 +143,17 @@ class StudentManager {
         try {
             console.log("[StudentManager] addOrUpdateStudent called with:", { studentId, studentData });
             
-            let student;
-            if (studentId) {
-                // Updating existing student
-                console.log("[StudentManager] Updating existing student with ID:", studentId);
-                try {
-                    student = await new Parse.Query('Student').get(studentId);
-                    console.log("[StudentManager] Retrieved student object for update:", student);
-                    if (student && typeof student === 'object') {
-                        console.log("[StudentManager] Student object type:", typeof student);
-                        console.log("[StudentManager] Student object constructor:", student.constructor.name);
-                        if (student.className) {
-                            console.log("[StudentManager] Student object className:", student.className);
-                        } else {
-                            console.warn("[StudentManager] Student object missing className property");
-                        }
-                    } else {
-                        console.error("[StudentManager] Retrieved student object is invalid:", student);
-                        throw new Error('Invalid student object retrieved from database');
-                    }
-                } catch (queryError) {
-                    console.error("[StudentManager] Error querying student:", queryError);
-                    // Fallback: Create a new object and set its ID
-                    student = new Parse.Object('Student');
-                    student.id = studentId;
-                    console.log("[StudentManager] Created fallback student object with ID:", studentId);
-                }
-            } else {
-                // Creating new student - check if one with same national ID exists
-                console.log("[StudentManager] Creating new student, checking for existing with national ID:", studentData.nationalID);
-                const query = new Parse.Query('Student');
-                query.equalTo('nationalID', studentData.nationalID);
-                const results = await query.find();
-                console.log(`[StudentManager] Found ${results.length} existing students with this national ID`);
-                if (results.length > 0) {
-                    console.log("[StudentManager] Found existing student with same national ID, updating that record");
-                    student = results[0];
-                    console.log("[StudentManager] Using existing student object:", student);
-                    if (student && typeof student === 'object') {
-                        console.log("[StudentManager] Existing student object type:", typeof student);
-                        console.log("[StudentManager] Existing student object constructor:", student.constructor.name);
-                        if (student.className) {
-                            console.log("[StudentManager] Existing student object className:", student.className);
-                        } else {
-                            console.warn("[StudentManager] Existing student object missing className property");
-                        }
-                    } else {
-                        console.error("[StudentManager] Existing student object is invalid:", student);
-                        throw new Error('Invalid existing student object');
-                    }
-                } else {
-                    console.log("[StudentManager] No existing student with this national ID, creating new record");
-                    // Create a new Parse object directly
-                    student = new Parse.Object('Student');
-                    console.log("[StudentManager] Created new student object:", student);
-                    if (student && typeof student === 'object') {
-                        console.log("[StudentManager] New student object type:", typeof student);
-                        console.log("[StudentManager] New student object constructor:", student.constructor.name);
-                        if (student.className) {
-                            console.log("[StudentManager] New student object className:", student.className);
-                        } else {
-                            console.warn("[StudentManager] New student object missing className property");
-                        }
-                    } else {
-                        console.error("[StudentManager] New student object is invalid:", student);
-                        throw new Error('Failed to create new student object');
-                    }
-                }
-            }
+            // Save the student using the centralized saveStudent function
+            const savedStudent = await window.saveStudent(studentData, studentId);
             
-            // Verify that we have a valid student object before setting properties
-            if (!student) {
-                throw new Error('Student object is null or undefined');
-            }
-            
-            // Set student properties
-            console.log("[StudentManager] Setting student properties");
-            if (studentData.name !== undefined) student.set('name', studentData.name);
-            if (studentData.course !== undefined) student.set('course', studentData.course);
-            if (studentData.season !== undefined) student.set('season', studentData.season);
-            if (studentData.nationalID !== undefined) student.set('nationalID', studentData.nationalID);
-            if (studentData.phone !== undefined) student.set('phone', studentData.phone);
-            if (studentData.location !== undefined) student.set('location', studentData.location);
-            
-            // Add season information
-            console.log("[StudentManager] Setting season information");
-            student.set('seasonId', window.currentSeason);
-            student.set('isActive', true);
-            student.set('enrollmentDate', new Date());
-            
-            // Verify that the student object has the required methods before saving
-            if (typeof student.save !== 'function') {
-                throw new Error('Student object does not have save method');
-            }
-            
-            console.log("[StudentManager] Student object before save:", student);
-            if (student.className) {
-                console.log("[StudentManager] Student object className before save:", student.className);
-            }
-
-            console.log("[StudentManager] Saving student to database");
-            const savedStudent = await student.save();
             console.log('[StudentManager] Student saved successfully', {
                 id: savedStudent.id,
-                name: savedStudent.get('name'),
-                nationalID: savedStudent.get('nationalID'),
-                course: savedStudent.get('course'),
-                season: savedStudent.get('season')
+                name: savedStudent.name,
+                nationalID: savedStudent.nationalID,
+                course: savedStudent.course,
+                season: savedStudent.season
             });
+            
             return { success: true, student: savedStudent };
         } catch (error) {
             console.error('[StudentManager] Error adding or updating student:', error);
@@ -271,14 +174,14 @@ class StudentManager {
         const studentToEdit = this.students.find(s => s.id === id);
         if (studentToEdit) {
             // Safely set form values, handling cases where fields might be missing
-            document.getElementById('studentName').value = studentToEdit.get('name') || '';
-            document.getElementById('studentID').value = studentToEdit.get('nationalID') || '';
-            document.getElementById('studentCourse').value = studentToEdit.get('course') || '';
-            document.getElementById('studentSeason').value = studentToEdit.get('season') || '';
-            document.getElementById('studentPhone').value = studentToEdit.get('phone') || '';
-            document.getElementById('studentLocation').value = studentToEdit.get('location') || '';
+            document.getElementById('studentName').value = studentToEdit.name || '';
+            document.getElementById('studentID').value = studentToEdit.nationalID || '';
+            document.getElementById('studentCourse').value = studentToEdit.course || '';
+            document.getElementById('studentSeason').value = studentToEdit.season || '';
+            document.getElementById('studentPhone').value = studentToEdit.phone || '';
+            document.getElementById('studentLocation').value = studentToEdit.location || '';
             document.getElementById('addStudentForm').setAttribute('data-editing-id', studentToEdit.id);
-            const studentName = studentToEdit.get('name') || 'Student';
+            const studentName = studentToEdit.name || 'Student';
             document.getElementById('student-form-heading').textContent = `Edit Student: ${studentName}`;
             document.getElementById('saveStudentBtn').textContent = 'Update Student';
             document.getElementById('cancelStudentBtn').style.display = 'inline-block';
@@ -291,7 +194,7 @@ class StudentManager {
      */
     async deleteStudent(id) {
         window.Utils.showConfirmDialog('Are you sure you want to delete this student?', async () => {
-            await window.deleteParseData('Student', id);
+            await window.deleteStudent(id);
         });
     }
 

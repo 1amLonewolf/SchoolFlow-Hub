@@ -21,8 +21,8 @@ class CourseManager {
      */
     getCoursesBySeason(seasonId) {
         return this.courses.filter(course => {
-            const courseSeason = course.get('seasonId');
-            const isActive = course.get('isActive');
+            const courseSeason = course.seasonId;
+            const isActive = course.isActive;
             
             // If course doesn't have seasonId, check if it should be included
             if (courseSeason === undefined || courseSeason === null) {
@@ -57,13 +57,13 @@ class CourseManager {
                 return td;
             };
 
-            row.appendChild(makeCell('Course Name', course.get('name')));
-            row.appendChild(makeCell('Description', course.get('description')));
+            row.appendChild(makeCell('Course Name', course.name));
+            row.appendChild(makeCell('Description', course.description));
             
             // Get teacher name
-            const teacherId = course.get('teacherId');
+            const teacherId = course.teacherId;
             const teacher = window.teacherManager.getTeachers().find(t => t.id === teacherId);
-            const teacherName = teacher ? teacher.get('name') : 'Unassigned';
+            const teacherName = teacher ? teacher.name : 'Unassigned';
             row.appendChild(makeCell('Assigned Teacher', teacherName));
 
             const actionsTd = document.createElement('td');
@@ -120,24 +120,10 @@ class CourseManager {
         }
 
         try {
-            let course;
-            if (this.editingCourseId) {
-                // Updating existing course
-                course = await new Parse.Query('Course').get(this.editingCourseId);
-            } else {
-                // Creating new course
-                const Course = Parse.Object.extend('Course');
-                course = new Course();
-            }
+            let courseId = this.editingCourseId || null;
             
-            // Set course properties
-            course.set('name', courseData.name);
-            course.set('description', courseData.description);
-            course.set('teacherId', courseData.teacherId);
-            course.set('seasonId', courseData.seasonId);
-            course.set('isActive', courseData.isActive);
-
-            const savedCourse = await course.save();
+            // Use the centralized saveCourse function
+            const savedCourse = await window.saveCourse(courseData, courseId);
             console.log('Course saved successfully', savedCourse);
             window.Utils.showMessage('Course saved successfully!', 'success');
             
@@ -152,16 +138,16 @@ class CourseManager {
     editCourse(id) {
         const courseToEdit = this.courses.find(c => c.id === id);
         if (courseToEdit) {
-            document.getElementById('courseName').value = courseToEdit.get('name');
-            document.getElementById('courseDescription').value = courseToEdit.get('description');
+            document.getElementById('courseName').value = courseToEdit.name;
+            document.getElementById('courseDescription').value = courseToEdit.description;
             
             // Set teacher selection
-            const teacherId = courseToEdit.get('teacherId');
+            const teacherId = courseToEdit.teacherId;
             if (teacherId) {
                 document.getElementById('assignedTeacher').value = teacherId;
             }
             
-            document.getElementById('course-form-heading').textContent = `Edit Course: ${courseToEdit.get('name')}`;
+            document.getElementById('course-form-heading').textContent = `Edit Course: ${courseToEdit.name}`;
             document.getElementById('saveCourseBtn').textContent = 'Update Course';
             document.getElementById('cancelCourseBtn').style.display = 'inline-block';
             this.editingCourseId = id;
@@ -170,7 +156,7 @@ class CourseManager {
 
     async deleteCourse(id) {
         window.Utils.showConfirmDialog('Are you sure you want to delete this course? This action cannot be undone.', async () => {
-            await window.deleteParseData('Course', id);
+            await window.deleteCourse(id);
         });
     }
 
@@ -181,6 +167,13 @@ class CourseManager {
         document.getElementById('cancelCourseBtn').style.display = 'none';
         this.editingCourseId = null;
     }
+}
+
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = CourseManager;
+} else {
+    window.CourseManager = CourseManager;
 }
 
 // Export for use in other modules

@@ -53,7 +53,7 @@ class SeasonManager {
         
         // Collect all season IDs from students
         window.studentManager.getStudents().forEach(student => {
-            const seasonId = student.get('seasonId');
+            const seasonId = student.seasonId;
             if (seasonId) {
                 seasons.add(seasonId);
             }
@@ -61,7 +61,7 @@ class SeasonManager {
         
         // Collect all season IDs from courses
         window.courseManager.getCourses().forEach(course => {
-            const seasonId = course.get('seasonId');
+            const seasonId = course.seasonId;
             if (seasonId) {
                 seasons.add(seasonId);
             }
@@ -145,9 +145,8 @@ class SeasonManager {
                 const currentStudents = window.studentManager.getStudentsBySeason(this.getCurrentSeason());
                 for (const student of currentStudents) {
                     try {
-                        const studentObj = await new Parse.Query('Student').get(student.id);
-                        studentObj.set('isActive', false);
-                        await studentObj.save();
+                        // Use the centralized archiveStudent function to update the student
+                        await window.archiveStudent(student.id);
                     } catch (error) {
                         console.error(`Error archiving student ${student.id}:`, error);
                     }
@@ -172,10 +171,9 @@ class SeasonManager {
                 
                 for (const student of currentStudents) {
                     try {
-                        const studentObj = await new Parse.Query('Student').get(student.id);
-                        if (studentObj.get('isActive') !== false) {
-                            studentObj.set('isActive', false);
-                            await studentObj.save();
+                        // Use the centralized archiveStudent function to update the student
+                        const studentObj = await window.archiveStudent(student.id);
+                        if (studentObj.isActive !== false) {
                             archivedCount++;
                         }
                     } catch (error) {
@@ -191,6 +189,13 @@ class SeasonManager {
             }
         });
     }
+}
+
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = SeasonManager;
+} else {
+    window.SeasonManager = SeasonManager;
 }
 
 // Export for use in other modules

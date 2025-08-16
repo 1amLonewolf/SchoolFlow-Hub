@@ -39,22 +39,22 @@ class AttendanceManager {
             };
 
             // Get student name
-            const studentId = record.get('studentId');
+            const studentId = record.studentId;
             const student = window.studentManager.getStudents().find(s => s.id === studentId);
-            const studentName = student ? student.get('name') : 'Unknown Student';
+            const studentName = student ? student.name : 'Unknown Student';
             
             // Get course name
-            const courseId = student ? student.get('course') : null;
+            const courseId = student ? student.course : null;
             const course = window.courseManager.getCourses().find(c => c.id === courseId);
-            const courseName = course ? course.get('name') : (courseId || 'Unknown Course');
+            const courseName = course ? course.name : (courseId || 'Unknown Course');
 
-            const date = record.get('date');
+            const date = record.date;
             const formattedDate = date ? new Date(date).toLocaleDateString() : '';
             
             row.appendChild(makeCell('Date', formattedDate));
             row.appendChild(makeCell('Student', studentName));
             row.appendChild(makeCell('Course', courseName));
-            row.appendChild(makeCell('Status', record.get('status')));
+            row.appendChild(makeCell('Status', record.status));
 
             const actionsTd = document.createElement('td');
             actionsTd.setAttribute('data-label', 'Actions');
@@ -108,21 +108,13 @@ class AttendanceManager {
         }
 
         try {
-            let record;
-            if (this.editingAttendanceId) {
-                // Updating existing record
-                record = await new Parse.Query('Attendance').get(this.editingAttendanceId);
-            } else {
-                // Creating new record
-                record = new Parse.Object('Attendance');
-            }
+            let recordId = this.editingAttendanceId || null;
             
-            // Set attendance properties
-            record.set('studentId', attendanceData.studentId);
-            record.set('date', new Date(attendanceData.date));
-            record.set('status', attendanceData.status);
-
-            const savedRecord = await record.save();
+            // Convert date string to Date object
+            attendanceData.date = new Date(attendanceData.date);
+            
+            // Use the centralized saveAttendanceRecord function
+            const savedRecord = await window.saveAttendanceRecord(attendanceData, recordId);
             console.log('Attendance record saved successfully', savedRecord);
             window.Utils.showMessage('Attendance record saved successfully!', 'success');
             
@@ -137,12 +129,12 @@ class AttendanceManager {
     editAttendance(id) {
         const recordToEdit = this.attendanceRecords.find(r => r.id === id);
         if (recordToEdit) {
-            document.getElementById('attendanceStudent').value = recordToEdit.get('studentId');
-            const date = recordToEdit.get('date');
+            document.getElementById('attendanceStudent').value = recordToEdit.studentId;
+            const date = recordToEdit.date;
             if (date) {
                 document.getElementById('attendanceDate').value = new Date(date).toISOString().split('T')[0];
             }
-            document.getElementById('attendanceStatus').value = recordToEdit.get('status');
+            document.getElementById('attendanceStatus').value = recordToEdit.status;
             
             document.getElementById('saveAttendanceBtn').textContent = 'Update Attendance';
             document.getElementById('cancelAttendanceBtn').style.display = 'inline-block';
@@ -152,7 +144,7 @@ class AttendanceManager {
 
     async deleteAttendance(id) {
         window.Utils.showConfirmDialog('Are you sure you want to delete this attendance record? This action cannot be undone.', async () => {
-            await window.deleteParseData('Attendance', id);
+            await window.deleteAttendanceRecord(id);
         });
     }
 
@@ -168,14 +160,21 @@ class AttendanceManager {
      * @returns {Object} Object containing present and absent counts
      */
     getAttendanceStats() {
-        const presentCount = this.attendanceRecords.filter(record => record.get('status') === 'Present').length;
-        const absentCount = this.attendanceRecords.filter(record => record.get('status') === 'Absent').length;
+        const presentCount = this.attendanceRecords.filter(record => record.status === 'Present').length;
+        const absentCount = this.attendanceRecords.filter(record => record.status === 'Absent').length;
         
         return {
             presentCount,
             absentCount
         };
     }
+}
+
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = AttendanceManager;
+} else {
+    window.AttendanceManager = AttendanceManager;
 }
 
 // Export for use in other modules
