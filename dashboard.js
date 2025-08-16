@@ -760,16 +760,12 @@ function addHorizontalSlider(container) {
 
     // Recompute on resize or content changes
     const ro = new ResizeObserver(() => {
-        if (getOverflow() <= 4) {
-            if (forced) {
-                if (!wrap.parentNode) container.appendChild(wrap);
-                range.disabled = true;
-                range.value = 0;
-            } else {
-                if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
-            }
+        const newOverflow = getOverflow();
+        if (newOverflow <= 4 && !forced) { // If no overflow and not forced, remove slider
+            if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+            container.classList.remove('has-hscroll');
         } else {
-            if (!wrap.parentNode) container.appendChild(wrap);
+            if (!wrap.parentNode) container.appendChild(wrap); // Add back if it was removed
             container.classList.add('has-hscroll');
             range.disabled = newOverflow <= 4;
             syncFromScroll(); // Update slider position
@@ -1170,16 +1166,14 @@ function attachEventListeners() {
 // MAIN INITIALIZATION FLOW
 // ======================
 
-// Initialize when DOM is fully loaded
-// REMOVED: document.addEventListener('DOMContentLoaded', async () => { ... });
-// The entire module script runs after DOM is parsed when type="module" and defer are used.
-// So, we can directly call initDashboard.
-
-// Make body visible after content loads (prevents FOUC)
-document.body.style.opacity = '1';
-
-// Start the dashboard initialization process directly
-initDashboard();
+// Ensure initDashboard is called only after the DOM is fully loaded and parsed.
+// This is the most robust way when using type="module" with external libraries.
+document.addEventListener('DOMContentLoaded', async () => {
+    // Make body visible after content loads (prevents FOUC)
+    // This should ideally happen when login is complete, but keeping it here for immediate visibility after module loads.
+    document.body.style.opacity = '1'; 
+    await initDashboard();
+});
 
 
 // Helper for export functions (can be moved to Utils if preferred)
@@ -1327,7 +1321,7 @@ function checkGraduationEligibility() {
         // Calculate attendance percentage
         const studentAttendanceRecords = allAttendanceRecords.filter(record => record.studentId === studentId);
         const totalAttendanceDays = studentAttendanceRecords.length;
-        const presentDays = studentAttendanceRecords.filter(record => record.status === 'Present').length; // Direct access
+        const presentDays = studentAttendanceRecords.filter(record => record.status === 'Present').length; // Direct access (Corrected)
         const attendancePercentage = totalAttendanceDays > 0 ? (presentDays / totalAttendanceDays) * 100 : 0;
         
         // Check for required exams
