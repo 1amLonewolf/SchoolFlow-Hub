@@ -126,7 +126,8 @@ class CourseManager {
                 course = await new Parse.Query('Course').get(this.editingCourseId);
             } else {
                 // Creating new course
-                course = new Parse.Object('Course');
+                const Course = Parse.Object.extend('Course');
+                course = new Course();
             }
             
             // Set course properties

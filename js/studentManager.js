@@ -147,7 +147,9 @@ class StudentManager {
                     student = results[0];
                 } else {
                     console.log("[StudentManager] No existing student with this national ID, creating new record");
-                    student = new Parse.Object('Student');
+                    // Using Parse.Object.extend as per Parse documentation
+                    const Student = Parse.Object.extend('Student');
+                    student = new Student();
                 }
             }
             
