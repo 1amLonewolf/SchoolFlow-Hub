@@ -196,14 +196,16 @@ class StudentManager {
     editStudent(id) {
         const studentToEdit = this.students.find(s => s.id === id);
         if (studentToEdit) {
-            document.getElementById('studentName').value = studentToEdit.get('name');
-            document.getElementById('studentID').value = studentToEdit.get('nationalID');
-            document.getElementById('studentCourse').value = studentToEdit.get('course');
-            document.getElementById('studentSeason').value = studentToEdit.get('season');
-            document.getElementById('studentPhone').value = studentToEdit.get('phone');
-            document.getElementById('studentLocation').value = studentToEdit.get('location');
+            // Safely set form values, handling cases where fields might be missing
+            document.getElementById('studentName').value = studentToEdit.get('name') || '';
+            document.getElementById('studentID').value = studentToEdit.get('nationalID') || '';
+            document.getElementById('studentCourse').value = studentToEdit.get('course') || '';
+            document.getElementById('studentSeason').value = studentToEdit.get('season') || '';
+            document.getElementById('studentPhone').value = studentToEdit.get('phone') || '';
+            document.getElementById('studentLocation').value = studentToEdit.get('location') || '';
             document.getElementById('addStudentForm').setAttribute('data-editing-id', studentToEdit.id);
-            document.getElementById('student-form-heading').textContent = `Edit Student: ${studentToEdit.get('name')}`;
+            const studentName = studentToEdit.get('name') || 'Student';
+            document.getElementById('student-form-heading').textContent = `Edit Student: ${studentName}`;
             document.getElementById('saveStudentBtn').textContent = 'Update Student';
             document.getElementById('cancelStudentBtn').style.display = 'inline-block';
         }
