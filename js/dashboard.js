@@ -204,6 +204,7 @@ async function loadAllData() {
     }
     
     try {
+        console.log("[loadAllData] Loading data from Parse backend...");
         const [studentsR, attendanceR, teachersR, coursesR, examsR] = await Promise.all([
             loadParseData('Student'),
             loadParseData('Attendance'),
@@ -212,6 +213,13 @@ async function loadAllData() {
             loadParseData('Exam'),
         ]);
         
+        console.log(`[loadAllData] Data loaded from Parse:`);
+        console.log(`  - Students: ${studentsR.length}`);
+        console.log(`  - Attendance: ${attendanceR.length}`);
+        console.log(`  - Teachers: ${teachersR.length}`);
+        console.log(`  - Courses: ${coursesR.length}`);
+        console.log(`  - Exams: ${examsR.length}`);
+        
         // Set data in our managers
         window.studentManager.setStudents(studentsR);
         window.teacherManager.setTeachers(teachersR);
@@ -219,7 +227,7 @@ async function loadAllData() {
         window.examManager.setExams(examsR);
         window.attendanceManager.setAttendanceRecords(attendanceR);
         
-        console.log(`[loadAllData] Data loaded. Students: ${studentsR.length}, Teachers: ${teachersR.length}, Courses: ${coursesR.length}, Exams: ${examsR.length}, Attendance: ${attendanceR.length}`);
+        console.log(`[loadAllData] Data stored in managers. Students: ${studentsR.length}, Teachers: ${teachersR.length}, Courses: ${coursesR.length}, Exams: ${examsR.length}, Attendance: ${attendanceR.length}`);
         updateUI();
         console.log("[loadAllData] All data loaded and UI updated.");
     } catch (error) {
@@ -233,23 +241,32 @@ async function loadAllData() {
 function updateUI() {
     console.log("[updateUI] Starting UI update...");
 
+    console.log("[updateUI] Rendering student table...");
     window.studentManager.renderStudentTable();
+    console.log("[updateUI] Rendering teacher table...");
     window.teacherManager.renderTeacherTable();
+    console.log("[updateUI] Rendering course table...");
     window.courseManager.renderCourseTable();
+    console.log("[updateUI] Rendering exam table...");
     window.examManager.renderExamTable();
+    console.log("[updateUI] Rendering attendance table...");
     window.attendanceManager.renderAttendanceTable();
     // We would also call render methods for other managers
 
+    console.log("[updateUI] Populating teacher dropdown...");
     window.teacherManager.populateTeacherDropdown();
 
     // Update season displays
+    console.log("[updateUI] Updating season displays...");
     seasonManager.updateSeasonDisplay();
     seasonManager.renderSeasonsTable();
     
     // Render overview charts
+    console.log("[updateUI] Rendering overview charts...");
     renderOverviewCharts();
     
     // Update reports and analytics data
+    console.log("[updateUI] Updating reports and analytics...");
     updateReportsAndAnalytics();
 
     console.log("[updateUI] UI update complete.");
@@ -594,6 +611,8 @@ function attachEventListeners() {
     if (addStudentForm) {
         addStudentForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log("[Student Form] Form submission started");
+            
             const studentId = e.target.getAttribute('data-editing-id');
             const studentData = {
                 name: document.getElementById('studentName').value.trim(),
@@ -603,9 +622,19 @@ function attachEventListeners() {
                 phone: document.getElementById('studentPhone').value.trim(),
                 location: document.getElementById('studentLocation').value.trim(),
             };
-            await window.studentManager.addOrUpdateStudent(studentId, studentData);
-            await loadAllData();
-            window.studentManager.resetStudentForm();
+            
+            console.log("[Student Form] Student data:", studentData);
+            
+            const result = await window.studentManager.addOrUpdateStudent(studentId, studentData);
+            console.log("[Student Form] Save result:", result);
+            
+            if (result.success) {
+                console.log("[Student Form] Student saved successfully, refreshing data");
+                await loadAllData();
+                window.studentManager.resetStudentForm();
+            } else {
+                console.error("[Student Form] Error saving student:", result.message);
+            }
         });
     }
 

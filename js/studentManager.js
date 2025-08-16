@@ -16,6 +16,7 @@ class StudentManager {
      * @param {Array} students - Array of student objects from Parse
      */
     setStudents(students) {
+        console.log(`[StudentManager] setStudents called with ${students.length} students`);
         this.students = students;
     }
 
@@ -51,9 +52,14 @@ class StudentManager {
      * Populates the student table with current student data
      */
     renderStudentTable() {
+        console.log("[StudentManager] renderStudentTable called");
         const studentTableBody = document.querySelector('#studentTable tbody');
-        if (!studentTableBody) return;
+        if (!studentTableBody) {
+            console.log("[StudentManager] Student table body not found");
+            return;
+        }
         studentTableBody.innerHTML = '';
+        console.log(`[StudentManager] Rendering ${this.students.length} students`);
         if (this.students.length === 0) {
             const tr = document.createElement('tr');
             const td = document.createElement('td');
@@ -122,42 +128,49 @@ class StudentManager {
      */
     async addOrUpdateStudent(studentId, studentData) {
         try {
+            console.log("[StudentManager] addOrUpdateStudent called with:", { studentId, studentData });
+            
             let student;
             if (studentId) {
                 // Updating existing student
+                console.log("[StudentManager] Updating existing student with ID:", studentId);
                 student = await new Parse.Query('Student').get(studentId);
             } else {
                 // Creating new student - check if one with same national ID exists
+                console.log("[StudentManager] Creating new student, checking for existing with national ID:", studentData.nationalID);
                 const query = new Parse.Query('Student');
                 query.equalTo('nationalID', studentData.nationalID);
                 const results = await query.find();
                 if (results.length > 0) {
+                    console.log("[StudentManager] Found existing student with same national ID, updating that record");
                     student = results[0];
                 } else {
+                    console.log("[StudentManager] No existing student with this national ID, creating new record");
                     student = new Parse.Object('Student');
                 }
             }
             
             // Set student properties
+            console.log("[StudentManager] Setting student properties");
             student.set('name', studentData.name);
             student.set('course', studentData.course);
             student.set('season', studentData.season);
-            student.set('startDate', studentData.startDate);
-            student.set('endDate', studentData.endDate);
             student.set('nationalID', studentData.nationalID);
             student.set('phone', studentData.phone);
             student.set('location', studentData.location);
             
             // Add season information
+            console.log("[StudentManager] Setting season information");
             student.set('seasonId', window.currentSeason);
             student.set('isActive', true);
             student.set('enrollmentDate', new Date());
 
+            console.log("[StudentManager] Saving student to database");
             const savedStudent = await student.save();
-            console.log('Student saved successfully', savedStudent);
+            console.log('[StudentManager] Student saved successfully', savedStudent);
             return { success: true, student: savedStudent };
         } catch (error) {
-            console.error('Error adding or updating student:', error);
+            console.error('[StudentManager] Error adding or updating student:', error);
             return { success: false, message: error.message };
         }
     }
