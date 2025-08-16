@@ -147,17 +147,27 @@ class StudentManager {
             if (studentId) {
                 // Updating existing student
                 console.log("[StudentManager] Updating existing student with ID:", studentId);
-                student = await new Parse.Query('Student').get(studentId);
-                console.log("[StudentManager] Retrieved student object for update:", student);
-                if (student && typeof student === 'object') {
-                    console.log("[StudentManager] Student object type:", typeof student);
-                    console.log("[StudentManager] Student object constructor:", student.constructor.name);
-                    if (student.className) {
-                        console.log("[StudentManager] Student object className:", student.className);
+                try {
+                    student = await new Parse.Query('Student').get(studentId);
+                    console.log("[StudentManager] Retrieved student object for update:", student);
+                    if (student && typeof student === 'object') {
+                        console.log("[StudentManager] Student object type:", typeof student);
+                        console.log("[StudentManager] Student object constructor:", student.constructor.name);
+                        if (student.className) {
+                            console.log("[StudentManager] Student object className:", student.className);
+                        } else {
+                            console.warn("[StudentManager] Student object missing className property");
+                        }
+                    } else {
+                        console.error("[StudentManager] Retrieved student object is invalid:", student);
+                        throw new Error('Invalid student object retrieved from database');
                     }
-                } else {
-                    console.error("[StudentManager] Retrieved student object is invalid:", student);
-                    throw new Error('Invalid student object retrieved from database');
+                } catch (queryError) {
+                    console.error("[StudentManager] Error querying student:", queryError);
+                    // Fallback: Create a new object and set its ID
+                    student = new Parse.Object('Student');
+                    student.id = studentId;
+                    console.log("[StudentManager] Created fallback student object with ID:", studentId);
                 }
             } else {
                 // Creating new student - check if one with same national ID exists
@@ -175,6 +185,8 @@ class StudentManager {
                         console.log("[StudentManager] Existing student object constructor:", student.constructor.name);
                         if (student.className) {
                             console.log("[StudentManager] Existing student object className:", student.className);
+                        } else {
+                            console.warn("[StudentManager] Existing student object missing className property");
                         }
                     } else {
                         console.error("[StudentManager] Existing student object is invalid:", student);
@@ -190,6 +202,8 @@ class StudentManager {
                         console.log("[StudentManager] New student object constructor:", student.constructor.name);
                         if (student.className) {
                             console.log("[StudentManager] New student object className:", student.className);
+                        } else {
+                            console.warn("[StudentManager] New student object missing className property");
                         }
                     } else {
                         console.error("[StudentManager] New student object is invalid:", student);
