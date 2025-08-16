@@ -157,20 +157,14 @@ async function saveParseData(className, data, id = null) {
             throw new Error('Class name is required');
         }
         
+        const Class = Parse.Object.extend(className);
         let object;
         if (id) {
             // For updates, we need to fetch the existing object properly
-            try {
-                object = await new Parse.Query(className).get(id);
-            } catch (queryError) {
-                console.error(`Error querying ${className} with ID ${id}:`, queryError);
-                // Fallback: Create a new object and set its ID
-                object = new Parse.Object(className);
-                object.id = id;
-            }
+            object = await new Parse.Query(className).get(id);
         } else {
             // For new objects, create a new instance
-            object = new Parse.Object(className);
+            object = new Class();
         }
         
         // Set the properties
