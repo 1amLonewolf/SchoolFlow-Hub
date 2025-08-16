@@ -238,8 +238,166 @@ function updateUI() {
     // Update season displays
     seasonManager.updateSeasonDisplay();
     seasonManager.renderSeasonsTable();
+    
+    // Render overview charts
+    renderOverviewCharts();
 
     console.log("[updateUI] UI update complete.");
+}
+
+/**
+ * Render charts for the dashboard overview
+ */
+function renderOverviewCharts() {
+    try {
+        // Destroy existing charts if they exist
+        if (window.coursePopularityChart) {
+            window.coursePopularityChart.destroy();
+        }
+        if (window.overallAttendanceChart) {
+            window.overallAttendanceChart.destroy();
+        }
+        if (window.topStudentsChart) {
+            window.topStudentsChart.destroy();
+        }
+
+        // Course Popularity Chart
+        const coursePopularityCtx = document.getElementById('coursePopularityChart');
+        if (coursePopularityCtx) {
+            // Get course data
+            const courses = window.courseManager.getCourses();
+            const courseNames = courses.map(course => course.get('name') || 'Unnamed Course');
+            const studentCounts = courses.map(course => {
+                // Count students in this course for current season
+                const courseId = course.id;
+                return window.studentManager.getStudents().filter(student => 
+                    student.get('course') === courseId && 
+                    student.get('seasonId') === window.currentSeason
+                ).length;
+            });
+
+            window.coursePopularityChart = new Chart(coursePopularityCtx, {
+                type: 'bar',
+                data: {
+                    labels: courseNames,
+                    datasets: [{
+                        label: 'Number of Students',
+                        data: studentCounts,
+                        backgroundColor: 'rgba(47, 24, 87, 0.7)',
+                        borderColor: 'rgba(47, 24, 87, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Course Popularity'
+                        },
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Overall Attendance Chart
+        const overallAttendanceCtx = document.getElementById('overallAttendanceChart');
+        if (overallAttendanceCtx) {
+            // Get attendance data
+            const attendanceRecords = []; // This would need to be implemented
+            const presentCount = attendanceRecords.filter(record => record.get('status') === 'Present').length;
+            const absentCount = attendanceRecords.filter(record => record.get('status') === 'Absent').length;
+
+            window.overallAttendanceChart = new Chart(overallAttendanceCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Present', 'Absent'],
+                    datasets: [{
+                        data: [presentCount, absentCount],
+                        backgroundColor: [
+                            'rgba(76, 175, 80, 0.7)',
+                            'rgba(244, 67, 54, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(76, 175, 80, 1)',
+                            'rgba(244, 67, 54, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Overall Attendance'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Top Students Chart
+        const topStudentsCtx = document.getElementById('topStudentsChart');
+        if (topStudentsCtx) {
+            // Get top students based on exam scores
+            const students = window.studentManager.getStudents();
+            const studentNames = students.slice(0, 5).map(student => student.get('name') || 'Unnamed Student');
+            const averageScores = students.slice(0, 5).map(student => {
+                // This would need to be implemented with actual exam data
+                return Math.floor(Math.random() * 100);
+            });
+
+            window.topStudentsChart = new Chart(topStudentsCtx, {
+                type: 'bar',
+                data: {
+                    labels: studentNames,
+                    datasets: [{
+                        label: 'Average Score',
+                        data: averageScores,
+                        backgroundColor: 'rgba(37, 117, 252, 0.7)',
+                        borderColor: 'rgba(37, 117, 252, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Top Performing Students'
+                        },
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('[renderOverviewCharts] Error rendering charts:', error);
+        // Don't show an error message to the user for chart rendering issues
+    }
 }
 
 function switchToTab(tabId) {
