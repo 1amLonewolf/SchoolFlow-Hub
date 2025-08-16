@@ -5,7 +5,8 @@
   "main": "scripts/createAdminUser.js",
   "scripts": {
     "create-admin": "node scripts/createAdminUser.js",
-    "setup-admin": "node scripts/createAdminUser.js"
+    "setup-admin": "node scripts/createAdminUser.js",
+    "start": "node server.js"
   },
   "keywords": ["schoolflow", "admin", "back4app"],
   "author": "SchoolFlow Hub Team",

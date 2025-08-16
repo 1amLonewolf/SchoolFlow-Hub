@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Persistence Test</title>
+    <script src="https://unpkg.com/parse@3.5.0/dist/parse.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Data Persistence Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Connection Test</h2>
+        <button id="testConnection">Test Connection</button>
+        <div id="connectionResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Data Operations Test</h2>
+        <button id="testDataOps">Test Data Operations</button>
+        <div id="dataOpsResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Data Retrieval Test</h2>
+        <button id="testDataRetrieval">Test Data Retrieval</button>
+        <div id="dataRetrievalResult" class="result"></div>
+    </div>
+    
+    <script>
+        // Back4App Parse SDK Configuration
+        const B4A_APP_ID = '1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0';
+        const B4A_JS_KEY = '7CE7gnknAyyfSZRTWpqvuDvNhLOMsF0DNYk8qvgn';
+        const B4A_SERVER_URL = 'https://parseapi.back4app.com/';
+        
+        // Initialize Parse SDK
+        Parse.initialize(B4A_APP_ID, B4A_JS_KEY);
+        Parse.serverURL = B4A_SERVER_URL;
+        
+        // Test Connection
+        document.getElementById('testConnection').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('connectionResult');
+            resultDiv.innerHTML = '<p class="info">Testing connection...</p>';
+            
+            try {
+                // Try to authenticate as admin
+                const user = await Parse.User.logIn('admin', 'admin123');
+                resultDiv.innerHTML += '<p class="success">✅ Logged in as admin</p>';
+                
+                // Test a simple query
+                const query = new Parse.Query('Student');
+                query.limit(1);
+                await query.find();
+                resultDiv.innerHTML += '<p class="success">✅ Database query successful</p>';
+                
+                // Log out
+                await Parse.User.logOut();
+                resultDiv.innerHTML += '<p class="success">✅ Logged out</p>';
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<p class="error">❌ Error: ${error.message}</p>`;
+                console.error('Error details:', error);
+            }
+        });
+        
+        // Test Data Operations
+        document.getElementById('testDataOps').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('dataOpsResult');
+            resultDiv.innerHTML = '<p class="info">Testing data operations...</p>';
+            
+            try {
+                // Login as admin
+                const user = await Parse.User.logIn('admin', 'admin123');
+                resultDiv.innerHTML += '<p class="success">✅ Logged in as admin</p>';
+                
+                // Create a test student
+                const Student = Parse.Object.extend('Student');
+                const student = new Student();
+                student.set('name', 'Test Student');
+                student.set('course', 'Test Course');
+                student.set('season', 1);
+                student.set('startDate', new Date());
+                student.set('endDate', new Date(Date.now() + 30*24*60*60*1000)); // 30 days from now
+                student.set('nationalID', 'TEST123');
+                student.set('phone', '123-456-7890');
+                student.set('location', 'Test Location');
+                student.set('seasonId', 1);
+                student.set('isActive', true);
+                student.set('enrollmentDate', new Date());
+                
+                const savedStudent = await student.save();
+                resultDiv.innerHTML += `<p class="success">✅ Created test student with ID: ${savedStudent.id}</p>`;
+                
+                // Update the student
+                savedStudent.set('course', 'Updated Test Course');
+                await savedStudent.save();
+                resultDiv.innerHTML += '<p class="success">✅ Updated test student</p>';
+                
+                // Clean up - delete the test student
+                await savedStudent.destroy();
+                resultDiv.innerHTML += '<p class="success">✅ Deleted test student</p>';
+                
+                // Log out
+                await Parse.User.logOut();
+                resultDiv.innerHTML += '<p class="success">✅ Logged out</p>';
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<p class="error">❌ Error: ${error.message}</p>`;
+                console.error('Error details:', error);
+            }
+        });
+        
+        // Test Data Retrieval
+        document.getElementById('testDataRetrieval').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('dataRetrievalResult');
+            resultDiv.innerHTML = '<p class="info">Testing data retrieval...</p>';
+            
+            try {
+                // Login as admin
+                const user = await Parse.User.logIn('admin', 'admin123');
+                resultDiv.innerHTML += '<p class="success">✅ Logged in as admin</p>';
+                
+                // Retrieve students
+                const studentQuery = new Parse.Query('Student');
+                studentQuery.limit(3);
+                const students = await studentQuery.find();
+                resultDiv.innerHTML += `<p class="success">✅ Retrieved ${students.length} students</p>`;
+                
+                if (students.length > 0) {
+                    resultDiv.innerHTML += '<h3>Sample Student Data:</h3><ul>';
+                    students.forEach(student => {
+                        resultDiv.innerHTML += `<li>${student.get('name')} (${student.get('nationalID')})</li>`;
+                    });
+                    resultDiv.innerHTML += '</ul>';
+                }
+                
+                // Retrieve other data types
+                const teacherQuery = new Parse.Query('Teacher');
+                teacherQuery.limit(3);
+                const teachers = await teacherQuery.find();
+                resultDiv.innerHTML += `<p class="success">✅ Retrieved ${teachers.length} teachers</p>`;
+                
+                const courseQuery = new Parse.Query('Course');
+                courseQuery.limit(3);
+                const courses = await courseQuery.find();
+                resultDiv.innerHTML += `<p class="success">✅ Retrieved ${courses.length} courses</p>`;
+                
+                // Log out
+                await Parse.User.logOut();
+                resultDiv.innerHTML += '<p class="success">✅ Logged out</p>';
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<p class="error">❌ Error: ${error.message}</p>`;
+                console.error('Error details:', error);
+            }
+        });
+    </script>
+</body>
+</html>
