@@ -117,17 +117,19 @@ async function bootstrapSessionFromLocalStorage() {
  * @returns {Object} Plain JavaScript object with all Parse object properties
  */
 function parseObjectToPlainObject(parseObject) {
+    // Defensive check for undefined or null parseObject
     if (!parseObject) return null;
     
     // Get all attributes from the Parse object
     const attributes = parseObject.attributes || {};
     
     // Create a plain object with all the Parse object properties
+    // Use fallback values for properties that might be undefined
     const plainObject = {
-        id: parseObject.id,
-        className: parseObject.className,
-        createdAt: parseObject.createdAt,
-        updatedAt: parseObject.updatedAt,
+        id: parseObject.id || null,
+        className: parseObject.className || null,
+        createdAt: parseObject.createdAt || null,
+        updatedAt: parseObject.updatedAt || null,
         ...attributes
     };
     
