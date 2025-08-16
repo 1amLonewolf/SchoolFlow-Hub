@@ -162,7 +162,7 @@ async function loadParseData(className) {
 async function saveParseData(className, data, id = null) {
     // Basic validation for className
     if (typeof className !== 'string' || !className) {
-        const msg = 'Error: Invalid data type (class name)नामी specified for saving.';
+        const msg = 'Error: Invalid data type (class name) specified for saving.';
         console.error("[saveParseData]", msg, { className, data, id });
         window.Utils.showMessage(msg, 'error');
         return null;
@@ -459,7 +459,7 @@ function renderOverviewCharts() {
             const studentsData = window.studentManager.getStudents(); // Plain JS objects
 
             const courseCounts = {};
-            studentsData.filter(s => s.seasonId === window.seasonManager.getCurrentSeason() && s.isActive).forEach(student => {
+            studentsData.filter(s => s.season === window.seasonManager.getCurrentSeason() && s.isActive).forEach(student => {
                 const courseName = student.course; // Direct access
                 if (courseName) {
                     courseCounts[courseName] = (courseCounts[courseName] || 0) + 1;
@@ -770,14 +770,19 @@ function addHorizontalSlider(container) {
             }
         } else {
             if (!wrap.parentNode) container.appendChild(wrap);
-            range.disabled = false;
-            syncFromScroll();
+            container.classList.add('has-hscroll');
+            range.disabled = newOverflow <= 4;
+            syncFromScroll(); // Update slider position
         }
     });
-    ro.observe(container);
+    ro.observe(container); // Observe the main container
+    if (contentEl && contentEl !== container) {
+        ro.observe(contentEl); // Also observe content element if it's different
+    }
 
-    container.appendChild(wrap);
-    syncFromScroll();
+    container.appendChild(wrap); // Add the slider to the container
+    syncFromScroll(); // Initial sync
+    console.log("[Utils] Horizontal slider added.");
 }
 
 // Function to refresh all dashboard data and UI
@@ -976,16 +981,16 @@ function attachEventListeners() {
                 let records = [];
                 try {
                     if (file.name.endsWith('.csv')) {
-                        records = parseCSV(fileContent);
+                        records = window.Utils.parseCSV(fileContent); // Use Utils.parseCSV
                     } else if (file.name.endsWith('.json')) {
-                        records = parseJSON(fileContent);
+                        records = window.Utils.parseJSON(fileContent); // Use Utils.parseJSON
                     } else {
                         window.Utils.showMessage('Invalid file type. Please upload a .csv or .json file.', 'error');
                         if (uploadStatusDiv) uploadStatusDiv.textContent = 'Invalid file type.';
                         return;
                     }
                     if (records.length > 0) {
-                        await processStudentRecords(records); // This calls addOrUpdateStudent internally
+                        await window.studentManager.processStudentRecords(records); // Call manager method
                     } else {
                         window.Utils.showMessage('File is empty or could not be parsed.', 'warning');
                         if (uploadStatusDiv) uploadStatusDiv.textContent = 'No data found.';
@@ -1166,13 +1171,16 @@ function attachEventListeners() {
 // ======================
 
 // Initialize when DOM is fully loaded
-document.addEventListener('DOMContentLoaded', async () => {
-    // Make body visible after content loads (prevents FOUC)
-    document.body.style.opacity = '1';
+// REMOVED: document.addEventListener('DOMContentLoaded', async () => { ... });
+// The entire module script runs after DOM is parsed when type="module" and defer are used.
+// So, we can directly call initDashboard.
 
-    // Start the dashboard initialization process
-    await initDashboard();
-});
+// Make body visible after content loads (prevents FOUC)
+document.body.style.opacity = '1';
+
+// Start the dashboard initialization process directly
+initDashboard();
+
 
 // Helper for export functions (can be moved to Utils if preferred)
 function toCSV(rows) {
@@ -1319,7 +1327,7 @@ function checkGraduationEligibility() {
         // Calculate attendance percentage
         const studentAttendanceRecords = allAttendanceRecords.filter(record => record.studentId === studentId);
         const totalAttendanceDays = studentAttendanceRecords.length;
-        const presentDays = studentAttendanceRecords.filter(record => record.status === 'present').length; // Direct access
+        const presentDays = studentAttendanceRecords.filter(record => record.status === 'Present').length; // Direct access
         const attendancePercentage = totalAttendanceDays > 0 ? (presentDays / totalAttendanceDays) * 100 : 0;
         
         // Check for required exams
@@ -1468,7 +1476,7 @@ if (!window.Utils || !window.Utils.getTodayDateString) {
     window.Utils.getTodayDateString = function() {
         const today = new Date();
         const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
         const day = String(today.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     };
