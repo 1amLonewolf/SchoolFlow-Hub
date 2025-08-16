@@ -130,11 +130,54 @@ class StudentManager {
         try {
             console.log("[StudentManager] addOrUpdateStudent called with:", { studentId, studentData });
             
-            // Use the saveParseData function from dashboard.js for consistency, just like TeacherManager does
-            await window.saveParseData('Student', studentData, studentId);
+            let student;
+            if (studentId) {
+                // Updating existing student
+                console.log("[StudentManager] Updating existing student with ID:", studentId);
+                student = await new Parse.Query('Student').get(studentId);
+            } else {
+                // Creating new student - check if one with same national ID exists
+                console.log("[StudentManager] Creating new student, checking for existing with national ID:", studentData.nationalID);
+                const query = new Parse.Query('Student');
+                query.equalTo('nationalID', studentData.nationalID);
+                const results = await query.find();
+                console.log(`[StudentManager] Found ${results.length} existing students with this national ID`);
+                if (results.length > 0) {
+                    console.log("[StudentManager] Found existing student with same national ID, updating that record");
+                    student = results[0];
+                } else {
+                    console.log("[StudentManager] No existing student with this national ID, creating new record");
+                    // Using Parse.Object.extend as per Parse documentation
+                    const Student = Parse.Object.extend('Student');
+                    student = new Student();
+                }
+            }
             
-            // Since saveParseData handles the loading of data, we just need to return success
-            return { success: true };
+            // Set student properties
+            console.log("[StudentManager] Setting student properties");
+            student.set('name', studentData.name);
+            student.set('course', studentData.course);
+            student.set('season', studentData.season);
+            student.set('nationalID', studentData.nationalID);
+            student.set('phone', studentData.phone);
+            student.set('location', studentData.location);
+            
+            // Add season information
+            console.log("[StudentManager] Setting season information");
+            student.set('seasonId', window.currentSeason);
+            student.set('isActive', true);
+            student.set('enrollmentDate', new Date());
+
+            console.log("[StudentManager] Saving student to database");
+            const savedStudent = await student.save();
+            console.log('[StudentManager] Student saved successfully', {
+                id: savedStudent.id,
+                name: savedStudent.get('name'),
+                nationalID: savedStudent.get('nationalID'),
+                course: savedStudent.get('course'),
+                season: savedStudent.get('season')
+            });
+            return { success: true, student: savedStudent };
         } catch (error) {
             console.error('[StudentManager] Error adding or updating student:', error);
             console.error('[StudentManager] Error details:', {

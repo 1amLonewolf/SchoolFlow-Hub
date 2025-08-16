@@ -152,22 +152,38 @@ async function loadParseData(className) {
 
 async function saveParseData(className, data, id = null) {
     try {
+        // Ensure className is valid
+        if (!className) {
+            throw new Error('Class name is required');
+        }
+        
         const Class = Parse.Object.extend(className);
         let object;
         if (id) {
+            // For updates, we need to fetch the existing object properly
             object = await new Parse.Query(className).get(id);
         } else {
+            // For new objects, create a new instance
             object = new Class();
         }
+        
+        // Set the properties
         for (const key in data) {
-            object.set(key, data[key]);
+            // Skip any undefined or null values
+            if (data[key] !== undefined && data[key] !== null) {
+                object.set(key, data[key]);
+            }
         }
+        
+        // Save the object
         await object.save();
         Utils.showMessage(`${className} saved successfully!`, 'success');
         await loadAllData();
+        return object; // Return the saved object
     } catch (error) {
         console.error(`Error saving ${className}:`, error);
         Utils.showMessage(`Error saving ${className}. Please try again.`, 'error');
+        throw error; // Re-throw the error so caller can handle it
     }
 }
 
