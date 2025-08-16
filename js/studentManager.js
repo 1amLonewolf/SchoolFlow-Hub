@@ -212,7 +212,7 @@ class StudentManager {
      * @param {string} id - ID of student to delete
      */
     async deleteStudent(id) {
-        window.showConfirmDialog('Are you sure you want to delete this student?', async () => {
+        window.Utils.showConfirmDialog('Are you sure you want to delete this student?', async () => {
             await window.deleteParseData('Student', id);
         });
     }

@@ -120,7 +120,7 @@ class TeacherManager {
     }
 
     async deleteTeacher(id) {
-        window.showConfirmDialog('Are you sure you want to delete this teacher? This action cannot be undone.', async () => {
+        window.Utils.showConfirmDialog('Are you sure you want to delete this teacher? This action cannot be undone.', async () => {
             await window.deleteParseData('Teacher', id);
         });
     }
