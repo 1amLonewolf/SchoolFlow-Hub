@@ -141,6 +141,7 @@ class StudentManager {
                 const query = new Parse.Query('Student');
                 query.equalTo('nationalID', studentData.nationalID);
                 const results = await query.find();
+                console.log(`[StudentManager] Found ${results.length} existing students with this national ID`);
                 if (results.length > 0) {
                     console.log("[StudentManager] Found existing student with same national ID, updating that record");
                     student = results[0];
@@ -167,10 +168,21 @@ class StudentManager {
 
             console.log("[StudentManager] Saving student to database");
             const savedStudent = await student.save();
-            console.log('[StudentManager] Student saved successfully', savedStudent);
+            console.log('[StudentManager] Student saved successfully', {
+                id: savedStudent.id,
+                name: savedStudent.get('name'),
+                nationalID: savedStudent.get('nationalID'),
+                course: savedStudent.get('course'),
+                season: savedStudent.get('season')
+            });
             return { success: true, student: savedStudent };
         } catch (error) {
             console.error('[StudentManager] Error adding or updating student:', error);
+            console.error('[StudentManager] Error details:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+            });
             return { success: false, message: error.message };
         }
     }

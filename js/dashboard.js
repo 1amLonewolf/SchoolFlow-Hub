@@ -113,9 +113,19 @@ async function bootstrapSessionFromLocalStorage() {
 
 async function loadParseData(className) {
     try {
+        console.log(`[loadParseData] Loading ${className} data from Parse backend...`);
         const query = new Parse.Query(className);
         const results = await query.find();
         console.log(`[loadParseData] Successfully loaded ${results.length} ${className} records`);
+        if (className === 'Student') {
+            console.log(`[loadParseData] Student records:`, results.map(s => ({
+                id: s.id,
+                name: s.get('name'),
+                nationalID: s.get('nationalID'),
+                course: s.get('course'),
+                season: s.get('season')
+            })));
+        }
         return results;
     } catch (error) {
         console.error(`[loadParseData] Error fetching ${className} data:`, error);
@@ -221,6 +231,7 @@ async function loadAllData() {
         console.log(`  - Exams: ${examsR.length}`);
         
         // Set data in our managers
+        console.log("[loadAllData] Setting data in managers...");
         window.studentManager.setStudents(studentsR);
         window.teacherManager.setTeachers(teachersR);
         window.courseManager.setCourses(coursesR);
@@ -228,10 +239,15 @@ async function loadAllData() {
         window.attendanceManager.setAttendanceRecords(attendanceR);
         
         console.log(`[loadAllData] Data stored in managers. Students: ${studentsR.length}, Teachers: ${teachersR.length}, Courses: ${coursesR.length}, Exams: ${examsR.length}, Attendance: ${attendanceR.length}`);
+        console.log("[loadAllData] Calling updateUI...");
         updateUI();
         console.log("[loadAllData] All data loaded and UI updated.");
     } catch (error) {
         console.error("[loadAllData] Critical error during data loading:", error);
+        console.error("[loadAllData] Error details:", {
+            message: error.message,
+            stack: error.stack
+        });
         Utils.showMessage('Critical error loading dashboard data. Some features may not work correctly.', 'error');
         // Still try to update UI with whatever data we have
         updateUI();
