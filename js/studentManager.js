@@ -63,7 +63,7 @@ class StudentManager {
         if (this.students.length === 0) {
             const tr = document.createElement('tr');
             const td = document.createElement('td');
-            td.colSpan = 6;
+            td.colSpan = 7;
             td.style.textAlign = 'center';
             td.textContent = 'No students added yet.';
             tr.appendChild(td);
@@ -85,6 +85,7 @@ class StudentManager {
             row.appendChild(makeCell('ID', student.get('nationalID')));
             row.appendChild(makeCell('Season', student.get('season')));
             row.appendChild(makeCell('Phone', student.get('phone')));
+            row.appendChild(makeCell('Location', student.get('location')));
 
             const actionsTd = document.createElement('td');
             actionsTd.setAttribute('data-label', 'Actions');
@@ -136,7 +137,12 @@ class StudentManager {
                 console.log("[StudentManager] Updating existing student with ID:", studentId);
                 student = await new Parse.Query('Student').get(studentId);
                 console.log("[StudentManager] Retrieved student object for update:", student);
-                console.log("[StudentManager] Student object className:", student.className);
+                if (student && student.className) {
+                    console.log("[StudentManager] Student object className:", student.className);
+                } else {
+                    console.error("[StudentManager] Retrieved student object is invalid:", student);
+                    throw new Error('Invalid student object retrieved from database');
+                }
             } else {
                 // Creating new student - check if one with same national ID exists
                 console.log("[StudentManager] Creating new student, checking for existing with national ID:", studentData.nationalID);
@@ -148,14 +154,24 @@ class StudentManager {
                     console.log("[StudentManager] Found existing student with same national ID, updating that record");
                     student = results[0];
                     console.log("[StudentManager] Using existing student object:", student);
-                    console.log("[StudentManager] Existing student object className:", student.className);
+                    if (student && student.className) {
+                        console.log("[StudentManager] Existing student object className:", student.className);
+                    } else {
+                        console.error("[StudentManager] Existing student object is invalid:", student);
+                        throw new Error('Invalid existing student object');
+                    }
                 } else {
                     console.log("[StudentManager] No existing student with this national ID, creating new record");
                     // Using Parse.Object.extend as per Parse documentation
                     const Student = Parse.Object.extend('Student');
                     student = new Student();
                     console.log("[StudentManager] Created new student object:", student);
-                    console.log("[StudentManager] New student object className:", student.className);
+                    if (student && student.className) {
+                        console.log("[StudentManager] New student object className:", student.className);
+                    } else {
+                        console.error("[StudentManager] New student object is invalid:", student);
+                        throw new Error('Failed to create new student object');
+                    }
                 }
             }
             
@@ -166,12 +182,12 @@ class StudentManager {
             
             // Set student properties
             console.log("[StudentManager] Setting student properties");
-            student.set('name', studentData.name);
-            student.set('course', studentData.course);
-            student.set('season', studentData.season);
-            student.set('nationalID', studentData.nationalID);
-            student.set('phone', studentData.phone);
-            student.set('location', studentData.location);
+            if (studentData.name !== undefined) student.set('name', studentData.name);
+            if (studentData.course !== undefined) student.set('course', studentData.course);
+            if (studentData.season !== undefined) student.set('season', studentData.season);
+            if (studentData.nationalID !== undefined) student.set('nationalID', studentData.nationalID);
+            if (studentData.phone !== undefined) student.set('phone', studentData.phone);
+            if (studentData.location !== undefined) student.set('location', studentData.location);
             
             // Add season information
             console.log("[StudentManager] Setting season information");
@@ -185,7 +201,9 @@ class StudentManager {
             }
             
             console.log("[StudentManager] Student object before save:", student);
-            console.log("[StudentManager] Student object className before save:", student.className);
+            if (student.className) {
+                console.log("[StudentManager] Student object className before save:", student.className);
+            }
 
             console.log("[StudentManager] Saving student to database");
             const savedStudent = await student.save();
