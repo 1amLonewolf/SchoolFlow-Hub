@@ -1,201 +1,101 @@
 # SchoolFlow Hub
 
-A comprehensive school management system built with modern web technologies.
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Development](#development)
-- [Testing](#testing)
-- [Building](#building)
-- [Deployment](#deployment)
-- [API Documentation](#api-documentation)
-- [Contributing](#contributing)
-- [License](#license)
-
-## Overview
-
-SchoolFlow Hub is a complete school management solution that helps educational institutions manage students, teachers, courses, attendance, exams, and more. The system provides a responsive web interface with role-based access control and real-time data visualization.
+SchoolFlow Hub is a comprehensive school management system designed to streamline administrative tasks, enhance communication between staff, students, and parents, and provide insightful analytics for better decision-making.
 
 ## Features
 
-- **User Authentication**: Secure login system with session management
-- **Student Management**: Add, edit, delete, and bulk upload students
-- **Teacher Management**: Manage teacher information and assignments
-- **Course Management**: Create courses and assign them to teachers
-- **Attendance Tracking**: Record and monitor student attendance
-- **Exam Management**: Record exam results with advanced filtering
-- **Season Management**: Academic year/term tracking
-- **Graduation Eligibility**: Automated checks based on attendance and exams
-- **Reports & Analytics**: Data visualization with charts
-- **Data Export**: Export functionality for various data types
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
-- **Dark Mode**: User preference for light/dark theme
+- Student Management
+- Teacher Management
+- Course Management
+- Attendance Tracking
+- Exam Records Management
+- Graduation Eligibility Checking
+- Reporting and Analytics
+- Dark Mode Support
 
-## Architecture
+## Technologies Used
 
-### Frontend
-- Pure HTML/CSS/JavaScript (no frameworks)
-- Modular architecture with separate components
-- Responsive design with mobile-first approach
-- Chart.js for data visualization
+- HTML5, CSS3, JavaScript (ES6+)
+- Parse SDK for Backend-as-a-Service
+- Webpack for module bundling
+- Jest for testing
 
-### Backend
-- Node.js HTTP server for serving static files
-- Back4App (Parse Server) for data persistence
-- RESTful API interactions
-- Session management
+## Setup Instructions
 
-### Security
-- Secure password handling
-- Session token validation
-- Input sanitization
-- Content Security Policy
-- Environment variable configuration
+### Prerequisites
 
-## Prerequisites
+- Node.js (version 14 or higher)
+- npm (comes with Node.js)
 
-- Node.js (v14 or higher)
-- npm (v6 or higher)
-- Back4App account (for database)
-
-## Installation
+### Installation
 
 1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd schoolflow-hub
+   ```
+   git clone https://github.com/your-username/SchoolFlow-Hub.git
    ```
 
-2. Install dependencies:
-   ```bash
+2. Navigate to the project directory:
+   ```
+   cd SchoolFlow-Hub
+   ```
+
+3. Install dependencies:
+   ```
    npm install
    ```
 
-## Configuration
-
-1. Create a `.env` file in the project root with the following variables:
-   ```env
-   BACK4APP_APP_ID=your_back4app_app_id
-   BACK4APP_JS_KEY=your_back4app_js_key
-   BACK4APP_MASTER_KEY=your_back4app_master_key
-   BACK4APP_SERVER_URL=https://parseapi.back4app.com/
-   ADMIN_USERNAME=admin
-   ADMIN_EMAIL=admin@example.com
-   ADMIN_PASSWORD=secure_password
+4. Create a `.env` file in the root directory with your Parse Server configuration:
+   ```
+   PARSE_APP_ID=your_app_id
+   PARSE_JS_KEY=your_javascript_key
+   PARSE_SERVER_URL=https://parseapi.back4app.com/
    ```
 
-2. Create the admin user:
-   ```bash
-   npm run create-admin
-   ```
+### Building the Project
 
-3. Configure Back4App permissions:
-   - Log into your Back4App Dashboard
-   - For each class (Student, Teacher, Course, etc.):
-     - Go to Database > Browser > [Class Name]
-     - Click the Settings (gear) icon
-     - Select "Class Level Permissions"
-     - Add the "Admin" role to all permissions
-     - Click "Save"
-
-## Usage
-
-1. Start the development server:
-   ```bash
-   node server.js
-   ```
-
-2. Open your browser and navigate to `http://localhost:8000`
-
-3. Log in with the admin credentials you created
-
-## Development
-
-### Project Structure
-
+To build the project for production:
 ```
-schoolflow-hub/
-├── js/                    # Modular JavaScript components
-│   ├── dashboard.js       # Main dashboard coordinator
-│   ├── studentManager.js  # Student management logic
-│   ├── teacherManager.js  # Teacher management logic
-│   ├── seasonManager.js   # Season management logic
-│   └── utils.js           # Utility functions
-├── tests/                 # Unit tests
-├── scripts/               # Admin setup scripts
-├── dist/                  # Built/bundled files
-├── server.js             # Node.js HTTP server
-├── loginPage.html        # Authentication page
-├── login.js              # Login form handling
-├── dashboard.html        # Main application interface
-├── dashboard.css         # Dashboard styling
-├── loginPage.css         # Login page styling
-├── package.json          # Dependencies and scripts
-└── README.md             # Project documentation
-```
-
-### Code Standards
-
-- Use consistent indentation (2 spaces)
-- Follow naming conventions (camelCase for variables/functions, PascalCase for classes)
-- Add comments for complex logic
-- Keep functions small and focused
-- Use meaningful variable and function names
-
-## Testing
-
-Run all tests:
-```bash
-npm test
-```
-
-Run tests in watch mode:
-```bash
-npm run test:watch
-```
-
-## Building
-
-Build for production:
-```bash
 npm run build
 ```
 
-Build for development:
-```bash
-npm run build:dev
+This will create a `dist` folder with the bundled JavaScript file.
+
+### Running Tests
+
+To run the test suite:
+```
+npm test
 ```
 
-## Deployment
+### Development
 
-1. Build the project:
-   ```bash
-   npm run build
-   ```
+For development, you can use a local server to serve the files. One option is to use `http-server`:
+```
+npx http-server
+```
 
-2. Deploy the built files to your web server
+Then open your browser to the provided URL (usually http://localhost:8080).
 
-3. Ensure your Back4App configuration is correct
+## Usage
 
-## API Documentation
-
-The application uses the Back4App Parse Server API. Refer to the [Parse JavaScript SDK documentation](https://docs.parseplatform.org/js/guide/) for detailed API information.
+1. Open `loginPage.html` in your browser to access the login page
+2. Log in with your credentials
+3. Navigate through the dashboard to manage students, teachers, courses, attendance, and exams
+4. Use the reporting features to generate insights about student performance
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a pull request
+2. Create a new branch (`git checkout -b feature/AmazingFeature`)
+3. Make your changes
+4. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+5. Push to the branch (`git push origin feature/AmazingFeature`)
+6. Open a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contact
+
+For support or inquiries, please contact the project team at [your-email@example.com].
