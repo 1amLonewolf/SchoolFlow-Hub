@@ -53,7 +53,14 @@ const server = http.createServer((req, res) => {
       }
     } else {
       // Success
-      res.writeHead(200, { 'Content-Type': contentType });
+      const headers = { 'Content-Type': contentType };
+      // Add cache control headers for JS files to prevent caching during development
+      if (extname === '.js') {
+        headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+        headers['Pragma'] = 'no-cache';
+        headers['Expires'] = '0';
+      }
+      res.writeHead(200, headers);
       res.end(content, 'utf-8');
     }
   });
