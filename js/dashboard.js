@@ -507,13 +507,13 @@ function renderOverviewCharts() {
         if (coursePopularityCtx) {
             // Get course data
             const courses = window.courseManager.getCourses();
-            const courseNames = courses.map(course => course.get('name') || 'Unnamed Course');
+            const courseNames = courses.map(course => course.name || 'Unnamed Course');
             const studentCounts = courses.map(course => {
                 // Count students in this course for current season
                 const courseId = course.id;
                 return window.studentManager.getStudents().filter(student => 
-                    student.get('course') === courseId && 
-                    student.get('seasonId') === window.currentSeason
+                    student.course === courseId && 
+                    student.seasonId === window.currentSeason
                 ).length;
             });
 
@@ -596,7 +596,7 @@ function renderOverviewCharts() {
         if (topStudentsCtx) {
             // Get top students based on exam scores
             const students = window.studentManager.getStudents();
-            const studentNames = students.slice(0, 5).map(student => student.get('name') || 'Unnamed Student');
+            const studentNames = students.slice(0, 5).map(student => student.name || 'Unnamed Student');
             const averageScores = students.slice(0, 5).map(student => {
                 // This would need to be implemented with actual exam data
                 return Math.floor(Math.random() * 100);
