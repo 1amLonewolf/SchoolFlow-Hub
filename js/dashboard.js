@@ -251,13 +251,13 @@ function updateUI() {
 function renderOverviewCharts() {
     try {
         // Destroy existing charts if they exist
-        if (window.coursePopularityChart) {
+        if (window.coursePopularityChart && typeof window.coursePopularityChart.destroy === 'function') {
             window.coursePopularityChart.destroy();
         }
-        if (window.overallAttendanceChart) {
+        if (window.overallAttendanceChart && typeof window.overallAttendanceChart.destroy === 'function') {
             window.overallAttendanceChart.destroy();
         }
-        if (window.topStudentsChart) {
+        if (window.topStudentsChart && typeof window.topStudentsChart.destroy === 'function') {
             window.topStudentsChart.destroy();
         }
 
