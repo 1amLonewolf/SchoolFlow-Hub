@@ -135,6 +135,8 @@ class StudentManager {
                 // Updating existing student
                 console.log("[StudentManager] Updating existing student with ID:", studentId);
                 student = await new Parse.Query('Student').get(studentId);
+                console.log("[StudentManager] Retrieved student object for update:", student);
+                console.log("[StudentManager] Student object className:", student.className);
             } else {
                 // Creating new student - check if one with same national ID exists
                 console.log("[StudentManager] Creating new student, checking for existing with national ID:", studentData.nationalID);
@@ -145,12 +147,21 @@ class StudentManager {
                 if (results.length > 0) {
                     console.log("[StudentManager] Found existing student with same national ID, updating that record");
                     student = results[0];
+                    console.log("[StudentManager] Using existing student object:", student);
+                    console.log("[StudentManager] Existing student object className:", student.className);
                 } else {
                     console.log("[StudentManager] No existing student with this national ID, creating new record");
                     // Using Parse.Object.extend as per Parse documentation
                     const Student = Parse.Object.extend('Student');
                     student = new Student();
+                    console.log("[StudentManager] Created new student object:", student);
+                    console.log("[StudentManager] New student object className:", student.className);
                 }
+            }
+            
+            // Verify that we have a valid student object before setting properties
+            if (!student) {
+                throw new Error('Student object is null or undefined');
             }
             
             // Set student properties
@@ -167,6 +178,14 @@ class StudentManager {
             student.set('seasonId', window.currentSeason);
             student.set('isActive', true);
             student.set('enrollmentDate', new Date());
+            
+            // Verify that the student object has the required methods before saving
+            if (typeof student.save !== 'function') {
+                throw new Error('Student object does not have save method');
+            }
+            
+            console.log("[StudentManager] Student object before save:", student);
+            console.log("[StudentManager] Student object className before save:", student.className);
 
             console.log("[StudentManager] Saving student to database");
             const savedStudent = await student.save();
