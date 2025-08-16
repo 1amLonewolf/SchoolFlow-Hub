@@ -6,6 +6,7 @@ import TeacherManager from './teacherManager.js';
 import SeasonManager from './seasonManager.js';
 import CourseManager from './courseManager.js';
 import ExamManager from './examManager.js';
+import AttendanceManager from './attendanceManager.js';
 import Utils from './utils.js';
 
 // Back4App Parse SDK Initialization
@@ -22,6 +23,7 @@ window.studentManager = new StudentManager();
 window.teacherManager = new TeacherManager();
 window.courseManager = new CourseManager();
 window.examManager = new ExamManager();
+window.attendanceManager = new AttendanceManager();
 window.seasonManager = new SeasonManager();
 window.Utils = Utils;
 
@@ -215,8 +217,9 @@ async function loadAllData() {
         window.teacherManager.setTeachers(teachersR);
         window.courseManager.setCourses(coursesR);
         window.examManager.setExams(examsR);
+        window.attendanceManager.setAttendanceRecords(attendanceR);
         
-        console.log(`[loadAllData] Data loaded. Students: ${studentsR.length}, Teachers: ${teachersR.length}, Courses: ${coursesR.length}, Exams: ${examsR.length}`);
+        console.log(`[loadAllData] Data loaded. Students: ${studentsR.length}, Teachers: ${teachersR.length}, Courses: ${coursesR.length}, Exams: ${examsR.length}, Attendance: ${attendanceR.length}`);
         updateUI();
         console.log("[loadAllData] All data loaded and UI updated.");
     } catch (error) {
@@ -234,6 +237,7 @@ function updateUI() {
     window.teacherManager.renderTeacherTable();
     window.courseManager.renderCourseTable();
     window.examManager.renderExamTable();
+    window.attendanceManager.renderAttendanceTable();
     // We would also call render methods for other managers
 
     window.teacherManager.populateTeacherDropdown();
@@ -322,9 +326,9 @@ function renderOverviewCharts() {
         const overallAttendanceCtx = document.getElementById('overallAttendanceChart');
         if (overallAttendanceCtx) {
             // Get attendance data
-            const attendanceRecords = []; // This would need to be implemented
-            const presentCount = attendanceRecords.filter(record => record.get('status') === 'Present').length;
-            const absentCount = attendanceRecords.filter(record => record.get('status') === 'Absent').length;
+            const attendanceStats = window.attendanceManager.getAttendanceStats();
+            const presentCount = attendanceStats.presentCount;
+            const absentCount = attendanceStats.absentCount;
 
             window.overallAttendanceChart = new Chart(overallAttendanceCtx, {
                 type: 'doughnut',
@@ -726,6 +730,20 @@ function attachEventListeners() {
         });
     }
     
+    // Attendance form event listeners
+    const addAttendanceForm = document.getElementById('addAttendanceForm');
+    if (addAttendanceForm) {
+        addAttendanceForm.addEventListener('submit', (e) => {
+            window.attendanceManager.addOrUpdateAttendance(e);
+        });
+    }
+    const cancelAttendanceBtn = document.getElementById('cancelAttendanceBtn');
+    if (cancelAttendanceBtn) {
+        cancelAttendanceBtn.addEventListener('click', () => {
+            window.attendanceManager.resetAttendanceForm();
+        });
+    }
+    
     // Exam form event listeners
     const addExamForm = document.getElementById('addExamForm');
     if (addExamForm) {
@@ -767,15 +785,16 @@ function exportStudentsCSV() {
 
 function exportAttendanceCSV() {
     const rows = [["Date","Student","Course","Status"]];
-    // We would need to access attendance records here
-    const attendanceRecords = []; // This would need to be implemented
-    attendanceRecords.forEach(r => {
+    window.attendanceManager.getAttendanceRecords().forEach(r => {
         const student = window.studentManager.getStudents().find(s => s.id === r.get('studentId'));
+        const courseId = student ? student.get('course') : null;
+        const course = window.courseManager.getCourses().find(c => c.id === courseId);
+        const courseName = course ? course.get('name') : (courseId || 'Unknown Course');
         const d = r.get('date');
         rows.push([
             d ? new Date(d).toLocaleDateString() : '',
-            student ? student.get('name') : '',
-            student ? student.get('course') : '',
+            student ? student.get('name') : 'Unknown Student',
+            courseName,
             r.get('status') || ''
         ]);
     });
@@ -852,12 +871,14 @@ export default {
     TeacherManager,
     CourseManager,
     ExamManager,
+    AttendanceManager,
     SeasonManager,
     Utils,
     studentManager: window.studentManager,
     teacherManager: window.teacherManager,
     courseManager: window.courseManager,
     examManager: window.examManager,
+    attendanceManager: window.attendanceManager,
     seasonManager: window.seasonManager,
     Utils: window.Utils
 };
