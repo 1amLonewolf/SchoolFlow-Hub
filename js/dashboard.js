@@ -574,10 +574,12 @@ if (document.readyState === 'loading') {
 export default {
     StudentManager,
     TeacherManager,
+    CourseManager,
     SeasonManager,
     Utils,
     studentManager: window.studentManager,
     teacherManager: window.teacherManager,
+    courseManager: window.courseManager,
     seasonManager: window.seasonManager,
     Utils: window.Utils
 };
