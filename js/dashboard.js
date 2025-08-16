@@ -241,6 +241,9 @@ function updateUI() {
     
     // Render overview charts
     renderOverviewCharts();
+    
+    // Update reports and analytics data
+    updateReportsAndAnalytics();
 
     console.log("[updateUI] UI update complete.");
 }
@@ -397,6 +400,103 @@ function renderOverviewCharts() {
     } catch (error) {
         console.error('[renderOverviewCharts] Error rendering charts:', error);
         // Don't show an error message to the user for chart rendering issues
+    }
+}
+
+/**
+ * Update the reports and analytics tab with data and charts
+ */
+function updateReportsAndAnalytics() {
+    try {
+        // Update summary data
+        updateSummaryData();
+        
+        // Render low performing assignments chart
+        renderLowPerformingAssignmentsChart();
+    } catch (error) {
+        console.error('[updateReportsAndAnalytics] Error updating reports and analytics:', error);
+    }
+}
+
+/**
+ * Update the summary data in the reports and analytics tab
+ */
+function updateSummaryData() {
+    // Update total students
+    const totalStudentsElement = document.getElementById('summaryTotalStudents');
+    if (totalStudentsElement) {
+        totalStudentsElement.textContent = window.studentManager.getStudents().length;
+    }
+    
+    // Update total courses
+    const totalCoursesElement = document.getElementById('summaryTotalCourses');
+    if (totalCoursesElement) {
+        totalCoursesElement.textContent = window.courseManager.getCourses().length;
+    }
+    
+    // Update total teachers
+    const totalTeachersElement = document.getElementById('summaryTotalTeachers');
+    if (totalTeachersElement) {
+        totalTeachersElement.textContent = window.teacherManager.getTeachers().length;
+    }
+}
+
+/**
+ * Render the low performing assignments chart
+ */
+function renderLowPerformingAssignmentsChart() {
+    // Destroy existing chart if it exists
+    if (window.lowPerformingAssignmentsChart && typeof window.lowPerformingAssignmentsChart.destroy === 'function') {
+        window.lowPerformingAssignmentsChart.destroy();
+    }
+
+    const ctx = document.getElementById('lowPerformingAssignmentsChart');
+    if (ctx) {
+        // For now, we'll create a placeholder chart with sample data
+        // In a real implementation, this would be based on actual exam/assignment data
+        const assignments = [
+            { name: 'Math Quiz 1', averageScore: 75 },
+            { name: 'Science Test', averageScore: 68 },
+            { name: 'History Essay', averageScore: 72 },
+            { name: 'English Exam', averageScore: 65 },
+            { name: 'Physics Lab', averageScore: 70 }
+        ];
+        
+        const assignmentNames = assignments.map(a => a.name);
+        const averageScores = assignments.map(a => a.averageScore);
+        
+        window.lowPerformingAssignmentsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: assignmentNames,
+                datasets: [{
+                    label: 'Average Score',
+                    data: averageScores,
+                    backgroundColor: 'rgba(244, 67, 54, 0.7)',
+                    borderColor: 'rgba(244, 67, 54, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Low Performing Assignments'
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
     }
 }
 
@@ -601,6 +701,14 @@ function attachEventListeners() {
         downloadLowAssignmentsBtn.addEventListener('click', (e) => {
             e.preventDefault();
             downloadChart('lowPerformingAssignmentsChart', 'low-performing-assignments.png');
+        });
+    }
+    
+    const refreshDashboardReportsBtn = document.getElementById('refreshDashboardReportsBtn');
+    if (refreshDashboardReportsBtn) {
+        refreshDashboardReportsBtn.addEventListener('click', () => {
+            // Refresh all data
+            loadAllData();
         });
     }
     
