@@ -172,6 +172,13 @@ async function saveParseData(className, data, id = null) {
 }
 
 async function deleteParseData(className, id) {
+    // Add defensive check for className and id
+    if (!className || !id) {
+        console.error('Error: className or id is undefined in deleteParseData', { className, id });
+        Utils.showMessage('Error: Invalid parameters for deletion. Please try again.', 'error');
+        return;
+    }
+    
     try {
         // First, retrieve the object to ensure it exists
         const object = await new Parse.Query(className).get(id);
