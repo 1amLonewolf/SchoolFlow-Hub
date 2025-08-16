@@ -1126,5 +1126,28 @@ export default {
     Utils: window.Utils
 };
 
-// Expose saveParseData to the window object for use in other modules
+// Expose data access functions to the window object for use in other modules
 window.saveParseData = saveParseData;
+window.deleteParseData = deleteParseData;
+
+// Expose specific data access functions
+window.loadStudents = loadStudents;
+window.saveStudent = saveStudent;
+window.deleteStudent = deleteStudent;
+window.archiveStudent = archiveStudent;
+
+window.loadTeachers = loadTeachers;
+window.saveTeacher = saveTeacher;
+window.deleteTeacher = deleteTeacher;
+
+window.loadCourses = loadCourses;
+window.saveCourse = saveCourse;
+window.deleteCourse = deleteCourse;
+
+window.loadExams = loadExams;
+window.saveExam = saveExam;
+window.deleteExam = deleteExam;
+
+window.loadAttendanceRecords = loadAttendanceRecords;
+window.saveAttendanceRecord = saveAttendanceRecord;
+window.deleteAttendanceRecord = deleteAttendanceRecord;
