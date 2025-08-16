@@ -135,6 +135,12 @@ class StudentManager {
                 // Updating existing student
                 console.log("[StudentManager] Updating existing student with ID:", studentId);
                 student = await new Parse.Query('Student').get(studentId);
+                console.log("[StudentManager] Retrieved student object:", student);
+                
+                // Verify that the student object is valid
+                if (!student || typeof student !== 'object') {
+                    throw new Error('Failed to retrieve valid student object for update');
+                }
             } else {
                 // Creating new student - check if one with same national ID exists
                 console.log("[StudentManager] Creating new student, checking for existing with national ID:", studentData.nationalID);
@@ -153,6 +159,11 @@ class StudentManager {
                 }
             }
             
+            // Verify that we have a valid student object before setting properties
+            if (!student || typeof student !== 'object') {
+                throw new Error('Invalid student object');
+            }
+            
             // Set student properties
             console.log("[StudentManager] Setting student properties");
             student.set('name', studentData.name);
@@ -167,6 +178,11 @@ class StudentManager {
             student.set('seasonId', window.currentSeason);
             student.set('isActive', true);
             student.set('enrollmentDate', new Date());
+            
+            // Verify that the student object has the required methods before saving
+            if (typeof student.save !== 'function') {
+                throw new Error('Student object does not have save method');
+            }
 
             console.log("[StudentManager] Saving student to database");
             const savedStudent = await student.save();
