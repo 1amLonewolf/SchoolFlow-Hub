@@ -4,6 +4,7 @@
 import StudentManager from './studentManager.js';
 import TeacherManager from './teacherManager.js';
 import SeasonManager from './seasonManager.js';
+import CourseManager from './courseManager.js';
 import Utils from './utils.js';
 
 // Back4App Parse SDK Initialization
@@ -18,6 +19,7 @@ Parse.serverURL = B4A_SERVER_URL;
 // Create instances of our managers
 window.studentManager = new StudentManager();
 window.teacherManager = new TeacherManager();
+window.courseManager = new CourseManager();
 window.seasonManager = new SeasonManager();
 window.Utils = Utils;
 
@@ -209,9 +211,10 @@ async function loadAllData() {
         // Set data in our managers
         window.studentManager.setStudents(studentsR);
         window.teacherManager.setTeachers(teachersR);
-        // We would also set courses, attendance, and exams in their respective managers
+        window.courseManager.setCourses(coursesR);
+        // We would also set attendance and exams in their respective managers
         
-        console.log(`[loadAllData] Data loaded. Students: ${studentsR.length}, Teachers: ${teachersR.length}`);
+        console.log(`[loadAllData] Data loaded. Students: ${studentsR.length}, Teachers: ${teachersR.length}, Courses: ${coursesR.length}`);
         updateUI();
         console.log("[loadAllData] All data loaded and UI updated.");
     } catch (error) {
@@ -227,6 +230,7 @@ function updateUI() {
 
     window.studentManager.renderStudentTable();
     window.teacherManager.renderTeacherTable();
+    window.courseManager.renderCourseTable();
     // We would also call render methods for other managers
 
     window.teacherManager.populateTeacherDropdown();
@@ -363,6 +367,20 @@ function attachEventListeners() {
     if (cancelTeacherBtn) {
         cancelTeacherBtn.addEventListener('click', () => {
             window.teacherManager.resetTeacherForm();
+        });
+    }
+
+    // Course form event listeners
+    const addCourseForm = document.getElementById('addCourseForm');
+    if (addCourseForm) {
+        addCourseForm.addEventListener('submit', (e) => {
+            window.courseManager.addOrUpdateCourse(e);
+        });
+    }
+    const cancelCourseBtn = document.getElementById('cancelCourseBtn');
+    if (cancelCourseBtn) {
+        cancelCourseBtn.addEventListener('click', () => {
+            window.courseManager.resetCourseForm();
         });
     }
 
