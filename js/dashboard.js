@@ -173,8 +173,9 @@ async function saveParseData(className, data, id = null) {
 
 async function deleteParseData(className, id) {
     try {
-        const object = new Parse.Object(className);
-        object.set('objectId', id);
+        // First, retrieve the object to ensure it exists
+        const object = await new Parse.Query(className).get(id);
+        // Then destroy it
         await object.destroy();
         Utils.showMessage(`${className} deleted successfully.`, 'success');
         await loadAllData();
@@ -185,8 +186,6 @@ async function deleteParseData(className, id) {
         } else if (error.code === Parse.Error.SESSION_MISSING || error.code === Parse.Error.INVALID_SESSION_TOKEN) {
             Utils.showMessage('Error: Your session has expired. Please log in again.', 'error');
             setTimeout(() => window.location.href = 'loginPage.html', 3000);
-        } else if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
-            Utils.showMessage(`Error: ${className} not found or already deleted.`, 'error');
         } else {
             Utils.showMessage(`Error deleting ${className}. ${error.message || 'Please try again.'}`, 'error');
         }
