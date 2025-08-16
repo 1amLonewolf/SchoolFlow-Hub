@@ -5,6 +5,7 @@ import StudentManager from './studentManager.js';
 import TeacherManager from './teacherManager.js';
 import SeasonManager from './seasonManager.js';
 import CourseManager from './courseManager.js';
+import ExamManager from './examManager.js';
 import Utils from './utils.js';
 
 // Back4App Parse SDK Initialization
@@ -20,6 +21,7 @@ Parse.serverURL = B4A_SERVER_URL;
 window.studentManager = new StudentManager();
 window.teacherManager = new TeacherManager();
 window.courseManager = new CourseManager();
+window.examManager = new ExamManager();
 window.seasonManager = new SeasonManager();
 window.Utils = Utils;
 
@@ -212,9 +214,9 @@ async function loadAllData() {
         window.studentManager.setStudents(studentsR);
         window.teacherManager.setTeachers(teachersR);
         window.courseManager.setCourses(coursesR);
-        // We would also set attendance and exams in their respective managers
+        window.examManager.setExams(examsR);
         
-        console.log(`[loadAllData] Data loaded. Students: ${studentsR.length}, Teachers: ${teachersR.length}, Courses: ${coursesR.length}`);
+        console.log(`[loadAllData] Data loaded. Students: ${studentsR.length}, Teachers: ${teachersR.length}, Courses: ${coursesR.length}, Exams: ${examsR.length}`);
         updateUI();
         console.log("[loadAllData] All data loaded and UI updated.");
     } catch (error) {
@@ -231,6 +233,7 @@ function updateUI() {
     window.studentManager.renderStudentTable();
     window.teacherManager.renderTeacherTable();
     window.courseManager.renderCourseTable();
+    window.examManager.renderExamTable();
     // We would also call render methods for other managers
 
     window.teacherManager.populateTeacherDropdown();
@@ -452,15 +455,8 @@ function renderLowPerformingAssignmentsChart() {
 
     const ctx = document.getElementById('lowPerformingAssignmentsChart');
     if (ctx) {
-        // For now, we'll create a placeholder chart with sample data
-        // In a real implementation, this would be based on actual exam/assignment data
-        const assignments = [
-            { name: 'Math Quiz 1', averageScore: 75 },
-            { name: 'Science Test', averageScore: 68 },
-            { name: 'History Essay', averageScore: 72 },
-            { name: 'English Exam', averageScore: 65 },
-            { name: 'Physics Lab', averageScore: 70 }
-        ];
+        // Get low performing assignments from exam data
+        const assignments = window.examManager.getLowPerformingAssignments();
         
         const assignmentNames = assignments.map(a => a.name);
         const averageScores = assignments.map(a => a.averageScore);
@@ -729,6 +725,20 @@ function attachEventListeners() {
             Utils.exportTableToPDF('eligibleStudentsTable', 'Graduation Eligibility Report', 'graduation-eligibility.pdf');
         });
     }
+    
+    // Exam form event listeners
+    const addExamForm = document.getElementById('addExamForm');
+    if (addExamForm) {
+        addExamForm.addEventListener('submit', (e) => {
+            window.examManager.addOrUpdateExam(e);
+        });
+    }
+    const cancelExamBtn = document.getElementById('cancelExamBtn');
+    if (cancelExamBtn) {
+        cancelExamBtn.addEventListener('click', () => {
+            window.examManager.resetExamForm();
+        });
+    }
 
     console.log("[attachEventListeners] All event listeners attached.");
 }
@@ -841,11 +851,13 @@ export default {
     StudentManager,
     TeacherManager,
     CourseManager,
+    ExamManager,
     SeasonManager,
     Utils,
     studentManager: window.studentManager,
     teacherManager: window.teacherManager,
     courseManager: window.courseManager,
+    examManager: window.examManager,
     seasonManager: window.seasonManager,
     Utils: window.Utils
 };
