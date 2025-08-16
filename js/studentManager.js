@@ -149,8 +149,12 @@ class StudentManager {
                 console.log("[StudentManager] Updating existing student with ID:", studentId);
                 student = await new Parse.Query('Student').get(studentId);
                 console.log("[StudentManager] Retrieved student object for update:", student);
-                if (student && student.className) {
-                    console.log("[StudentManager] Student object className:", student.className);
+                if (student && typeof student === 'object') {
+                    console.log("[StudentManager] Student object type:", typeof student);
+                    console.log("[StudentManager] Student object constructor:", student.constructor.name);
+                    if (student.className) {
+                        console.log("[StudentManager] Student object className:", student.className);
+                    }
                 } else {
                     console.error("[StudentManager] Retrieved student object is invalid:", student);
                     throw new Error('Invalid student object retrieved from database');
@@ -166,20 +170,27 @@ class StudentManager {
                     console.log("[StudentManager] Found existing student with same national ID, updating that record");
                     student = results[0];
                     console.log("[StudentManager] Using existing student object:", student);
-                    if (student && student.className) {
-                        console.log("[StudentManager] Existing student object className:", student.className);
+                    if (student && typeof student === 'object') {
+                        console.log("[StudentManager] Existing student object type:", typeof student);
+                        console.log("[StudentManager] Existing student object constructor:", student.constructor.name);
+                        if (student.className) {
+                            console.log("[StudentManager] Existing student object className:", student.className);
+                        }
                     } else {
                         console.error("[StudentManager] Existing student object is invalid:", student);
                         throw new Error('Invalid existing student object');
                     }
                 } else {
                     console.log("[StudentManager] No existing student with this national ID, creating new record");
-                    // Using Parse.Object.extend as per Parse documentation
-                    const Student = Parse.Object.extend('Student');
-                    student = new Student();
+                    // Create a new Parse object directly
+                    student = new Parse.Object('Student');
                     console.log("[StudentManager] Created new student object:", student);
-                    if (student && student.className) {
-                        console.log("[StudentManager] New student object className:", student.className);
+                    if (student && typeof student === 'object') {
+                        console.log("[StudentManager] New student object type:", typeof student);
+                        console.log("[StudentManager] New student object constructor:", student.constructor.name);
+                        if (student.className) {
+                            console.log("[StudentManager] New student object className:", student.className);
+                        }
                     } else {
                         console.error("[StudentManager] New student object is invalid:", student);
                         throw new Error('Failed to create new student object');
