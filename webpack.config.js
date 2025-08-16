@@ -8,6 +8,12 @@ module.exports = {
     filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),
     clean: true,
+    library: {
+      name: 'SchoolFlowHub',
+      type: 'umd',
+      export: 'default',
+    },
+    globalObject: 'this',
   },
   mode: 'production',
   module: {

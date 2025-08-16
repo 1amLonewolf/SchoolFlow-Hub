@@ -1,7 +1,10 @@
 // js/dashboard.js
 
-// Import our modules (in a real project, we'd use ES6 imports or a module bundler)
-// For now, we'll assume they're available globally
+// Import our modules
+import StudentManager from './studentManager.js';
+import TeacherManager from './teacherManager.js';
+import SeasonManager from './seasonManager.js';
+import Utils from './utils.js';
 
 // Back4App Parse SDK Initialization
 const B4A_APP_ID = '1ViZN5pbU94AJep2LHr2owBflGOGedwvYliU50g0';
@@ -548,3 +551,15 @@ if (document.readyState === 'loading') {
 } else {
     initDashboard();
 }
+
+// Export for use in other modules
+export default {
+    StudentManager,
+    TeacherManager,
+    SeasonManager,
+    Utils,
+    studentManager: window.studentManager,
+    teacherManager: window.teacherManager,
+    seasonManager: window.seasonManager,
+    Utils: window.Utils
+};
