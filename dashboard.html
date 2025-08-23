@@ -69,6 +69,7 @@
                     <a href="#courses" class="button primary-button">Add Course</a>
                     <a href="#attendance" class="button primary-button">Record Attendance</a>
                     <button class="button secondary-button" id="refreshDashboardBtn">Refresh Dashboard</button>
+                    <button class="button secondary-button" id="refreshRealTimeBtn">Refresh Real-time Data</button>
                 </div>
             </div>
 
@@ -450,6 +451,17 @@
                             </label>
                             <p>Toggle dark theme for the dashboard interface.</p>
                             <button class="button secondary-button" id="resetPreferencesBtn">Reset Preferences</button>
+                        </div>
+                    </div>
+                    <div class="setting-card">
+                        <h3>Real-time Updates</h3>
+                        <div class="setting-content">
+                            <label class="switch">
+                                Enable Real-time Updates
+                                <input type="checkbox" id="settingsRealTimeToggle">
+                                <span class="slider"></span>
+                            </label>
+                            <p>Automatically refresh dashboard data every 30 seconds.</p>
                         </div>
                     </div>
                 </div>

@@ -17,27 +17,11 @@ let courses = [];
 let exams = [];
 let currentSeason = 1;
 
-// Add caching for loaded data
-let dataCache = {
-    students: { data: [], timestamp: 0, valid: false },
-    attendance: { data: [], timestamp: 0, valid: false },
-    teachers: { data: [], timestamp: 0, valid: false },
-    courses: { data: [], timestamp: 0, valid: false },
-    exams: { data: [], timestamp: 0, valid: false }
-};
-
-// Cache timeout (5 minutes)
-const CACHE_TIMEOUT = 5 * 60 * 1000;
-
 // Chart instances
 let coursePopularityChartInstance = null;
 let overallAttendanceChartInstance = null;
 let topStudentsChartInstance = null;
 let lowPerformingAssignmentsChartInstance = null;
-
-// Real-time update settings
-let realTimeUpdateInterval = null;
-const REAL_TIME_UPDATE_INTERVAL_MS = 30000; // 30 seconds
 
 // Global state for editing
 window.editingStudentId = null;
@@ -350,29 +334,9 @@ function showConfirmDialog(message, onConfirm) {
 
 async function loadParseData(className) {
     try {
-        // Check cache first
-        const cacheKey = className.toLowerCase();
-        const cacheEntry = dataCache[cacheKey];
-        
-        if (cacheEntry && cacheEntry.valid) {
-            const now = Date.now();
-            if (now - cacheEntry.timestamp < CACHE_TIMEOUT) {
-                console.log(`[loadParseData] Using cached ${className} data (${cacheEntry.data.length} records)`);
-                return cacheEntry.data;
-            }
-        }
-        
         const query = new Parse.Query(className);
         const results = await query.find();
         console.log(`[loadParseData] Successfully loaded ${results.length} ${className} records`);
-        
-        // Update cache
-        if (cacheEntry) {
-            cacheEntry.data = results;
-            cacheEntry.timestamp = Date.now();
-            cacheEntry.valid = true;
-        }
-        
         return results;
     } catch (error) {
         console.error(`[loadParseData] Error fetching ${className} data:`, error);
@@ -394,14 +358,6 @@ async function loadParseData(className) {
         
         showMessage(userMessage, 'error');
         return [];
-    }
-}
-
-// Function to invalidate cache for a specific data type
-function invalidateCache(className) {
-    const cacheKey = className.toLowerCase();
-    if (dataCache[cacheKey]) {
-        dataCache[cacheKey].valid = false;
     }
 }
 
@@ -955,9 +911,14 @@ function renderAttendanceTable() {
     }
 }
 
+// FIX: Added the missing renderOverallAttendanceChart function
 function renderOverallAttendanceChart() {
     const canvas = document.getElementById('overallAttendanceChart');
     if (!canvas) return;
+
+    if (overallAttendanceChartInstance) {
+        overallAttendanceChartInstance.destroy();
+    }
 
     // Use only attendance records for active students in current season
     const activeStudents = getStudentsBySeason(getCurrentSeason());
@@ -969,81 +930,70 @@ function renderOverallAttendanceChart() {
 
     const presentCount = filteredAttendanceRecords.filter(r => r.get('status') === 'Present').length;
     const absentCount = filteredAttendanceRecords.filter(r => r.get('status') === 'Absent').length;
-    
-    const data = [presentCount, absentCount];
-    const labels = ['Present', 'Absent'];
 
-    // If chart instance exists, update it instead of destroying and recreating
-    if (overallAttendanceChartInstance) {
-        overallAttendanceChartInstance.data.labels = labels;
-        overallAttendanceChartInstance.data.datasets[0].data = data;
-        overallAttendanceChartInstance.options.plugins.title.text = 'Overall Attendance Summary (Current Season)';
-        overallAttendanceChartInstance.update();
-    } else {
-        overallAttendanceChartInstance = new Chart(canvas, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: [
-                        'rgba(76, 175, 80, 0.8)',   // Green for Present
-                        'rgba(244, 67, 54, 0.8)'    // Red for Absent
-                    ],
-                    borderColor: [
-                        'rgba(76, 175, 80, 1)',
-                        'rgba(244, 67, 54, 1)'
-                    ],
-                    borderWidth: 2,
-                    hoverOffset: 15
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '60%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 20,
-                            usePointStyle: true,
-                            pointStyle: 'circle'
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: 'Overall Attendance Summary (Current Season)',
-                        font: {
-                            size: 16,
-                            weight: 'bold'
-                        },
-                        padding: 20
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: {
-                            size: 14
-                        },
-                        bodyFont: {
-                            size: 13
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                const total = presentCount + absentCount;
-                                const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
-                                return `${context.label}: ${context.raw} (${percentage}%)`;
-                            }
-                        }
+    overallAttendanceChartInstance = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: ['Present', 'Absent'],
+            datasets: [{
+                data: [presentCount, absentCount],
+                backgroundColor: [
+                    'rgba(76, 175, 80, 0.8)',   // Green for Present
+                    'rgba(244, 67, 54, 0.8)'    // Red for Absent
+                ],
+                borderColor: [
+                    'rgba(76, 175, 80, 1)',
+                    'rgba(244, 67, 54, 1)'
+                ],
+                borderWidth: 2,
+                hoverOffset: 15
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
                     }
                 },
-                animation: {
-                    animateRotate: true,
-                    animateScale: true
+                title: {
+                    display: true,
+                    text: 'Overall Attendance Summary (Current Season)',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: 20
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            const total = presentCount + absentCount;
+                            const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
+                            return `${context.label}: ${context.raw} (${percentage}%)`;
+                        }
+                    }
                 }
+            },
+            animation: {
+                animateRotate: true,
+                animateScale: true
             }
-        });
-    }
+        }
+    });
 }
 
 async function recordAttendance(event) {
@@ -1649,39 +1599,12 @@ function showExamsTab() {
 // DASHBOARD OVERVIEW
 // ======================
 
-// Function to start real-time updates
-function startRealTimeUpdates() {
-    // Clear any existing interval
-    if (realTimeUpdateInterval) {
-        clearInterval(realTimeUpdateInterval);
-    }
-    
-    // Set up interval for periodic updates
-    realTimeUpdateInterval = setInterval(async () => {
-        console.log('[RealTime] Updating dashboard data...');
-        try {
-            await loadAllData();
-            console.log('[RealTime] Dashboard data updated successfully');
-        } catch (error) {
-            console.error('[RealTime] Error updating dashboard data:', error);
-        }
-    }, REAL_TIME_UPDATE_INTERVAL_MS);
-    
-    console.log(`[RealTime] Started real-time updates every ${REAL_TIME_UPDATE_INTERVAL_MS}ms`);
-}
-
-// Function to stop real-time updates
-function stopRealTimeUpdates() {
-    if (realTimeUpdateInterval) {
-        clearInterval(realTimeUpdateInterval);
-        realTimeUpdateInterval = null;
-        console.log('[RealTime] Stopped real-time updates');
-    }
-}
-
 function renderCoursePopularityChart() {
     const canvas = document.getElementById('coursePopularityChart');
     if (!canvas) return;
+    if (coursePopularityChartInstance) {
+        coursePopularityChartInstance.destroy();
+    }
     
     // Use only active students from current season
     const activeStudents = getStudentsBySeason(getCurrentSeason());
@@ -1695,133 +1618,104 @@ function renderCoursePopularityChart() {
     
     const labels = Object.keys(courseCounts);
     const data = Object.values(courseCounts);
-    
-    // If chart instance exists, update it instead of destroying and recreating
-    if (coursePopularityChartInstance) {
-        coursePopularityChartInstance.data.labels = labels;
-        coursePopularityChartInstance.data.datasets[0].data = data;
-        coursePopularityChartInstance.data.datasets[0].backgroundColor = labels.map((_, i) => {
-            const colors = [
-                'rgba(54, 162, 235, 0.7)',  // Blue
-                'rgba(255, 99, 132, 0.7)',  // Red
-                'rgba(255, 206, 86, 0.7)',  // Yellow
-                'rgba(75, 192, 192, 0.7)',  // Teal
-                'rgba(153, 102, 255, 0.7)', // Purple
-                'rgba(255, 159, 64, 0.7)',  // Orange
-                'rgba(199, 199, 199, 0.7)'  // Grey
-            ];
-            return colors[i % colors.length];
-        });
-        coursePopularityChartInstance.data.datasets[0].borderColor = labels.map((_, i) => {
-            const colors = [
-                'rgba(54, 162, 235, 1)',
-                'rgba(255, 99, 132, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(75, 192, 192, 1)',
-                'rgba(153, 102, 255, 1)',
-                'rgba(255, 159, 64, 1)',
-                'rgba(199, 199, 199, 1)'
-            ];
-            return colors[i % colors.length];
-        });
-        coursePopularityChartInstance.options.plugins.title.text = 'Student Enrollment by Course (Current Season)';
-        coursePopularityChartInstance.update();
-    } else {
-        coursePopularityChartInstance = new Chart(canvas, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Number of Students',
-                    data: data,
-                    backgroundColor: labels.map((_, i) => {
-                        const colors = [
-                            'rgba(54, 162, 235, 0.7)',  // Blue
-                            'rgba(255, 99, 132, 0.7)',  // Red
-                            'rgba(255, 206, 86, 0.7)',  // Yellow
-                            'rgba(75, 192, 192, 0.7)',  // Teal
-                            'rgba(153, 102, 255, 0.7)', // Purple
-                            'rgba(255, 159, 64, 0.7)',  // Orange
-                            'rgba(199, 199, 199, 0.7)'  // Grey
-                        ];
-                        return colors[i % colors.length];
-                    }),
-                    borderColor: labels.map((_, i) => {
-                        const colors = [
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',
-                            'rgba(255, 159, 64, 1)',
-                            'rgba(199, 199, 199, 1)'
-                        ];
-                        return colors[i % colors.length];
-                    }),
-                    borderWidth: 2,
-                    borderRadius: 4,
-                    borderSkipped: false,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Student Enrollment by Course (Current Season)',
-                        font: {
-                            size: 16,
-                            weight: 'bold'
-                        },
-                        padding: 20
+    coursePopularityChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Number of Students',
+                data: data,
+                backgroundColor: labels.map((_, i) => {
+                    const colors = [
+                        'rgba(54, 162, 235, 0.7)',  // Blue
+                        'rgba(255, 99, 132, 0.7)',  // Red
+                        'rgba(255, 206, 86, 0.7)',  // Yellow
+                        'rgba(75, 192, 192, 0.7)',  // Teal
+                        'rgba(153, 102, 255, 0.7)', // Purple
+                        'rgba(255, 159, 64, 0.7)',  // Orange
+                        'rgba(199, 199, 199, 0.7)'  // Grey
+                    ];
+                    return colors[i % colors.length];
+                }),
+                borderColor: labels.map((_, i) => {
+                    const colors = [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(199, 199, 199, 1)'
+                    ];
+                    return colors[i % colors.length];
+                }),
+                borderWidth: 2,
+                borderRadius: 4,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Student Enrollment by Course (Current Season)',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
                     },
-                    legend: {
-                        display: false
+                    padding: 20
+                },
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14
                     },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: {
-                            size: 14
-                        },
-                        bodyFont: {
-                            size: 13
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                return `Students: ${context.raw}`;
-                            }
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return `Students: ${context.raw}`;
                         }
                     }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
-                        ticks: {
-                            precision: 0
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                animation: {
-                    duration: 1000,
-                    easing: 'easeOutQuart'
                 }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        precision: 0
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
             }
-        });
-    }
+        }
+    });
 }
 
 function renderTopStudentsChart() {
     const canvas = document.getElementById('topStudentsChart');
     if (!canvas) return;
+
+    if (topStudentsChartInstance) {
+        topStudentsChartInstance.destroy();
+    }
 
     // Use only active students from current season
     const activeStudents = getStudentsBySeason(getCurrentSeason());
@@ -1846,100 +1740,89 @@ function renderTopStudentsChart() {
         .map(s => ({ ...s, average: s.totalExams > 0 ? s.totalScore / s.totalExams : 0 }))
         .sort((a, b) => b.average - a.average)
         .slice(0, 5);
-    
-    const labels = topStudents.map(s => s.name);
-    const data = topStudents.map(s => s.average);
 
-    // If chart instance exists, update it instead of destroying and recreating
-    if (topStudentsChartInstance) {
-        topStudentsChartInstance.data.labels = labels;
-        topStudentsChartInstance.data.datasets[0].data = data;
-        topStudentsChartInstance.options.plugins.title.text = 'Top 5 Students by Average Exam Score (Current Season)';
-        topStudentsChartInstance.update();
-    } else {
-        topStudentsChartInstance = new Chart(canvas, {
-            type: 'polarArea',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Average Score (%)',
-                    data: data,
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.7)',
-                        'rgba(54, 162, 235, 0.7)',
-                        'rgba(255, 206, 86, 0.7)',
-                        'rgba(75, 192, 192, 0.7)',
-                        'rgba(153, 102, 255, 0.7)'
-                    ],
-                    borderColor: [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)'
-                    ],
-                    borderWidth: 2,
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { 
-                        position: 'right',
-                        labels: {
-                            padding: 15,
-                            usePointStyle: true,
-                            pointStyle: 'circle'
-                        }
-                    },
-                    title: { 
-                        display: true, 
-                        text: 'Top 5 Students by Average Exam Score (Current Season)',
-                        font: {
-                            size: 16,
-                            weight: 'bold'
-                        },
-                        padding: 20
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: {
-                            size: 14
-                        },
-                        bodyFont: {
-                            size: 13
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.raw.toFixed(1)}%`;
-                            }
-                        }
+    topStudentsChartInstance = new Chart(canvas, {
+        type: 'polarArea',
+        data: {
+            labels: topStudents.map(s => s.name),
+            datasets: [{
+                label: 'Average Score (%)',
+                data: topStudents.map(s => s.average),
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ],
+                borderWidth: 2,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { 
+                    position: 'right',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
                     }
                 },
-                scales: {
-                    r: {
-                        angleLines: {
-                            display: true
-                        },
-                        suggestedMin: 0,
-                        suggestedMax: 100,
-                        ticks: {
-                            stepSize: 20,
-                            callback: function(value) {
-                                return value + '%';
-                            }
+                title: { 
+                    display: true, 
+                    text: 'Top 5 Students by Average Exam Score (Current Season)',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: 20
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.raw.toFixed(1)}%`;
                         }
                     }
-                },
-                animation: {
-                    duration: 1500,
-                    easing: 'easeOutQuart'
                 }
+            },
+            scales: {
+                r: {
+                    angleLines: {
+                        display: true
+                    },
+                    suggestedMin: 0,
+                    suggestedMax: 100,
+                    ticks: {
+                        stepSize: 20,
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            animation: {
+                duration: 1500,
+                easing: 'easeOutQuart'
             }
-        });
-    }
+        }
+    });
 }
 
 // ======================
@@ -2327,6 +2210,10 @@ function renderLowPerformingAssignmentsChart() {
     const canvas = document.getElementById('lowPerformingAssignmentsChart');
     if (!canvas) return;
 
+    if (lowPerformingAssignmentsChartInstance) {
+        lowPerformingAssignmentsChartInstance.destroy();
+    }
+
     // Filter exams to only include those from active students in current season
     const activeStudents = getStudentsBySeason(getCurrentSeason());
     const activeStudentIds = activeStudents.map(student => student.id);
@@ -2358,89 +2245,81 @@ function renderLowPerformingAssignmentsChart() {
     const labels = entries.map(e => e.name);
     const data = entries.map(e => Math.round(e.min));
 
-    // If chart instance exists, update it instead of destroying and recreating
-    if (lowPerformingAssignmentsChartInstance) {
-        lowPerformingAssignmentsChartInstance.data.labels = labels;
-        lowPerformingAssignmentsChartInstance.data.datasets[0].data = data;
-        lowPerformingAssignmentsChartInstance.options.plugins.title.text = 'Low Performing Exams (min %) - Current Season';
-        lowPerformingAssignmentsChartInstance.update();
-    } else {
-        lowPerformingAssignmentsChartInstance = new Chart(canvas, {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [{
-                    label: 'Lowest % score',
-                    data,
-                    backgroundColor: 'rgba(244, 67, 54, 0.7)',  // Red with transparency
-                    borderColor: 'rgba(244, 67, 54, 1)',       // Solid red border
-                    borderWidth: 2,
-                    borderRadius: 4,
-                    borderSkipped: false,
-                    hoverBackgroundColor: 'rgba(244, 67, 54, 0.9)',
-                    hoverBorderColor: 'rgba(244, 67, 54, 1)',
-                    hoverBorderWidth: 3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                indexAxis: 'y',
-                plugins: {
-                    title: { 
-                        display: true, 
-                        text: 'Low Performing Exams (min %) - Current Season',
-                        font: {
-                            size: 16,
-                            weight: 'bold'
-                        },
-                        padding: 20
+    lowPerformingAssignmentsChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Lowest % score',
+                data,
+                backgroundColor: 'rgba(244, 67, 54, 0.7)',  // Red with transparency
+                borderColor: 'rgba(244, 67, 54, 1)',       // Solid red border
+                borderWidth: 2,
+                borderRadius: 4,
+                borderSkipped: false,
+                hoverBackgroundColor: 'rgba(244, 67, 54, 0.9)',
+                hoverBorderColor: 'rgba(244, 67, 54, 1)',
+                hoverBorderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                title: { 
+                    display: true, 
+                    text: 'Low Performing Exams (min %) - Current Season',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
                     },
-                    legend: {
-                        display: false
+                    padding: 20
+                },
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14
                     },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: {
-                            size: 14
-                        },
-                        bodyFont: {
-                            size: 13
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                return `Lowest Score: ${context.raw}%`;
-                            }
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return `Lowest Score: ${context.raw}%`;
                         }
                     }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        max: 100,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%';
-                            },
-                            precision: 0
-                        }
-                    },
-                    y: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                animation: {
-                    duration: 1200,
-                    easing: 'easeOutQuart'
                 }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        },
+                        precision: 0
+                    }
+                },
+                y: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            animation: {
+                duration: 1200,
+                easing: 'easeOutQuart'
             }
-        });
-    }
+        }
+    });
 }
 
 function downloadGraduationList() {
@@ -2816,46 +2695,11 @@ function attachEventListeners() {
         });
     }
 
-    // Real-time updates toggle
-    const settingsRealTimeToggle = document.getElementById('settingsRealTimeToggle');
-    if (settingsRealTimeToggle) {
-        // Check if real-time updates were previously enabled
-        const realTimeEnabled = localStorage.getItem('realTimeUpdates') === 'true';
-        settingsRealTimeToggle.checked = realTimeEnabled;
-        
-        // Initialize real-time updates if enabled
-        if (realTimeEnabled) {
-            startRealTimeUpdates();
-        }
-        
-        settingsRealTimeToggle.addEventListener('change', (e) => {
-            const checked = e.target.checked;
-            if (checked) {
-                startRealTimeUpdates();
-                showMessage('Real-time updates enabled', 'success');
-            } else {
-                stopRealTimeUpdates();
-                showMessage('Real-time updates disabled', 'info');
-            }
-            localStorage.setItem('realTimeUpdates', checked);
-        });
-    }
-
     const bindClick = (id, handler) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('click', (e) => { e.preventDefault(); handler(); });
     };
     bindClick('refreshDashboardBtn', refreshDashboard);
-    bindClick('refreshRealTimeBtn', async () => {
-        showMessage('Refreshing real-time data...', 'info');
-        try {
-            await loadAllData();
-            showMessage('Real-time data refreshed successfully!', 'success');
-        } catch (error) {
-            console.error('Error refreshing real-time data:', error);
-            showMessage('Error refreshing real-time data. Please try again.', 'error');
-        }
-    });
     bindClick('refreshDashboardReportsBtn', refreshDashboard);
     bindClick('exportStudentsCsvBtn', exportStudentsCSV);
     bindClick('exportAttendanceCsvBtn', exportAttendanceCSV);
@@ -3005,12 +2849,6 @@ async function initDashboard() {
     
     // Load data after confirming we have a valid session
     await loadAllData();
-    
-    // Initialize real-time updates if enabled
-    const realTimeEnabled = localStorage.getItem('realTimeUpdates') === 'true';
-    if (realTimeEnabled) {
-        startRealTimeUpdates();
-    }
 }
 
 if (document.readyState === 'loading') {

@@ -35,10 +35,6 @@ let overallAttendanceChartInstance = null;
 let topStudentsChartInstance = null;
 let lowPerformingAssignmentsChartInstance = null;
 
-// Real-time update settings
-let realTimeUpdateInterval = null;
-const REAL_TIME_UPDATE_INTERVAL_MS = 30000; // 30 seconds
-
 // Global state for editing
 window.editingStudentId = null;
 window.editingTeacherId = null;
@@ -278,6 +274,8 @@ function switchToTab(tabId) {
         section.style.display = 'none';
         if (section.id === tabId) {
             section.style.display = 'block';
+            // Load data for this tab if it hasn't been loaded yet
+            loadDataForTab(tabId);
         }
     });
 }
@@ -419,7 +417,15 @@ async function saveParseData(className, data, id = null) {
         }
         await object.save();
         showMessage(`${className} saved successfully!`, 'success');
-        await loadAllData();
+        
+        // Invalidate cache for this data type
+        invalidateCache(className);
+        
+        // Reload data for the current tab
+        const activeTab = document.querySelector('.dashboard-content-section.active');
+        if (activeTab) {
+            await loadDataForTab(activeTab.id);
+        }
     } catch (error) {
         console.error(`Error saving ${className}:`, error);
         showMessage(`Error saving ${className}. Please try again.`, 'error');
@@ -432,7 +438,15 @@ async function deleteParseData(className, id) {
         object.set('objectId', id);
         await object.destroy();
         showMessage(`${className} deleted successfully.`, 'success');
-        await loadAllData();
+        
+        // Invalidate cache for this data type
+        invalidateCache(className);
+        
+        // Reload data for the current tab
+        const activeTab = document.querySelector('.dashboard-content-section.active');
+        if (activeTab) {
+            await loadDataForTab(activeTab.id);
+        }
     } catch (error) {
         console.error(`Error deleting ${className}:`, error);
         if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
@@ -466,8 +480,13 @@ function renderStudentTable() {
         studentTableBody.appendChild(tr);
         return;
     }
+    
+    // For large datasets, we'll implement virtual scrolling or pagination
+    // For now, we'll optimize the rendering by using document fragments
+    const fragment = document.createDocumentFragment();
+    
     students.forEach(student => {
-        const row = studentTableBody.insertRow();
+        const row = document.createElement('tr');
 
         const makeCell = (label, value) => {
             const td = document.createElement('td');
@@ -513,7 +532,11 @@ function renderStudentTable() {
         actionsTd.appendChild(editBtn);
         actionsTd.appendChild(deleteBtn);
         row.appendChild(actionsTd);
+        
+        fragment.appendChild(row);
     });
+    
+    studentTableBody.appendChild(fragment);
 }
 
 async function addOrUpdateStudent(studentId, studentData) {
@@ -602,8 +625,12 @@ function renderTeacherTable() {
         teacherTableBody.appendChild(tr);
         return;
     }
+    
+    // Use document fragment for better performance
+    const fragment = document.createDocumentFragment();
+    
     teachers.forEach(teacher => {
-        const row = teacherTableBody.insertRow();
+        const row = document.createElement('tr');
 
         const makeCell = (label, value) => {
             const td = document.createElement('td');
@@ -647,7 +674,11 @@ function renderTeacherTable() {
         actionsTd.appendChild(editBtn);
         actionsTd.appendChild(deleteBtn);
         row.appendChild(actionsTd);
+        
+        fragment.appendChild(row);
     });
+    
+    teacherTableBody.appendChild(fragment);
 }
 
 async function addOrUpdateTeacher(event) {
@@ -725,9 +756,19 @@ function renderCourseTable() {
         courseTableBody.appendChild(tr);
         return;
     }
+    
+    // Create a teacher map for faster lookups
+    const teacherMap = {};
+    teachers.forEach(teacher => {
+        teacherMap[teacher.id] = teacher;
+    });
+    
+    // Use document fragment for better performance
+    const fragment = document.createDocumentFragment();
+    
     courses.forEach(course => {
-        const teacher = teachers.find(t => t.id === course.get('assignedTeacher'));
-        const row = courseTableBody.insertRow();
+        const teacher = teacherMap[course.get('assignedTeacher')];
+        const row = document.createElement('tr');
 
         const makeCell = (label, value) => {
             const td = document.createElement('td');
@@ -771,7 +812,11 @@ function renderCourseTable() {
         actionsTd.appendChild(editBtn);
         actionsTd.appendChild(deleteBtn);
         row.appendChild(actionsTd);
+        
+        fragment.appendChild(row);
     });
+    
+    courseTableBody.appendChild(fragment);
 }
 
 function populateTeacherDropdown() {
@@ -905,6 +950,16 @@ function renderAttendanceTable() {
     const tableBody = document.querySelector('#attendanceTable tbody');
     if (!tableBody) return;
     tableBody.innerHTML = '';
+    
+    // Create a student map for faster lookups
+    const studentMap = {};
+    students.forEach(student => {
+        studentMap[student.id] = student;
+    });
+    
+    // Use document fragment for better performance
+    const fragment = document.createDocumentFragment();
+    
     const groupedAttendance = attendanceRecords.reduce((acc, record) => {
         if (!acc[record.get('studentId')]) acc[record.get('studentId')] = [];
         acc[record.get('studentId')].push(record);
@@ -912,11 +967,11 @@ function renderAttendanceTable() {
     }, {});
 
     for (const studentId in groupedAttendance) {
-        const student = students.find(s => s.id === studentId);
+        const student = studentMap[studentId];
         if (!student) continue;
 
         groupedAttendance[studentId].forEach(record => {
-            const row = tableBody.insertRow();
+            const row = document.createElement('tr');
             const dateVal = record.get('date');
             const displayDate = dateVal ? new Date(dateVal).toLocaleDateString() : '';
 
@@ -951,13 +1006,22 @@ function renderAttendanceTable() {
 
             actionsTd.appendChild(deleteBtn);
             row.appendChild(actionsTd);
+            
+            fragment.appendChild(row);
         });
     }
+    
+    tableBody.appendChild(fragment);
 }
 
+// FIX: Added the missing renderOverallAttendanceChart function
 function renderOverallAttendanceChart() {
     const canvas = document.getElementById('overallAttendanceChart');
     if (!canvas) return;
+
+    if (overallAttendanceChartInstance) {
+        overallAttendanceChartInstance.destroy();
+    }
 
     // Use only attendance records for active students in current season
     const activeStudents = getStudentsBySeason(getCurrentSeason());
@@ -969,81 +1033,70 @@ function renderOverallAttendanceChart() {
 
     const presentCount = filteredAttendanceRecords.filter(r => r.get('status') === 'Present').length;
     const absentCount = filteredAttendanceRecords.filter(r => r.get('status') === 'Absent').length;
-    
-    const data = [presentCount, absentCount];
-    const labels = ['Present', 'Absent'];
 
-    // If chart instance exists, update it instead of destroying and recreating
-    if (overallAttendanceChartInstance) {
-        overallAttendanceChartInstance.data.labels = labels;
-        overallAttendanceChartInstance.data.datasets[0].data = data;
-        overallAttendanceChartInstance.options.plugins.title.text = 'Overall Attendance Summary (Current Season)';
-        overallAttendanceChartInstance.update();
-    } else {
-        overallAttendanceChartInstance = new Chart(canvas, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: [
-                        'rgba(76, 175, 80, 0.8)',   // Green for Present
-                        'rgba(244, 67, 54, 0.8)'    // Red for Absent
-                    ],
-                    borderColor: [
-                        'rgba(76, 175, 80, 1)',
-                        'rgba(244, 67, 54, 1)'
-                    ],
-                    borderWidth: 2,
-                    hoverOffset: 15
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '60%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 20,
-                            usePointStyle: true,
-                            pointStyle: 'circle'
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: 'Overall Attendance Summary (Current Season)',
-                        font: {
-                            size: 16,
-                            weight: 'bold'
-                        },
-                        padding: 20
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: {
-                            size: 14
-                        },
-                        bodyFont: {
-                            size: 13
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                const total = presentCount + absentCount;
-                                const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
-                                return `${context.label}: ${context.raw} (${percentage}%)`;
-                            }
-                        }
+    overallAttendanceChartInstance = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: ['Present', 'Absent'],
+            datasets: [{
+                data: [presentCount, absentCount],
+                backgroundColor: [
+                    'rgba(76, 175, 80, 0.8)',   // Green for Present
+                    'rgba(244, 67, 54, 0.8)'    // Red for Absent
+                ],
+                borderColor: [
+                    'rgba(76, 175, 80, 1)',
+                    'rgba(244, 67, 54, 1)'
+                ],
+                borderWidth: 2,
+                hoverOffset: 15
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
                     }
                 },
-                animation: {
-                    animateRotate: true,
-                    animateScale: true
+                title: {
+                    display: true,
+                    text: 'Overall Attendance Summary (Current Season)',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: 20
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            const total = presentCount + absentCount;
+                            const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
+                            return `${context.label}: ${context.raw} (${percentage}%)`;
+                        }
+                    }
                 }
+            },
+            animation: {
+                animateRotate: true,
+                animateScale: true
             }
-        });
-    }
+        }
+    });
 }
 
 async function recordAttendance(event) {
@@ -1427,12 +1480,18 @@ function navigateExamPage(direction) {
 }
 
 function filterAndSortExams() {
+    // Create a student map for faster lookups
+    const studentMap = {};
+    students.forEach(student => {
+        studentMap[student.id] = student;
+    });
+    
     let filtered = [...exams];
     
     // Apply search filter
     if (examTableState.searchQuery) {
         filtered = filtered.filter(exam => {
-            const student = students.find(s => s.id === exam.get('studentId'));
+            const student = studentMap[exam.get('studentId')];
             const studentName = student ? student.get('name') || '' : '';
             const course = exam.get('course') || '';
             const examType = exam.get('examType') || '';
@@ -1649,39 +1708,12 @@ function showExamsTab() {
 // DASHBOARD OVERVIEW
 // ======================
 
-// Function to start real-time updates
-function startRealTimeUpdates() {
-    // Clear any existing interval
-    if (realTimeUpdateInterval) {
-        clearInterval(realTimeUpdateInterval);
-    }
-    
-    // Set up interval for periodic updates
-    realTimeUpdateInterval = setInterval(async () => {
-        console.log('[RealTime] Updating dashboard data...');
-        try {
-            await loadAllData();
-            console.log('[RealTime] Dashboard data updated successfully');
-        } catch (error) {
-            console.error('[RealTime] Error updating dashboard data:', error);
-        }
-    }, REAL_TIME_UPDATE_INTERVAL_MS);
-    
-    console.log(`[RealTime] Started real-time updates every ${REAL_TIME_UPDATE_INTERVAL_MS}ms`);
-}
-
-// Function to stop real-time updates
-function stopRealTimeUpdates() {
-    if (realTimeUpdateInterval) {
-        clearInterval(realTimeUpdateInterval);
-        realTimeUpdateInterval = null;
-        console.log('[RealTime] Stopped real-time updates');
-    }
-}
-
 function renderCoursePopularityChart() {
     const canvas = document.getElementById('coursePopularityChart');
     if (!canvas) return;
+    if (coursePopularityChartInstance) {
+        coursePopularityChartInstance.destroy();
+    }
     
     // Use only active students from current season
     const activeStudents = getStudentsBySeason(getCurrentSeason());
@@ -1695,133 +1727,104 @@ function renderCoursePopularityChart() {
     
     const labels = Object.keys(courseCounts);
     const data = Object.values(courseCounts);
-    
-    // If chart instance exists, update it instead of destroying and recreating
-    if (coursePopularityChartInstance) {
-        coursePopularityChartInstance.data.labels = labels;
-        coursePopularityChartInstance.data.datasets[0].data = data;
-        coursePopularityChartInstance.data.datasets[0].backgroundColor = labels.map((_, i) => {
-            const colors = [
-                'rgba(54, 162, 235, 0.7)',  // Blue
-                'rgba(255, 99, 132, 0.7)',  // Red
-                'rgba(255, 206, 86, 0.7)',  // Yellow
-                'rgba(75, 192, 192, 0.7)',  // Teal
-                'rgba(153, 102, 255, 0.7)', // Purple
-                'rgba(255, 159, 64, 0.7)',  // Orange
-                'rgba(199, 199, 199, 0.7)'  // Grey
-            ];
-            return colors[i % colors.length];
-        });
-        coursePopularityChartInstance.data.datasets[0].borderColor = labels.map((_, i) => {
-            const colors = [
-                'rgba(54, 162, 235, 1)',
-                'rgba(255, 99, 132, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(75, 192, 192, 1)',
-                'rgba(153, 102, 255, 1)',
-                'rgba(255, 159, 64, 1)',
-                'rgba(199, 199, 199, 1)'
-            ];
-            return colors[i % colors.length];
-        });
-        coursePopularityChartInstance.options.plugins.title.text = 'Student Enrollment by Course (Current Season)';
-        coursePopularityChartInstance.update();
-    } else {
-        coursePopularityChartInstance = new Chart(canvas, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Number of Students',
-                    data: data,
-                    backgroundColor: labels.map((_, i) => {
-                        const colors = [
-                            'rgba(54, 162, 235, 0.7)',  // Blue
-                            'rgba(255, 99, 132, 0.7)',  // Red
-                            'rgba(255, 206, 86, 0.7)',  // Yellow
-                            'rgba(75, 192, 192, 0.7)',  // Teal
-                            'rgba(153, 102, 255, 0.7)', // Purple
-                            'rgba(255, 159, 64, 0.7)',  // Orange
-                            'rgba(199, 199, 199, 0.7)'  // Grey
-                        ];
-                        return colors[i % colors.length];
-                    }),
-                    borderColor: labels.map((_, i) => {
-                        const colors = [
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',
-                            'rgba(255, 159, 64, 1)',
-                            'rgba(199, 199, 199, 1)'
-                        ];
-                        return colors[i % colors.length];
-                    }),
-                    borderWidth: 2,
-                    borderRadius: 4,
-                    borderSkipped: false,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Student Enrollment by Course (Current Season)',
-                        font: {
-                            size: 16,
-                            weight: 'bold'
-                        },
-                        padding: 20
+    coursePopularityChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Number of Students',
+                data: data,
+                backgroundColor: labels.map((_, i) => {
+                    const colors = [
+                        'rgba(54, 162, 235, 0.7)',  // Blue
+                        'rgba(255, 99, 132, 0.7)',  // Red
+                        'rgba(255, 206, 86, 0.7)',  // Yellow
+                        'rgba(75, 192, 192, 0.7)',  // Teal
+                        'rgba(153, 102, 255, 0.7)', // Purple
+                        'rgba(255, 159, 64, 0.7)',  // Orange
+                        'rgba(199, 199, 199, 0.7)'  // Grey
+                    ];
+                    return colors[i % colors.length];
+                }),
+                borderColor: labels.map((_, i) => {
+                    const colors = [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(199, 199, 199, 1)'
+                    ];
+                    return colors[i % colors.length];
+                }),
+                borderWidth: 2,
+                borderRadius: 4,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Student Enrollment by Course (Current Season)',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
                     },
-                    legend: {
-                        display: false
+                    padding: 20
+                },
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14
                     },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: {
-                            size: 14
-                        },
-                        bodyFont: {
-                            size: 13
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                return `Students: ${context.raw}`;
-                            }
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return `Students: ${context.raw}`;
                         }
                     }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
-                        ticks: {
-                            precision: 0
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                animation: {
-                    duration: 1000,
-                    easing: 'easeOutQuart'
                 }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        precision: 0
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
             }
-        });
-    }
+        }
+    });
 }
 
 function renderTopStudentsChart() {
     const canvas = document.getElementById('topStudentsChart');
     if (!canvas) return;
+
+    if (topStudentsChartInstance) {
+        topStudentsChartInstance.destroy();
+    }
 
     // Use only active students from current season
     const activeStudents = getStudentsBySeason(getCurrentSeason());
@@ -1846,100 +1849,89 @@ function renderTopStudentsChart() {
         .map(s => ({ ...s, average: s.totalExams > 0 ? s.totalScore / s.totalExams : 0 }))
         .sort((a, b) => b.average - a.average)
         .slice(0, 5);
-    
-    const labels = topStudents.map(s => s.name);
-    const data = topStudents.map(s => s.average);
 
-    // If chart instance exists, update it instead of destroying and recreating
-    if (topStudentsChartInstance) {
-        topStudentsChartInstance.data.labels = labels;
-        topStudentsChartInstance.data.datasets[0].data = data;
-        topStudentsChartInstance.options.plugins.title.text = 'Top 5 Students by Average Exam Score (Current Season)';
-        topStudentsChartInstance.update();
-    } else {
-        topStudentsChartInstance = new Chart(canvas, {
-            type: 'polarArea',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Average Score (%)',
-                    data: data,
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.7)',
-                        'rgba(54, 162, 235, 0.7)',
-                        'rgba(255, 206, 86, 0.7)',
-                        'rgba(75, 192, 192, 0.7)',
-                        'rgba(153, 102, 255, 0.7)'
-                    ],
-                    borderColor: [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)'
-                    ],
-                    borderWidth: 2,
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { 
-                        position: 'right',
-                        labels: {
-                            padding: 15,
-                            usePointStyle: true,
-                            pointStyle: 'circle'
-                        }
-                    },
-                    title: { 
-                        display: true, 
-                        text: 'Top 5 Students by Average Exam Score (Current Season)',
-                        font: {
-                            size: 16,
-                            weight: 'bold'
-                        },
-                        padding: 20
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: {
-                            size: 14
-                        },
-                        bodyFont: {
-                            size: 13
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.raw.toFixed(1)}%`;
-                            }
-                        }
+    topStudentsChartInstance = new Chart(canvas, {
+        type: 'polarArea',
+        data: {
+            labels: topStudents.map(s => s.name),
+            datasets: [{
+                label: 'Average Score (%)',
+                data: topStudents.map(s => s.average),
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ],
+                borderWidth: 2,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { 
+                    position: 'right',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
                     }
                 },
-                scales: {
-                    r: {
-                        angleLines: {
-                            display: true
-                        },
-                        suggestedMin: 0,
-                        suggestedMax: 100,
-                        ticks: {
-                            stepSize: 20,
-                            callback: function(value) {
-                                return value + '%';
-                            }
+                title: { 
+                    display: true, 
+                    text: 'Top 5 Students by Average Exam Score (Current Season)',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: 20
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.raw.toFixed(1)}%`;
                         }
                     }
-                },
-                animation: {
-                    duration: 1500,
-                    easing: 'easeOutQuart'
                 }
+            },
+            scales: {
+                r: {
+                    angleLines: {
+                        display: true
+                    },
+                    suggestedMin: 0,
+                    suggestedMax: 100,
+                    ticks: {
+                        stepSize: 20,
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            animation: {
+                duration: 1500,
+                easing: 'easeOutQuart'
             }
-        });
-    }
+        }
+    });
 }
 
 // ======================
@@ -2042,8 +2034,21 @@ async function processStudentRecords(records) {
 // ======================
 
 async function refreshDashboard() {
-    await loadAllData();
-    showMessage('Dashboard refreshed.', 'success');
+    // Invalidate all caches
+    Object.keys(dataCache).forEach(key => {
+        dataCache[key].valid = false;
+    });
+    
+    // Reload data for the current tab
+    const activeTab = document.querySelector('.dashboard-content-section.active');
+    if (activeTab) {
+        await loadDataForTab(activeTab.id);
+        showMessage('Dashboard refreshed.', 'success');
+    } else {
+        await loadAllData();
+        showMessage('Dashboard refreshed.', 'success');
+    }
+    
     // Also check graduation eligibility after refresh if the tab is active
     const graduationSection = document.getElementById('graduation');
     if (graduationSection && window.getComputedStyle(graduationSection).display !== 'none') {
@@ -2217,39 +2222,88 @@ function addHorizontalSlider(container) {
 function updateUI() {
     console.log("[updateUI] Starting UI update...");
 
-    renderStudentTable();
-    renderAttendanceTable();
-    renderExamTable();
-    renderTeacherTable();
-    renderCourseTable();
+    // Only update elements for the currently active tab
+    const activeTab = document.querySelector('.dashboard-content-section.active');
+    if (!activeTab) {
+        console.log("[updateUI] No active tab found, updating all UI elements");
+        // Fallback to updating everything if no active tab is found
+        renderStudentTable();
+        renderAttendanceTable();
+        renderExamTable();
+        renderTeacherTable();
+        renderCourseTable();
 
-    populateCourseDropdowns();
-    populateExamStudentDropdown();
-    populateExamCourseDropdown();
-    populateTeacherDropdown();
+        populateCourseDropdowns();
+        populateExamStudentDropdown();
+        populateExamCourseDropdown();
+        populateTeacherDropdown();
 
-    renderCoursePopularityChart();
-    renderOverallAttendanceChart();
-    renderTopStudentsChart();
-    renderLowPerformingAssignmentsChart();
-    updateSummaryMetrics();
-    updateWelcomeMessage();
-    
-    // Update season displays
-    updateSeasonDisplay();
-    renderSeasonsTable();
+        renderCoursePopularityChart();
+        renderOverallAttendanceChart();
+        renderTopStudentsChart();
+        renderLowPerformingAssignmentsChart();
+        updateSummaryMetrics();
+        updateWelcomeMessage();
+        
+        // Update season displays
+        updateSeasonDisplay();
+        renderSeasonsTable();
+    } else {
+        const tabId = activeTab.id;
+        console.log(`[updateUI] Updating UI for active tab: ${tabId}`);
+        
+        switch(tabId) {
+            case 'students':
+                renderStudentTable();
+                populateCourseDropdowns();
+                break;
+            case 'teachers':
+                renderTeacherTable();
+                populateTeacherDropdown();
+                break;
+            case 'courses':
+                renderCourseTable();
+                populateTeacherDropdown();
+                break;
+            case 'attendance':
+                renderAttendanceTable();
+                populateAttendanceStudentDropdown();
+                break;
+            case 'exams':
+                renderExamTable();
+                populateExamStudentDropdown();
+                populateExamCourseDropdown();
+                break;
+            case 'overview':
+                renderCoursePopularityChart();
+                renderOverallAttendanceChart();
+                renderTopStudentsChart();
+                renderLowPerformingAssignmentsChart();
+                updateSummaryMetrics();
+                break;
+            case 'reports-analytics':
+                renderLowPerformingAssignmentsChart();
+                updateSummaryMetrics();
+                break;
+            case 'graduation':
+                checkGraduationEligibility();
+                break;
+            case 'seasons':
+                updateSeasonDisplay();
+                renderSeasonsTable();
+                break;
+            default:
+                // For settings and other tabs, just update the welcome message
+                updateWelcomeMessage();
+                break;
+        }
+    }
 
     console.log("[updateUI] UI update complete.");
 
     // Additionally, enable a horizontal slider on the Students form when it overflows
     var studentsFormContainer = document.querySelector('#students .form-container');
     if (studentsFormContainer) addHorizontalSlider(studentsFormContainer);
-    
-    // Check graduation eligibility if the tab is active
-    const graduationSection = document.getElementById('graduation');
-    if (graduationSection && window.getComputedStyle(graduationSection).display !== 'none') {
-        checkGraduationEligibility();
-    }
 }
 
 // ======================
@@ -2327,6 +2381,10 @@ function renderLowPerformingAssignmentsChart() {
     const canvas = document.getElementById('lowPerformingAssignmentsChart');
     if (!canvas) return;
 
+    if (lowPerformingAssignmentsChartInstance) {
+        lowPerformingAssignmentsChartInstance.destroy();
+    }
+
     // Filter exams to only include those from active students in current season
     const activeStudents = getStudentsBySeason(getCurrentSeason());
     const activeStudentIds = activeStudents.map(student => student.id);
@@ -2358,89 +2416,81 @@ function renderLowPerformingAssignmentsChart() {
     const labels = entries.map(e => e.name);
     const data = entries.map(e => Math.round(e.min));
 
-    // If chart instance exists, update it instead of destroying and recreating
-    if (lowPerformingAssignmentsChartInstance) {
-        lowPerformingAssignmentsChartInstance.data.labels = labels;
-        lowPerformingAssignmentsChartInstance.data.datasets[0].data = data;
-        lowPerformingAssignmentsChartInstance.options.plugins.title.text = 'Low Performing Exams (min %) - Current Season';
-        lowPerformingAssignmentsChartInstance.update();
-    } else {
-        lowPerformingAssignmentsChartInstance = new Chart(canvas, {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [{
-                    label: 'Lowest % score',
-                    data,
-                    backgroundColor: 'rgba(244, 67, 54, 0.7)',  // Red with transparency
-                    borderColor: 'rgba(244, 67, 54, 1)',       // Solid red border
-                    borderWidth: 2,
-                    borderRadius: 4,
-                    borderSkipped: false,
-                    hoverBackgroundColor: 'rgba(244, 67, 54, 0.9)',
-                    hoverBorderColor: 'rgba(244, 67, 54, 1)',
-                    hoverBorderWidth: 3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                indexAxis: 'y',
-                plugins: {
-                    title: { 
-                        display: true, 
-                        text: 'Low Performing Exams (min %) - Current Season',
-                        font: {
-                            size: 16,
-                            weight: 'bold'
-                        },
-                        padding: 20
+    lowPerformingAssignmentsChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Lowest % score',
+                data,
+                backgroundColor: 'rgba(244, 67, 54, 0.7)',  // Red with transparency
+                borderColor: 'rgba(244, 67, 54, 1)',       // Solid red border
+                borderWidth: 2,
+                borderRadius: 4,
+                borderSkipped: false,
+                hoverBackgroundColor: 'rgba(244, 67, 54, 0.9)',
+                hoverBorderColor: 'rgba(244, 67, 54, 1)',
+                hoverBorderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                title: { 
+                    display: true, 
+                    text: 'Low Performing Exams (min %) - Current Season',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
                     },
-                    legend: {
-                        display: false
+                    padding: 20
+                },
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14
                     },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: {
-                            size: 14
-                        },
-                        bodyFont: {
-                            size: 13
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                return `Lowest Score: ${context.raw}%`;
-                            }
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return `Lowest Score: ${context.raw}%`;
                         }
                     }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        max: 100,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%';
-                            },
-                            precision: 0
-                        }
-                    },
-                    y: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                animation: {
-                    duration: 1200,
-                    easing: 'easeOutQuart'
                 }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        },
+                        precision: 0
+                    }
+                },
+                y: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            animation: {
+                duration: 1200,
+                easing: 'easeOutQuart'
             }
-        });
-    }
+        }
+    });
 }
 
 function downloadGraduationList() {
@@ -2629,21 +2679,15 @@ function attachEventListeners() {
         if (href.startsWith('#')) {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                sidebarLinks.forEach(l => l.classList.remove('active'));
-                link.classList.add('active');
-                sections.forEach(s => s.style.display = 'none');
                 const targetId = href.substring(1);
-                const targetEl = document.getElementById(targetId);
-                if (targetEl) {
-                    targetEl.style.display = 'block';
-                    setTimeout(() => {
-                        // Additionally, enable a horizontal slider on the Students form when it overflows
+                switchToTab(targetId);
+                
+                setTimeout(() => {
+                    // Additionally, enable a horizontal slider on the Students form when it overflows
+                    const targetEl = document.getElementById(targetId);
+                    if (targetEl) {
                         const studentsFormContainer = targetEl.querySelector('.form-container');
                         if (studentsFormContainer) addHorizontalSlider(studentsFormContainer);
-                        
-                        if (targetId === 'graduation') {
-                            checkGraduationEligibility();
-                        }
                         
                         if (targetId === 'attendance') {
                             showAttendanceTab();
@@ -2652,8 +2696,9 @@ function attachEventListeners() {
                         if (targetId === 'exams') {
                             showExamsTab();
                         }
-                    }, 0);
-                }
+                    }
+                }, 0);
+                
                 if (sidebar.classList.contains('open')) {
                     sidebar.classList.remove('open');
                     sidebarOverlay.style.display = 'none';
@@ -2816,46 +2861,11 @@ function attachEventListeners() {
         });
     }
 
-    // Real-time updates toggle
-    const settingsRealTimeToggle = document.getElementById('settingsRealTimeToggle');
-    if (settingsRealTimeToggle) {
-        // Check if real-time updates were previously enabled
-        const realTimeEnabled = localStorage.getItem('realTimeUpdates') === 'true';
-        settingsRealTimeToggle.checked = realTimeEnabled;
-        
-        // Initialize real-time updates if enabled
-        if (realTimeEnabled) {
-            startRealTimeUpdates();
-        }
-        
-        settingsRealTimeToggle.addEventListener('change', (e) => {
-            const checked = e.target.checked;
-            if (checked) {
-                startRealTimeUpdates();
-                showMessage('Real-time updates enabled', 'success');
-            } else {
-                stopRealTimeUpdates();
-                showMessage('Real-time updates disabled', 'info');
-            }
-            localStorage.setItem('realTimeUpdates', checked);
-        });
-    }
-
     const bindClick = (id, handler) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('click', (e) => { e.preventDefault(); handler(); });
     };
     bindClick('refreshDashboardBtn', refreshDashboard);
-    bindClick('refreshRealTimeBtn', async () => {
-        showMessage('Refreshing real-time data...', 'info');
-        try {
-            await loadAllData();
-            showMessage('Real-time data refreshed successfully!', 'success');
-        } catch (error) {
-            console.error('Error refreshing real-time data:', error);
-            showMessage('Error refreshing real-time data. Please try again.', 'error');
-        }
-    });
     bindClick('refreshDashboardReportsBtn', refreshDashboard);
     bindClick('exportStudentsCsvBtn', exportStudentsCSV);
     bindClick('exportAttendanceCsvBtn', exportAttendanceCSV);
@@ -2958,6 +2968,87 @@ async function loadAllData() {
     }
 }
 
+// Function to load data for a specific tab only
+async function loadDataForTab(tabId) {
+    console.log(`[loadDataForTab] Loading data for tab: ${tabId}`);
+    
+    // Check if we have a valid session first
+    const currentUser = Parse.User.current();
+    if (!currentUser) {
+        console.log("[loadDataForTab] No current user, skipping data load");
+        showMessage('No valid session. Please log in again.', 'error');
+        setTimeout(() => window.location.href = 'loginPage.html', 3000);
+        return;
+    }
+    
+    try {
+        switch(tabId) {
+            case 'students':
+                students = await loadParseData('Student');
+                renderStudentTable();
+                break;
+            case 'teachers':
+                teachers = await loadParseData('Teacher');
+                renderTeacherTable();
+                break;
+            case 'courses':
+                courses = await loadParseData('Course');
+                renderCourseTable();
+                break;
+            case 'attendance':
+                attendanceRecords = await loadParseData('Attendance');
+                renderAttendanceTable();
+                break;
+            case 'exams':
+                exams = await loadParseData('Exam');
+                renderExamTable();
+                break;
+            case 'overview':
+                // For overview, we need students, courses, and exams for charts
+                const [studentsR, coursesR, examsR] = await Promise.all([
+                    loadParseData('Student'),
+                    loadParseData('Course'),
+                    loadParseData('Exam'),
+                ]);
+                students = studentsR;
+                courses = coursesR;
+                exams = examsR;
+                renderCoursePopularityChart();
+                renderOverallAttendanceChart();
+                renderTopStudentsChart();
+                renderLowPerformingAssignmentsChart();
+                updateSummaryMetrics();
+                break;
+            case 'reports-analytics':
+                // For reports, we need all data
+                const [studentsRep, attendanceRep, teachersRep, coursesRep, examsRep] = await Promise.all([
+                    loadParseData('Student'),
+                    loadParseData('Attendance'),
+                    loadParseData('Teacher'),
+                    loadParseData('Course'),
+                    loadParseData('Exam'),
+                ]);
+                students = studentsRep;
+                attendanceRecords = attendanceRep;
+                teachers = teachersRep;
+                courses = coursesRep;
+                exams = examsRep;
+                renderLowPerformingAssignmentsChart();
+                updateSummaryMetrics();
+                break;
+            default:
+                // Load all data for other tabs or when in doubt
+                await loadAllData();
+                break;
+        }
+        
+        console.log(`[loadDataForTab] Data loaded for tab: ${tabId}`);
+    } catch (error) {
+        console.error(`[loadDataForTab] Error loading data for tab ${tabId}:`, error);
+        showMessage(`Error loading data for ${tabId} tab. Please try again.`, 'error');
+    }
+}
+
 function updateSummaryMetrics() {
     const elStudents = document.getElementById('summaryTotalStudents');
     const elCourses = document.getElementById('summaryTotalCourses');
@@ -3003,13 +3094,11 @@ async function initDashboard() {
         }
     }
     
-    // Load data after confirming we have a valid session
-    await loadAllData();
-    
-    // Initialize real-time updates if enabled
-    const realTimeEnabled = localStorage.getItem('realTimeUpdates') === 'true';
-    if (realTimeEnabled) {
-        startRealTimeUpdates();
+    // Load data only for the default active tab (overview)
+    const overviewTab = document.getElementById('overview');
+    if (overviewTab) {
+        overviewTab.classList.add('active');
+        await loadDataForTab('overview');
     }
 }
 
